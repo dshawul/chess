@@ -1,0 +1,18 @@
+Plan (informal)
+
+play a single match (POC)
+	int match(const char *engine[NB_COLOR], const char *fen);
+		play a match between engine[White] and engine[Black], starting from fen position.
+		return result of the match (enum from board.h as returned by game_over())
+
+play 2 matches concurrently (POC)
+	main() launches 2 threads, each executing the function match().
+	use -std=c11 (ISO C 2011) to write portable thread code, rather than calling POSIX thread system
+	calls.
+	only the process module should use POSIX system calls (non portable). at a later stage, we'll
+	make it Windows compatible too (a few ifdef and some ugly windows API, shouldn't be too hard)
+
+thread + scheduling
+	from a list of matches to be played (ie. a tournament), and a given max number of slave threads,
+	matches are played in a queue. No more than MAX_THREADS running at once (fixes the number of
+	games to be played in //). So we need some kind of scheduler, to distribute the work on threads
