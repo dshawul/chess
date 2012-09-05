@@ -3,9 +3,7 @@
 static inline move_t *make_pawn_moves(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist,
 	bool sub_promotions)
 /* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
- * indirect self checks (through fsq, or through the ep captured square). Note that direct self
- * checks aren't generated, so we don't check them here. In other words, we never put our King in
- * check before calling this function */
+ * indirect self checks (through fsq, or through the ep captured square) */
 {
 	assert(square_ok(fsq) && square_ok(tsq));
 	const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[us];
@@ -286,6 +284,72 @@ move_t *gen_moves(const Board *B, move_t *mlist)
 	}
 }
 
+bool has_piece_moves(const Board *B, uint64_t targets)
+{
+	assert(!board_is_check(B));			// do not use when in check (use gen_evasion)
+	const unsigned us = B->turn, kpos = B->king_pos[us];
+	assert(!(targets & B->all[us]));	// do not overwrite our pieces
+	uint64_t fss;
+
+	// Knight Moves
+	fss = B->b[us][Knight];
+	while (fss) {
+		unsigned fsq = next_bit(&fss);
+		uint64_t tss = NAttacks[fsq] & targets;
+		if (test_bit(B->st->pinned, fsq))	// pinned piece
+			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
+		if (tss)
+			return true;
+	}
+
+	// King moves
+	unsigned fsq = B->king_pos[us];
+	uint64_t tss = KAttacks[fsq] & targets & ~B->st->attacked;
+	if (tss)
+		return true;
+
+	// Rook Queen moves
+	fss = get_RQ(B, us);
+	while (fss) {
+		unsigned fsq = next_bit(&fss);
+		uint64_t tss = targets & rook_attack(fsq, B->st->occ);
+		if (test_bit(B->st->pinned, fsq))	// pinned piece
+			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
+		if (tss)
+			return true;
+	}
+
+	// Bishop Queen moves
+	fss = get_BQ(B, us);
+	while (fss) {
+		unsigned fsq = next_bit(&fss);
+		uint64_t tss = targets & bishop_attack(fsq, B->st->occ);
+		if (test_bit(B->st->pinned, fsq))	// pinned piece
+			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
+		if (tss)
+			return true;
+	}
+
+	return false;
+}
+
+bool has_moves(const Board *B)
+{
+	move_t mlist[MAX_MOVES];
+	
+	if (board_is_check(B))
+		return gen_evasion(B, mlist) != mlist;
+	else {
+		const uint64_t targets = ~B->all[B->turn];
+		if (has_piece_moves(B, targets))
+			return true;
+		if (gen_pawn_moves(B, targets, mlist, true) != mlist)
+			return true;
+	}
+	
+	return false;
+}
+
 uint64_t perft(Board *B, unsigned depth, unsigned ply)
 /* Calculates perft(depth), and displays all perft(depth-1) in the initial position. This
  * decomposition is useful to debug an incorrect perft recursively, against a correct perft
@@ -296,6 +360,11 @@ uint64_t perft(Board *B, unsigned depth, unsigned ply)
 	move_t *end = gen_moves(B, mlist);
 	uint64_t count;
 	char s[8];
+	
+	if (has_moves(B) != (end > begin)) {
+		print_board(B);
+		exit(EXIT_FAILURE);
+	}
 
 	if (depth > 1) {
 		for (m = begin, count = 0ULL; m < end; m++) {

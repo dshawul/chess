@@ -400,8 +400,8 @@ static bool is_stalemate(const Board *B)
 	move_t mlist[MAX_MOVES];
 	const uint64_t targets = ~B->all[B->turn];
 	
-	return (gen_pawn_moves(B, targets, mlist, true) == mlist)
-		&& (gen_piece_moves(B, targets, mlist, 1) == mlist);
+	return ( !has_piece_moves(B, targets)
+		&& gen_pawn_moves(B, targets, mlist, true) == mlist);
 }
 
 static bool is_mate(const Board *B)

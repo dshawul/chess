@@ -93,3 +93,6 @@ extern move_t *gen_castling(const Board *B, move_t *mlist);
 extern move_t *gen_pawn_moves(const Board *B, uint64_t targets, move_t *mlist, bool sub_promotions);
 extern move_t *gen_evasion(const Board *B, move_t *mlist);
 extern move_t *gen_moves(const Board *B, move_t *mlist);
+
+extern bool has_piece_moves(const Board *B, uint64_t targets);
+extern bool has_moves(const Board *B);
