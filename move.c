@@ -11,7 +11,7 @@ bool move_is_castling(const Board *B, move_t m)
 		&& (m.tsq == m.fsq - 2 || m.tsq == m.fsq + 2);
 }
 
-bool move_ok(Board *B, move_t m)
+bool move_is_legal(Board *B, move_t m)
 /* Determines whether a move is legal in the current board position. This function makes no
  * assumption or shortcut (like assuming the move is at least pseudo-legal for example), and tests
  * every single component of the move_t structure. So it is quite long and complex, but its execution

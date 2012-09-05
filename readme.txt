@@ -8,6 +8,10 @@ understand the FEN notation and long algebraic notation of moves.
 understand the basics of the UCI chess engine protocol, and experiment by running manually the engine
 in command line.
 
+C Coding standard:
+	http://www.jetcafe.org/jim/c-style.html
+	let's try to adhere to it, without being too rigid about it either!
+
 1/ Hierarchy
 ------------
 

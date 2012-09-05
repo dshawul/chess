@@ -25,7 +25,7 @@ bool test_perft()
 	
 	for (unsigned i = 0; Test[i].s; i++) {
 		printf("%s\n", Test[i].s);
-		load_fen(&B, Test[i].s);
+		set_fen(&B, Test[i].s);
 		if (perft(&B, Test[i].depth, 0) != Test[i].value) {
 			perror("perft: ERROR");
 			return false;

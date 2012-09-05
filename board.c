@@ -1,6 +1,7 @@
 #include "board.h"
 
 const char *PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
+static const move_t NoMove = {0,0,0,0};
 
 static void set_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play);
 static void clear_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play);
@@ -11,7 +12,7 @@ static uint64_t hidden_checkers(const Board *B, unsigned find_pins, unsigned col
 static bool is_stalemate(const Board *B);
 static bool is_mate(const Board *B);
 
-void reset_board(Board *B)
+void clear_board(Board *B)
 {
 	assert(BitboardInitialized);
 	memset(B, 0, sizeof(Board));
@@ -24,14 +25,14 @@ void reset_board(Board *B)
 	B->initialized = true;
 }
 
-void load_fen(Board *B, const char *fen)
+void set_fen(Board *B, const char *fen)
 {
 	assert(fen);
 	unsigned r, f;
 	char c = *fen++;
 
 	// load the board
-	reset_board(B);
+	clear_board(B);
 	for (r = Rank8, f = FileA; c != ' ' && r >= Rank1; c = *fen++) {
 		// empty squares
 		if ('1' <= c && c <= '8') {
@@ -106,7 +107,7 @@ void load_fen(Board *B, const char *fen)
 	assert(calc_key(B) == B->st->key);
 }
 
-void write_fen(const Board *B, char *fen)
+void get_fen(const Board *B, char *fen)
 {
 	assert(B->initialized && fen);
 
@@ -172,7 +173,7 @@ void print_board(const Board *B)
 	}
 	
 	char fen[MAX_FEN];
-	write_fen(B, fen);
+	get_fen(B, fen);
 	printf("fen: %s\n", fen);
 }
 
