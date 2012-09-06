@@ -1,18 +1,7 @@
-Plan (informal)
+1/ we need a Makefile
 
-play a single match (POC)
-	int match(const char *engine[NB_COLOR], const char *fen);
-		play a match between engine[White] and engine[Black], starting from fen position.
-		return result of the match (enum from board.h as returned by game_over())
-
-play 2 matches concurrently (POC)
-	main() launches 2 threads, each executing the function match().
-	use -std=c11 (ISO C 2011) to write portable thread code, rather than calling POSIX thread system
-	calls.
-	only the process module should use POSIX system calls (non portable). at a later stage, we'll
-	make it Windows compatible too (a few ifdef and some ugly windows API, shouldn't be too hard)
-
-thread + scheduling
-	from a list of matches to be played (ie. a tournament), and a given max number of slave threads,
-	matches are played in a queue. No more than MAX_THREADS running at once (fixes the number of
-	games to be played in //). So we need some kind of scheduler, to distribute the work on threads
+2/ Errors in child process ?
+- If a dup2() call fails, an exception is thrown in the child process, and the father is hung
+expecting input from stdin.
+- if the execlp() call fails, we throw an exception in the child process. This should kill the
+process and any call to write_line() or read_line() should throw IOErr()
