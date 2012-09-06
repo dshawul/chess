@@ -2,70 +2,84 @@
 #include <assert.h>
 #include <unistd.h>
 #include <signal.h>
+#include <cstring>
 
-bool process_create(Process *p, const char *cmd)
+void Process::create(const char *cmd) throw (ProcessErr)
 {
-	p->pid = 0;
-	p->in = p->out = NULL;
-
+	pid = 0;
 	int readpipe[2], writepipe[2];
-#define PARENT_READ		readpipe[0]
-#define CHILD_WRITE		readpipe[1]
-#define CHILD_READ		writepipe[0]
-#define PARENT_WRITE	writepipe[1]
+	#define PARENT_READ		readpipe[0]
+	#define CHILD_WRITE		readpipe[1]
+	#define CHILD_READ		writepipe[0]
+	#define PARENT_WRITE	writepipe[1]
 
-	if (pipe(readpipe) < 0 || pipe(writepipe) < 0)
-		return false;
+	try {
+		if (pipe(readpipe) < 0 || pipe(writepipe) < 0)
+			throw ProcessErr();
 
-	p->pid = fork();
+		pid = fork();
 
-	if (p->pid == 0) {
-		// in the child process
-		close(PARENT_WRITE);
-		close(PARENT_READ);
+		if (pid == 0) {
+			// in the child process
+			close(PARENT_WRITE);
+			close(PARENT_READ);
 
-		if (dup2(CHILD_READ, STDIN_FILENO) == -1)
-			return false;
-		close(CHILD_READ);
+			if (dup2(CHILD_READ, STDIN_FILENO) == -1)
+				throw ProcessErr();
+			close(CHILD_READ);
 
-		if (dup2(CHILD_WRITE, STDOUT_FILENO) == -1)
-			return false;
-		close(CHILD_WRITE);
+			if (dup2(CHILD_WRITE, STDOUT_FILENO) == -1)
+				throw ProcessErr();
+			close(CHILD_WRITE);
 
-		if (execlp(cmd, cmd, NULL) == -1)
-			return false;
+			if (execlp(cmd, cmd, NULL) == -1)
+				throw ProcessErr();
+		}
+		else if (pid > 0) {
+			// in the parent process
+			close(CHILD_READ);
+			close(CHILD_WRITE);
+			
+			if ( !(in = fdopen(PARENT_READ, "r")) 
+			|| !(out = fdopen(PARENT_WRITE, "w")) )
+				throw IOErr();
+		}
+		else
+			// fork failed
+			throw ProcessErr();
 	}
-	else if (p->pid > 0) {
-		// in the parent process
-		close(CHILD_READ);
-		close(CHILD_WRITE);
-
-		if (!(p->in = fdopen(PARENT_READ, "r")))
-			return false;
-
-		if (!(p->out = fdopen(PARENT_WRITE, "w")))
-			return false;
-
-		setvbuf(p->in, NULL, _IONBF, 0);
-		setvbuf(p->out, NULL, _IONBF, 0);
+	catch (ProcessErr &e) {
+		cleanup();
+		throw;
 	}
-	else
-		// fork failed
-		return false;
-
-	return true;
 }
 
-bool process_destroy(Process *p)
+void Process::cleanup()
 {
-	// close the parent side of the pipes
-	if (p->in)
-		fclose(p->in);
-	if (p->out)
-		fclose(p->out);
+	// close file descriptors
+	if (in) fclose(in);
+	if (out) fclose(out);
+	
+	// kill child process
+	if (pid > 0) kill(pid, SIGKILL);
+}
 
-	// kill the child process
-	return p->pid > 0
-	       ? kill(p->pid, SIGKILL) >= 0
-	       : false;
+Process::~Process()
+{
+	cleanup();
+}
+
+void Process::read_line(char *buf, int n) const
+{
+	if (!fgets(buf, n, in))
+		throw IOErr();
+}
+
+void Process::write_line(char *buf) const
+{
+	fputs(buf, out);
+	fflush(out);	// pipes are not auto-flushed by default
+	
+	if (ferror(out))
+		throw IOErr();
 }

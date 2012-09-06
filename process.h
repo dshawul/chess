@@ -3,10 +3,18 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-typedef struct {
+struct ProcessErr {};
+struct IOErr: ProcessErr {};
+
+class Process {
 	pid_t pid;
 	FILE *in, *out;
-} Process;
-
-extern bool process_create(Process *p, const char *cmd);
-extern bool process_destroy(Process *p);
+	void cleanup();	
+public:
+	Process(): pid(0), in(NULL), out(NULL) {}
+	~Process();
+	
+	void create(const char *cmd) throw (ProcessErr);
+	void read_line(char *buf, int n) const;
+	void write_line(char *buf) const;
+};

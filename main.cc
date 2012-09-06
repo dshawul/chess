@@ -4,21 +4,15 @@
 int main(int argc, char **argv)
 {
 	Process P[NB_COLOR];
-	char answer[0x100];
+	char buf[0x100];
 
 	for (unsigned color = White; color <= Black; color++) {
-		if (!process_create(&P[color], argv[color+1]))
-			goto ProcessError;
+		P[color].create(argv[color+1]);
 		
-		fputs("uci\n", P[White].out);
+		P[color].write_line("uci\n");
 		do {
-			if (fgets(answer, sizeof(answer), P[White].in) < 0)
-				goto ProcessError;
+			P[color].read_line(buf, sizeof(buf));
 		}
-		while (strcmp(answer, "uciok\n"));
+		while (strcmp(buf, "uciok\n"));
 	}
-
-ProcessError:
-	process_destroy(&P[White]);
-	process_destroy(&P[Black]);
 }
