@@ -36,7 +36,7 @@ typedef struct {
 	uint64_t attacked;			// squares attacked by opp_color(turn)
 	uint64_t checkers;			// pieces checking turn's King
 	uint64_t occ;				// occupancy
-	unsigned rule50;			// counter for the 50 move rule
+	int rule50;					// counter for the 50 move rule
 } game_info;
 
 typedef struct {
