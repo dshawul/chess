@@ -12,15 +12,18 @@
 struct ProcessErr {};
 struct IOErr: ProcessErr {};
 
-class Process {
-	pid_t pid;
-	FILE *in, *out;
-	void cleanup();	
+class Process
+{
 public:
 	Process(): pid(0), in(NULL), out(NULL) {}
 	virtual void create(const char *cmd) throw (ProcessErr);
 	virtual ~Process();
+
+protected:
+	pid_t pid;
+	FILE *in, *out;
 	
-	void read_line(char *buf, int n) const;
-	void write_line(const char *buf) const;
+	void cleanup();
+	void write_line(const char *s);
+	void read_line(char *s, int n);
 };

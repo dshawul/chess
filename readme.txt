@@ -3,12 +3,12 @@
 download some UCI compatible engine. example:
 	http://wbec-ridderkerk.nl/html/details1/DoubleCheck.html
 
-understand the FEN notation and long algebraic notation of moves.
-
-understand the basics of the UCI chess engine protocol.
+understand the basics of the UCI chess engine protocol, FEN notation
 
 1/ Hierarchy
 ------------
+
+=> C part
 
 types.h
 	defines types used by bitboard and board modules
@@ -28,9 +28,14 @@ process.h
 	process functions (spawn/kill processes, and talking to them via pipes)
 	implementation in process.c
 
+=> C++ part
+
+Process = process with pipe I/O
+Engine = Process + UCI communication stuff (Engine also holds name and options)
+
 2/ compilation
 --------------
 
-gcc *.c -o ./chess -std=c99 -O4 -flto -DNDEBUG -Wall
+g++ *.c -o ./chess -DNDEBUG -std=c++11 -O4 -flto -Wall
 
-makefile is probably not necessary and premature at this early stage, but definitely to do later.
+makefile coming soon!

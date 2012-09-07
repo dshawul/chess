@@ -1,30 +1,48 @@
 #include "engine.h"
+#include <sstream>
+#include <string.h>
 
 void Engine::create(const char *cmd) throw (ProcessErr)
-/* TODO:
- * - say "uci\n"
- * - read UCI options (and store in a TBD struct using some STL magic)
- * - until "uciok\n" is received
- * - Note: need a timeout version of read_line(), in order to detect non UCI process
- * */
+// Process the uci ... uciok tasks (parse option and engine name)
 {
 	Process::create(cmd);
-	/* Example of conversation Interface <-> Process:
-	* -> uci
-	* <- id name DiscoCheck 3.7.1
-	* <- id author Lucas Braesch
-	* <- option name Hash type spin default 32 min 1 max 8192
-	* <- option name Verbose type check default true
-	* <- option name AutoClearHash type check default false
-	* <- option name TimeBuffer type spin default 100 min 0 max 5000
-	* <- uciok
-	* Set the values of Engine::options accordingly
-	* */
+	write_line("uci\n");
+
+	char line[0x100], s[0x10];
+	Option o;
+	int n;
+
+	do {
+		read_line(line, sizeof(line));
+
+		// try to recognize the engine name
+		n = sscanf(line, "id name %s\n", s);
+		if (n == 1) {
+			strcpy(name, s);
+			continue;
+		}
+
+		// try to recognize an integer option
+		o.type = Option::Integer;
+		n = sscanf(line, "option name %s type spin default %d min %d max %d\n",
+			o.name, &o.value, &o.min, &o.max);
+		if (n == 4) goto recognized;
+
+		// try to recognize a boolean option
+		o.type = Option::Boolean;
+		o.min = false;
+		o.max = true;
+		n = sscanf(line, "option name %s type check default %s\n", o.name, s);
+		o.value = strcmp(s, "true") ? false : true;
+		if (n != 2) continue;	// option not recognized, discard
+
+recognized:
+		options.push_back(o);
+	}
+	while (strcmp(line, "uciok\n"));
 }
 
 Engine::~Engine()
-/* TODO:
- * - free options
- * - call Process::~Process()
- * */
-{}
+{
+	/* Nothing to do */
+}

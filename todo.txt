@@ -1,6 +1,6 @@
-1/ we need a Makefile
+=> Makefile
 
-2/ Errors in child process ?
+=> Errors in child process ?
 - If a dup2() call fails, an exception is thrown in the child process, and the father is hung
 expecting input from stdin.
 - if the execlp() call fails, we throw an exception in the child process. This should kill the

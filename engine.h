@@ -8,6 +8,8 @@
 #include <string>
 #include "process.h"
 
+struct SyntaxErr: ProcessErr {};
+
 class Engine: public Process
 {
 public:
@@ -16,11 +18,11 @@ public:
 	virtual ~Engine();
 private:
 	struct Option {
-		enum Type { Boolean, Integer, String };		
+		enum Type { Boolean, Integer };
 		Type type;
-		std::string name, str_value;
-		int int_value, min, max;	// when type == Integer
+		char name[0x20];
+		int value, min, max;
 	};
 	std::vector<Option> options;
-	std::string name;
+	char name[0x20];
 };

@@ -69,17 +69,17 @@ Process::~Process()
 	cleanup();
 }
 
-void Process::read_line(char *buf, int n) const
+void Process::write_line(const char *s)
 {
-	if (!fgets(buf, n, in))
+	fputs(s, out);
+	fflush(out);	// don't forget to flush! (that's what she says)
+	
+	if (ferror(out))
 		throw IOErr();
 }
 
-void Process::write_line(const char *buf) const
+void Process::read_line(char *s, int n)
 {
-	fputs(buf, out);
-	fflush(out);	// pipes are not auto-flushed by default
-	
-	if (ferror(out))
+	if (!fgets(s, n, in))
 		throw IOErr();
 }
