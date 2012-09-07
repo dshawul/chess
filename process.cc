@@ -75,7 +75,7 @@ void Process::read_line(char *buf, int n) const
 		throw IOErr();
 }
 
-void Process::write_line(char *buf) const
+void Process::write_line(const char *buf) const
 {
 	fputs(buf, out);
 	fflush(out);	// pipes are not auto-flushed by default

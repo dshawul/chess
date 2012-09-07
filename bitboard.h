@@ -2,8 +2,12 @@
 #include "types.h"
 
 /* Most used File bitboards */
-static const uint64_t FileA_bb = 0x0101010101010101ULL << FileA;
-static const uint64_t FileH_bb = 0x0101010101010101ULL << FileH;
+const uint64_t FileA_bb = 0x0101010101010101ULL << FileA;
+const uint64_t FileH_bb = 0x0101010101010101ULL << FileH;
+
+/* PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color */
+const uint64_t PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
+const uint64_t PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000000FFULL };
 
 extern bool BitboardInitialized;
 
@@ -15,10 +19,6 @@ extern uint64_t zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE],
  * the board*/
 extern uint64_t Between[NB_SQUARE][NB_SQUARE];
 extern uint64_t Direction[NB_SQUARE][NB_SQUARE];
-
-/* PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color */
-static const uint64_t PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
-static const uint64_t PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000000FFULL };
 
 /* Occupancy independant attacks */
 extern uint64_t KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];

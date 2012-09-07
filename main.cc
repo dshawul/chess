@@ -1,9 +1,9 @@
-#include "test.h"
-//#include "process.h"
+#include "types.h"
+#include "engine.h"
 
 int main(int argc, char **argv)
 {
-	/*Process P[NB_COLOR];
+	Process P[NB_COLOR];
 	char buf[0x100];
 
 	for (unsigned color = White; color <= Black; color++) {
@@ -14,6 +14,5 @@ int main(int argc, char **argv)
 			P[color].read_line(buf, sizeof(buf));
 		}
 		while (strcmp(buf, "uciok\n"));
-	}*/
-	return test_perft() ? 0 : EXIT_FAILURE;
+	}
 }
