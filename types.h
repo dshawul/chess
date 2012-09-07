@@ -28,27 +28,29 @@ enum {
 enum { Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8 };
 enum { FileA, FileB, FileC, FileD, FileE, FileF, FileG, FileH };
 
-static inline bool rank_file_ok(unsigned r, unsigned f)
+inline bool rank_file_ok(unsigned r, unsigned f)
 {
 	return r < NB_RANK_FILE && f < NB_RANK_FILE;
 }
-static inline unsigned square(unsigned r, unsigned f)
+
+inline unsigned square(unsigned r, unsigned f)
 {
 	assert(rank_file_ok(r, f));
 	return 8 * r + f;
 }
-static inline bool square_ok(unsigned sq)
+
+inline bool square_ok(unsigned sq)
 {
 	return sq <= H8;
 }
 
-static inline unsigned rank(unsigned sq)
+inline unsigned rank(unsigned sq)
 {
 	assert(square_ok(sq));
 	return sq / 8;
 }
 
-static inline unsigned file(unsigned sq)
+inline unsigned file(unsigned sq)
 {
 	assert(square_ok(sq));
 	return sq % 8;
@@ -59,11 +61,12 @@ static inline unsigned file(unsigned sq)
 #define NB_PIECE 6
 enum { Pawn, Knight, Bishop, Rook, Queen, King, NoPiece };
 
-static inline bool piece_ok(unsigned piece)
+inline bool piece_ok(unsigned piece)
 {
 	return piece < NoPiece;
 }
-static inline bool is_slider(unsigned piece)
+
+inline bool is_slider(unsigned piece)
 {
 	assert(piece_ok(piece));
 	return Bishop <= piece && piece <= Queen;
@@ -74,12 +77,12 @@ static inline bool is_slider(unsigned piece)
 #define NB_COLOR 2
 enum { White, Black, NoColor };
 
-static inline bool color_ok(unsigned color)
+inline bool color_ok(unsigned color)
 {
 	return color <= Black;
 }
 
-static inline unsigned opp_color(unsigned color)
+inline unsigned opp_color(unsigned color)
 {
 	assert(color_ok(color));
 	return color ^ 1;

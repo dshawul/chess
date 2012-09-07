@@ -42,25 +42,25 @@ extern void print_bitboard(uint64_t b);
 extern unsigned first_bit(uint64_t b);
 extern unsigned next_bit(uint64_t *b);
 
-static inline void set_bit(uint64_t *b, unsigned i)
+inline void set_bit(uint64_t *b, unsigned i)
 {
 	assert(square_ok(i));
 	*b |= 1ULL << i;
 }
 
-static inline void clear_bit(uint64_t *b, unsigned i)
+inline void clear_bit(uint64_t *b, unsigned i)
 {
 	assert(square_ok(i));
 	*b &= ~(1ULL << i);
 }
 
-static inline bool test_bit(uint64_t b, unsigned i)
+inline bool test_bit(uint64_t b, unsigned i)
 {
 	assert(square_ok(i));
 	return b & (1ULL << i);
 }
 
-static inline uint64_t shift_bit(uint64_t b, int i)
+inline uint64_t shift_bit(uint64_t b, int i)
 /* shift_bit() extends << in allowing negative shifts. This is useful to keep some pawn related code
  * generic and simple. */
 {
@@ -68,13 +68,13 @@ static inline uint64_t shift_bit(uint64_t b, int i)
 	return i > 0 ? b << i : b >> -i;
 }
 
-static inline bool several_bits(uint64_t b)
+inline bool several_bits(uint64_t b)
 {
 	return b & (b - 1);
 }
 
 /* Destination square for a Pawn of color to be pushed */
-static inline unsigned pawn_push(unsigned color, unsigned sq)
+inline unsigned pawn_push(unsigned color, unsigned sq)
 {
 	assert(color_ok(color) && rank(sq) >= Rank2 && rank(sq) <= Rank7);
 	return color ? sq - 8 : sq + 8;

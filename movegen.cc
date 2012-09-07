@@ -1,74 +1,77 @@
 #include "board.h"
 
-static inline move_t *make_pawn_moves(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist,
-	bool sub_promotions)
-/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
- * indirect self checks (through fsq, or through the ep captured square) */
+namespace
 {
-	assert(square_ok(fsq) && square_ok(tsq));
-	const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[us];
+	move_t *make_pawn_moves(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist,
+	                               bool sub_promotions)
+	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
+	 * indirect self checks (through fsq, or through the ep captured square) */
+	{
+		assert(square_ok(fsq) && square_ok(tsq));
+		const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[us];
 
-	if ((test_bit(B->st->pinned, fsq))				// pinned piece
-		&& (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
-		return mlist;	// illegal move by indirect self check
+		if ((test_bit(B->st->pinned, fsq))				// pinned piece
+		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
+			return mlist;	// illegal move by indirect self check
 
-	move_t m;
-	
-	m.fsq = fsq;
-	m.tsq = tsq;
-	m.ep = tsq == B->st->epsq;
+		move_t m;
 
-	if (m.ep) {
-		uint64_t occ = B->st->occ;
-		// play the ep capture on occ
-		clear_bit(&occ, m.fsq);
-		clear_bit(&occ, pawn_push(them, m.tsq));	// remove the ep captured enemy pawn
-		set_bit(&occ, m.tsq);
-		// test for check by a sliding enemy piece
-		if ((get_RQ(B, them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-			|| (get_BQ(B, them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
-			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
-	}
+		m.fsq = fsq;
+		m.tsq = tsq;
+		m.ep = tsq == B->st->epsq;
 
-	// promotions
-	if (test_bit(PPromotionRank[us], tsq)) {
-		m.promotion = Queen; *mlist++ = m;
-		if (sub_promotions) {
-			m.promotion = Knight; *mlist++ = m;
-			m.promotion = Rook; *mlist++ = m;
-			m.promotion = Bishop; *mlist++ = m;
+		if (m.ep) {
+			uint64_t occ = B->st->occ;
+			// play the ep capture on occ
+			clear_bit(&occ, m.fsq);
+			clear_bit(&occ, pawn_push(them, m.tsq));	// remove the ep captured enemy pawn
+			set_bit(&occ, m.tsq);
+			// test for check by a sliding enemy piece
+			if ((get_RQ(B, them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
+			        || (get_BQ(B, them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+				return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 		}
+
+		// promotions
+		if (test_bit(PPromotionRank[us], tsq)) {
+			m.promotion = Queen; *mlist++ = m;
+			if (sub_promotions) {
+				m.promotion = Knight; *mlist++ = m;
+				m.promotion = Rook; *mlist++ = m;
+				m.promotion = Bishop; *mlist++ = m;
+			}
+		}
+		// all other moves
+		else {
+			m.promotion = NoPiece;
+			*mlist++ = m;
+		}
+
+		return mlist;
 	}
-	// all other moves
-	else {
+
+	move_t *make_piece_move(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist)
+	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
+	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
+	 * other words, we never put our King in check before calling this function */
+	{
+		assert(square_ok(fsq) && square_ok(tsq));
+		const unsigned kpos = B->king_pos[B->turn];
+
+		if ((test_bit(B->st->pinned, fsq))				// pinned piece
+		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
+			return mlist;	// illegal move by indirect self check
+
+		move_t m;
+		m.fsq = fsq;
+		m.tsq = tsq;
+		m.ep = false;
+
 		m.promotion = NoPiece;
 		*mlist++ = m;
+
+		return mlist;
 	}
-
-	return mlist;
-}
-
-static inline move_t *make_piece_move(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist)
-/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
- * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
- * other words, we never put our King in check before calling this function */
-{
-	assert(square_ok(fsq) && square_ok(tsq));
-	const unsigned kpos = B->king_pos[B->turn];
-
-	if ((test_bit(B->st->pinned, fsq))				// pinned piece
-		&& (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
-		return mlist;	// illegal move by indirect self check
-
-	move_t m;
-	m.fsq = fsq;
-	m.tsq = tsq;	
-	m.ep = false;
-
-	m.promotion = NoPiece;
-	*mlist++ = m;
-
-	return mlist;
 }
 
 move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool king_moves)
@@ -169,13 +172,13 @@ move_t *gen_pawn_moves(const Board *B, uint64_t targets, move_t *mlist, bool sub
 {
 	const unsigned us = B->turn, them = opp_color(us);
 	const int
-		lc_inc = us ? -9 : 7,	// left capture increment
-		rc_inc = us ? -7 : 9,	// right capture increment
-		sp_inc = us ? -8 : 8,	// single push increment
-		dp_inc = 2 * sp_inc;	// double push increment
+	lc_inc = us ? -9 : 7,	// left capture increment
+	rc_inc = us ? -7 : 9,	// right capture increment
+	sp_inc = us ? -8 : 8,	// single push increment
+	dp_inc = 2 * sp_inc;	// double push increment
 	const uint64_t
-		fss = B->b[us][Pawn],
-		enemies = B->all[them] | get_epsq_bb(B);
+	fss = B->b[us][Pawn],
+	enemies = B->all[them] | get_epsq_bb(B);
 
 	/* First we calculate the to squares (tss) */
 
@@ -226,7 +229,7 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	const unsigned us = B->turn, kpos = B->king_pos[us];
 	const uint64_t checkers = B->st->checkers;
 	const unsigned csq = first_bit(checkers),	// checker square
-		cpiece = B->piece_on[csq];			// checker piece
+	               cpiece = B->piece_on[csq];			// checker piece
 	uint64_t tss;
 
 	// normal king escapes
@@ -236,7 +239,7 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	uint64_t _checkers = checkers;
 	while (_checkers) {
 		const unsigned _csq = next_bit(&_checkers),
-		    _cpiece = B->piece_on[_csq];
+		               _cpiece = B->piece_on[_csq];
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
 	}
@@ -250,8 +253,8 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	if (!board_is_double_check(B)) {
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
-			? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
-			: checkers;				// capture the checker
+		      ? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
+		      : checkers;				// capture the checker
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
 		 * push, and we also need to consider capturing it en passant to solve the check */
@@ -336,7 +339,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 bool has_moves(const Board *B)
 {
 	move_t mlist[MAX_MOVES];
-	
+
 	if (board_is_check(B))
 		return gen_evasion(B, mlist) != mlist;
 	else {
@@ -346,7 +349,7 @@ bool has_moves(const Board *B)
 		if (gen_pawn_moves(B, targets, mlist, true) != mlist)
 			return true;
 	}
-	
+
 	return false;
 }
 
@@ -360,7 +363,7 @@ uint64_t perft(Board *B, unsigned depth, unsigned ply)
 	move_t *end = gen_moves(B, mlist);
 	uint64_t count;
 	char s[8];
-	
+
 	if (has_moves(B) != (end > begin)) {
 		print_board(B);
 		exit(EXIT_FAILURE);
@@ -379,7 +382,8 @@ uint64_t perft(Board *B, unsigned depth, unsigned ply)
 				printf("%s\t%u\n", s, (uint32_t)count_subtree);
 			}
 		}
-	} else {
+	}
+	else {
 		count = end - begin;
 		if (!ply) {
 			for (m = begin; m < end; m++) {
