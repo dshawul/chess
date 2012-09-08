@@ -6,23 +6,18 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 // Process the uci ... uciok tasks (parse option and engine name)
 {
 	Process::create(cmd);
+	
+	char line[0x100];
+	std::string token;
 	write_line("uci\n");
 
-	char line[0x100];
-	for (;;)
+	do
 	{
 		read_line(line, sizeof(line));
-
 		std::istringstream s(line);
-		std::string token;
+		s >> token;
 
-		if (!(s >> token))
-			throw SyntaxErr();
-
-		if (token == "uciok")
-			break;
-
-		else if (token == "id")
+		if (token == "id")
 		{
 			if ((s >> token) && token == "name")
 			{
@@ -59,7 +54,7 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 
 				o.value = token == "true";
 				o.min = false;
-				o.max = true; // for the sake of consistency
+				o.max = true;
 			}
 			else if (token == "spin")
 			{
@@ -74,14 +69,10 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 				if ((o.min > o.value) || (o.max < o.value))
 					throw SyntaxErr();
 			}
-			else if (token != "string" && token != "combo")
-				throw SyntaxErr();
 
 			options.push_back(o);
 		}
-		else
-			throw SyntaxErr();
-	}
+	} while (token != "uciok");
 }
 
 Engine::~Engine()
