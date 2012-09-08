@@ -8,8 +8,6 @@
 #include <string>
 #include "process.h"
 
-struct SyntaxErr: ProcessErr {};
-
 class Engine: public Process
 {
 public:
