@@ -30,36 +30,33 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 				while ((s >> token) && token != "type")
 					o.name += token + " ";
 				s >> token;
-				if (token == "check") {
-					// option name o.name type check ...
-					o.type = Option::Boolean;
+				if (token == "check" || token == "spin") {
+					o.type = token == "check" ? Option::Boolean : Option::Integer;
+					// option name o.name type o.type ...					
 					if (!(s >> token) || token != "default")
 						throw SyntaxErr();					
 					// option name o.name type check default ...
-					s >> token;
-					o.value = token == "true" ? true : false;
-					o.min = false; o.max = true;	// for the sake of consistency
-				}
-				else if (token == "spin") {
-					// option name o.name type spin ...
-					o.type = Option::Integer;
-					if (!(s >> token) || token != "default")
-						throw SyntaxErr();
-					// option name o.name type spin default ...
-					s >> o.value;
-					if (!(s >> token) || token != "min")
-						throw SyntaxErr();
-					// option name o.name type spin default o.value min ...
-					s >> o.min;
-					if (!(s >> token) || token != "max")
-						throw SyntaxErr();
-					// option name o.name type spin default o.value min o.min max ...
-					s >> o.max;
+					if (o.type == Option::Boolean) {
+						s >> token;
+						o.value = token == "true" ? true : false;
+						o.min = false; o.max = true;	// for the sake of consistency
+					}
+					else if (o.type == Option::Integer) {
+						s >> o.value;
+						if (!(s >> token) || token != "min")
+							throw SyntaxErr();
+						// option name o.name type spin default o.value min ...
+						s >> o.min;
+						if (!(s >> token) || token != "max")
+							throw SyntaxErr();
+						// option name o.name type spin default o.value min o.min max ...
+						s >> o.max;						
+					}
 				}
 			}
 		}
 	}
-	while (token != "uciok\n");
+	while (token != "uciok");
 }
 
 Engine::~Engine()
