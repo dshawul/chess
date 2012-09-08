@@ -17,7 +17,8 @@ public:
 	virtual void create(const char *cmd) throw (ProcessErr);
 	virtual ~Engine();
 private:
-	struct Option {
+	struct Option
+	{
 		enum Type { Boolean, Integer };
 		Type type;
 		std::string name;

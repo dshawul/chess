@@ -38,22 +38,27 @@ void set_fen(Board *B, const char *fen)
 
 	// load the board
 	clear_board(B);
-	for (r = Rank8, f = FileA; c != ' ' && r >= Rank1; c = *fen++) {
+	for (r = Rank8, f = FileA; c != ' ' && r >= Rank1; c = *fen++)
+	{
 		// empty squares
-		if ('1' <= c && c <= '8') {
+		if ('1' <= c && c <= '8')
+		{
 			f += c - '0';
 			assert(f <= NB_RANK_FILE);
 		}
 		// EOL separator
-		else if (c == '/') {
+		else if (c == '/')
+		{
 			assert(f == NB_RANK_FILE);
 			r--;
 			f = FileA;
 		}
 		// piece
-		else {
+		else
+		{
 			unsigned sq = square(r, f++), piece;
-			for (piece = Pawn; piece <= King; piece++) {
+			for (piece = Pawn; piece <= King; piece++)
+			{
 				if (c == PieceLabel[isupper(c) ? White : Black][piece])
 					break;
 			}
@@ -79,20 +84,25 @@ void set_fen(Board *B, const char *fen)
 
 	if (c == '-')	// no castling rights
 		c = *fen++;
-	else {			// set castling rights (in reading order KQkq)
-		if (c == 'K') {
+	else  			// set castling rights (in reading order KQkq)
+	{
+		if (c == 'K')
+		{
 			B->st->crights ^= OO;
 			c = *fen++;
 		}
-		if (c == 'Q') {
+		if (c == 'Q')
+		{
 			B->st->crights ^= OOO;
 			c = *fen++;
 		}
-		if (c == 'k') {
+		if (c == 'k')
+		{
 			B->st->crights ^= OO << 2;
 			c = *fen++;
 		}
-		if (c == 'q') {
+		if (c == 'q')
+		{
 			B->st->crights ^= OOO << 2;
 			c = *fen++;
 		}
@@ -101,12 +111,14 @@ void set_fen(Board *B, const char *fen)
 	// en passant square
 	assert(c == ' ');
 	c = *fen++;
-	if (c == '-') {
+	if (c == '-')
+	{
 		// no en passant square
 		c = *fen++;
 		B->st->epsq = NoSquare;
 	}
-	else {
+	else
+	{
 		unsigned r, f;
 		assert('a' <= c && c <= 'h');
 		f = c - 'a';
@@ -130,14 +142,18 @@ void get_fen(const Board *B, char *fen)
 	assert(B->initialized && fen);
 
 	// write the board
-	for (int r = Rank8; r >= Rank1; r--) {
+	for (int r = Rank8; r >= Rank1; r--)
+	{
 		unsigned empty_cnt = 0;
-		for (int f = FileA; f <= FileH; f++) {
+		for (int f = FileA; f <= FileH; f++)
+		{
 			unsigned sq = square(r, f);
 			if (B->piece_on[sq] == NoPiece)
 				empty_cnt++;
-			else {
-				if (empty_cnt) {
+			else
+			{
+				if (empty_cnt)
+				{
 					*fen++ = empty_cnt + '0';
 					empty_cnt = 0;
 				}
@@ -154,7 +170,8 @@ void get_fen(const Board *B, char *fen)
 
 	// castling rights
 	unsigned crights = B->st->crights;
-	if (crights) {
+	if (crights)
+	{
 		if (crights & OO) *fen++ = 'K';
 		if (crights & OOO) *fen++ = 'Q';
 		if (crights & (OO << 2)) *fen++ = 'k';
@@ -166,7 +183,8 @@ void get_fen(const Board *B, char *fen)
 
 	// en passant square
 	unsigned epsq = B->st->epsq;
-	if (epsq != NoSquare) {
+	if (epsq != NoSquare)
+	{
 		*fen++ = file(epsq) + 'a';
 		*fen++ = rank(epsq) + '1';
 	}
@@ -180,8 +198,10 @@ void print_board(const Board *B)
 {
 	assert(B->initialized);
 
-	for (int r = Rank8; r >= Rank1; r--) {
-		for (int f = FileA; f <= FileH; f++) {
+	for (int r = Rank8; r >= Rank1; r--)
+	{
+		for (int f = FileA; f <= FileH; f++)
+		{
 			unsigned sq = square(r, f),
 			         color = color_on(B, sq);
 			char c = color != NoColor
@@ -209,13 +229,16 @@ void play(Board *B, move_t m)
 	const unsigned us = B->turn, them = opp_color(us);
 	const unsigned piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
 
-	if (move_equal(m, NoMove)) {
+	if (move_equal(m, NoMove))
+	{
 		assert(!board_is_check(B));
 		B->st->epsq = NoSquare;
 	}
-	else {
+	else
+	{
 		// normal capture: remove captured piece
-		if (piece_ok(capture)) {
+		if (piece_ok(capture))
+		{
 			B->st->rule50 = 0;
 			clear_square(B, them, capture, m.tsq, true);
 		}
@@ -224,7 +247,8 @@ void play(Board *B, move_t m)
 		clear_square(B, us, piece, m.fsq, true);
 		set_square(B, us, m.promotion == NoPiece ? piece : m.promotion, m.tsq, true);
 
-		if (piece == Pawn) {
+		if (piece == Pawn)
+		{
 			B->st->rule50 = 0;
 			int inc_pp = us ? -8 : 8;
 			// set the epsq if double push
@@ -235,33 +259,39 @@ void play(Board *B, move_t m)
 			if (m.ep)
 				clear_square(B, them, Pawn, m.tsq - inc_pp, true);
 		}
-		else {
+		else
+		{
 			B->st->epsq = NoSquare;
 
-			if (piece == Rook) {
+			if (piece == Rook)
+			{
 				// a rook move can alter castling rights
 				if (m.fsq == (us ? H8 : H1))
 					B->st->crights &= ~(OO << (2 * us));
 				else if (m.fsq == (us ? A8 : A1))
 					B->st->crights &= ~(OOO << (2 * us));
 			}
-			else if (piece == King) {
+			else if (piece == King)
+			{
 				// update king_pos and clear crights
 				B->king_pos[us] = m.tsq;
 				B->st->crights &= ~((OO | OOO) << (2 * us));
 				// move the rook (jump over the king)
-				if (m.tsq == m.fsq+2) {			// OO
+				if (m.tsq == m.fsq+2)  			// OO
+				{
 					clear_square(B, us, Rook, us ? H8 : H1, true);
 					set_square(B, us, Rook, us ? F8 : F1, true);
 				}
-				else if (m.tsq == m.fsq-2) {	// OOO
+				else if (m.tsq == m.fsq-2)  	// OOO
+				{
 					clear_square(B, us, Rook, us ? A8 : A1, true);
 					set_square(B, us, Rook, us ? D8 : D1, true);
 				}
 			}
 		}
 
-		if (capture == Rook) {
+		if (capture == Rook)
+		{
 			// Rook captures can alter opponent's castling rights
 			if (m.tsq == (us ? H1 : H8))
 				B->st->crights &= ~(OO << (2 * them));
@@ -294,7 +324,8 @@ void undo(Board *B)
 
 	if (move_equal(m, NoMove))
 		assert(!board_is_check(B));
-	else {
+	else
+	{
 		// move our piece back
 		clear_square(B, us, m.promotion == NoPiece ? piece : m.promotion, m.tsq, false);
 		set_square(B, us, piece, m.fsq, false);
@@ -303,15 +334,18 @@ void undo(Board *B)
 		if (piece_ok(capture))
 			set_square(B, them, capture, m.tsq, false);
 
-		if (piece == King) {
+		if (piece == King)
+		{
 			// update king_pos
 			B->king_pos[us] = m.fsq;
 			// undo rook jump (castling)
-			if (m.tsq == m.fsq+2) {			// OO
+			if (m.tsq == m.fsq+2)  			// OO
+			{
 				clear_square(B, us, Rook, us ? F8 : F1, false);
 				set_square(B, us, Rook, us ? H8 : H1, false);
 			}
-			else if (m.tsq == m.fsq-2) {	// OOO
+			else if (m.tsq == m.fsq-2)  	// OOO
+			{
 				clear_square(B, us, Rook, us ? D8 : D1, false);
 				set_square(B, us, Rook, us ? A8 : A1, false);
 			}
@@ -425,7 +459,8 @@ namespace
 		// Pinners are only sliders with X-ray attacks to ksq
 		pinners = (get_RQ(B, aside) & RPseudoAttacks[ksq]) | (get_BQ(B, aside) & BPseudoAttacks[ksq]);
 
-		while (pinners) {
+		while (pinners)
+		{
 			unsigned sq = next_bit(&pinners);
 			uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & B->st->occ;
 			// NB: if b == 0 then we're in check
@@ -478,7 +513,8 @@ namespace
 		set_bit(&B->all[color], sq);
 		B->piece_on[sq] = piece;
 
-		if (play) {
+		if (play)
+		{
 			set_bit(&B->st->occ, sq);
 			B->st->key ^= zob[color][piece][sq];
 		}
@@ -493,7 +529,8 @@ namespace
 		clear_bit(&B->all[color], sq);
 		B->piece_on[sq] = NoPiece;
 
-		if (play) {
+		if (play)
+		{
 			clear_bit(&B->st->occ, sq);
 			B->st->key ^= zob[color][piece][sq];
 		}
@@ -505,9 +542,11 @@ namespace
 		uint64_t key = 0ULL;
 
 		for (unsigned color = White; color <= Black; color++)
-			for (unsigned piece = Pawn; piece <= King; piece++) {
+			for (unsigned piece = Pawn; piece <= King; piece++)
+			{
 				uint64_t sqs = B->b[color][piece];
-				while (sqs) {
+				while (sqs)
+				{
 					const unsigned sq = next_bit(&sqs);
 					key ^= zob[color][piece][sq];
 				}

@@ -6,13 +6,15 @@
 #define MAX_MOVES	0x80	// max number of legal moves
 
 /* Castling flags: those are for White, use << 2 for Black */
-enum {
-	OO = 1,		// King side castle (OO = chess notation)
-	OOO = 2		// Queen side castle (OOO = chess notation)
+enum
+{
+    OO = 1,		// King side castle (OO = chess notation)
+    OOO = 2		// Queen side castle (OOO = chess notation)
 };
 
 /* Possible results of a game */
-enum Result {
+enum Result
+{
     ResultNone,			// game is not over
     ResultThreefold,	// draw by 3-fold repetition
     Result50Move,		// draw by 50 move rule
@@ -21,12 +23,14 @@ enum Result {
     ResultMate			// check mate
 };
 
-typedef struct {
+typedef struct
+{
 	uint16_t fsq:6, tsq:6;
 	uint16_t promotion:3, ep:1;
 } move_t;
 
-typedef struct {
+typedef struct
+{
 	unsigned piece, capture;	// undo info
 	unsigned epsq;				// en passant square
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
@@ -39,7 +43,8 @@ typedef struct {
 	int rule50;					// counter for the 50 move rule
 } game_info;
 
-typedef struct {
+typedef struct
+{
 	uint64_t b[NB_COLOR][NB_PIECE];
 	uint64_t all[NB_COLOR];
 	unsigned turn;

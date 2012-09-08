@@ -3,7 +3,7 @@
 namespace
 {
 	move_t *make_pawn_moves(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist,
-	                               bool sub_promotions)
+	                        bool sub_promotions)
 	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
@@ -20,7 +20,8 @@ namespace
 		m.tsq = tsq;
 		m.ep = tsq == B->st->epsq;
 
-		if (m.ep) {
+		if (m.ep)
+		{
 			uint64_t occ = B->st->occ;
 			// play the ep capture on occ
 			clear_bit(&occ, m.fsq);
@@ -33,16 +34,23 @@ namespace
 		}
 
 		// promotions
-		if (test_bit(PPromotionRank[us], tsq)) {
-			m.promotion = Queen; *mlist++ = m;
-			if (sub_promotions) {
-				m.promotion = Knight; *mlist++ = m;
-				m.promotion = Rook; *mlist++ = m;
-				m.promotion = Bishop; *mlist++ = m;
+		if (test_bit(PPromotionRank[us], tsq))
+		{
+			m.promotion = Queen;
+			*mlist++ = m;
+			if (sub_promotions)
+			{
+				m.promotion = Knight;
+				*mlist++ = m;
+				m.promotion = Rook;
+				*mlist++ = m;
+				m.promotion = Bishop;
+				*mlist++ = m;
 			}
 		}
 		// all other moves
-		else {
+		else
+		{
 			m.promotion = NoPiece;
 			*mlist++ = m;
 		}
@@ -85,10 +93,12 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 
 	// Knight Moves
 	fss = B->b[us][Knight];
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
-		while (tss) {
+		while (tss)
+		{
 			unsigned tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
@@ -96,10 +106,12 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 
 	// Rook Queen moves
 	fss = get_RQ(B, us);
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B->st->occ);
-		while (tss) {
+		while (tss)
+		{
 			unsigned tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
@@ -107,21 +119,25 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 
 	// Bishop Queen moves
 	fss = get_BQ(B, us);
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B->st->occ);
-		while (tss) {
+		while (tss)
+		{
 			unsigned tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
 	}
 
 	// King moves (king_moves == false is only used for check escapes)
-	if (king_moves) {
+	if (king_moves)
+	{
 		unsigned fsq = B->king_pos[us];
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
 		uint64_t tss = KAttacks[fsq] & targets & ~B->st->attacked;
-		while (tss) {
+		while (tss)
+		{
 			unsigned tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
@@ -143,20 +159,24 @@ move_t *gen_castling(const Board *B, move_t *mlist)
 	m.promotion = NoPiece;
 	m.ep = 0;
 
-	if (B->st->crights & (OO << (2 * us))) {
+	if (B->st->crights & (OO << (2 * us)))
+	{
 		uint64_t safe = 3ULL << (m.fsq + 1);	// must not be attacked
 		uint64_t empty = safe;						// must be empty
 
-		if (!(B->st->attacked & safe) && !(B->st->occ & empty)) {
+		if (!(B->st->attacked & safe) && !(B->st->occ & empty))
+		{
 			m.tsq = m.fsq + 2;
 			*mlist++ = m;
 		}
 	}
-	if (B->st->crights & (OOO << (2 * us))) {
+	if (B->st->crights & (OOO << (2 * us)))
+	{
 		uint64_t safe = 3ULL << (m.fsq - 2);	// must not be attacked
 		uint64_t empty = safe | (1ULL << (m.fsq - 3));		// must be empty
 
-		if (!(B->st->attacked & safe) && !(B->st->occ & empty)) {
+		if (!(B->st->attacked & safe) && !(B->st->occ & empty))
+		{
 			m.tsq = m.fsq - 2;
 			*mlist++ = m;
 		}
@@ -202,14 +222,16 @@ move_t *gen_pawn_moves(const Board *B, uint64_t targets, move_t *mlist, bool sub
 
 	/* Then we loop on the tss and find the possible from square(s) */
 
-	while (tss) {
+	while (tss)
+	{
 		const unsigned tsq = next_bit(&tss);
 
 		if (test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
 		else if (test_bit(tss_dp, tsq))	// can we double push to tsq ?
 			mlist = make_pawn_moves(B, tsq - dp_inc, tsq, mlist, sub_promotions);
-		else {	// can we capture tsq ?
+		else  	// can we capture tsq ?
+		{
 			if (test_bit(tss_lc, tsq))	// can we left capture tsq ?
 				mlist = make_pawn_moves(B, tsq - lc_inc, tsq, mlist, sub_promotions);
 			if (test_bit(tss_rc, tsq))	// can we right capture tsq ?
@@ -237,7 +259,8 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 
 	// The king must also get out of all sliding checkers' firing lines
 	uint64_t _checkers = checkers;
-	while (_checkers) {
+	while (_checkers)
+	{
 		const unsigned _csq = next_bit(&_checkers),
 		               _cpiece = B->piece_on[_csq];
 		if (is_slider(_cpiece))
@@ -245,12 +268,14 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	}
 
 	// generate King escapes
-	while (tss) {
+	while (tss)
+	{
 		unsigned tsq = next_bit(&tss);
 		mlist = make_piece_move(B, kpos, tsq, mlist);
 	}
 
-	if (!board_is_double_check(B)) {
+	if (!board_is_double_check(B))
+	{
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
 		      ? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
@@ -273,7 +298,8 @@ move_t *gen_moves(const Board *B, move_t *mlist)
 {
 	if (board_is_check(B))
 		return gen_evasion(B, mlist);
-	else {
+	else
+	{
 		// legal castling moves
 		mlist = gen_castling(B, mlist);
 
@@ -296,7 +322,8 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 
 	// Knight Moves
 	fss = B->b[us][Knight];
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
@@ -313,7 +340,8 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 
 	// Rook Queen moves
 	fss = get_RQ(B, us);
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B->st->occ);
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
@@ -324,7 +352,8 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 
 	// Bishop Queen moves
 	fss = get_BQ(B, us);
-	while (fss) {
+	while (fss)
+	{
 		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B->st->occ);
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
@@ -342,7 +371,8 @@ bool has_moves(const Board *B)
 
 	if (board_is_check(B))
 		return gen_evasion(B, mlist) != mlist;
-	else {
+	else
+	{
 		const uint64_t targets = ~B->all[B->turn];
 		if (has_piece_moves(B, targets))
 			return true;
@@ -364,29 +394,36 @@ uint64_t perft(Board *B, unsigned depth, unsigned ply)
 	uint64_t count;
 	char s[8];
 
-	if (has_moves(B) != (end > begin)) {
+	if (has_moves(B) != (end > begin))
+	{
 		print_board(B);
 		exit(EXIT_FAILURE);
 	}
 
-	if (depth > 1) {
-		for (m = begin, count = 0ULL; m < end; m++) {
+	if (depth > 1)
+	{
+		for (m = begin, count = 0ULL; m < end; m++)
+		{
 			uint64_t count_subtree;
 
 			play(B, *m);
 			count += count_subtree = perft(B, depth-1, ply+1);
 			undo(B);
 
-			if (!ply) {
+			if (!ply)
+			{
 				move_to_san(B, *m, s);
 				printf("%s\t%u\n", s, (uint32_t)count_subtree);
 			}
 		}
 	}
-	else {
+	else
+	{
 		count = end - begin;
-		if (!ply) {
-			for (m = begin; m < end; m++) {
+		if (!ply)
+		{
+			for (m = begin; m < end; m++)
+			{
 				move_to_san(B, *m, s);
 				printf("%s\n", s);
 			}

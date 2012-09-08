@@ -22,7 +22,7 @@ public:
 protected:
 	pid_t pid;
 	FILE *in, *out;
-	
+
 	void cleanup();
 	void write_line(const char *s);
 	void read_line(char *s, int n);
