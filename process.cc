@@ -4,7 +4,7 @@
 #include <signal.h>
 #include <cstring>
 
-void Process::create(const char *cmd) throw (ProcessErr)
+void Process::create(const char *cmd) throw (Err)
 {
 	pid = 0;
 	int readpipe[2], writepipe[2];
@@ -16,7 +16,7 @@ void Process::create(const char *cmd) throw (ProcessErr)
 	try
 	{
 		if (pipe(readpipe) < 0 || pipe(writepipe) < 0)
-			throw ProcessErr();
+			throw Err();
 
 		pid = fork();
 
@@ -27,15 +27,15 @@ void Process::create(const char *cmd) throw (ProcessErr)
 			close(PARENT_READ);
 
 			if (dup2(CHILD_READ, STDIN_FILENO) == -1)
-				throw ProcessErr();
+				throw Err();
 			close(CHILD_READ);
 
 			if (dup2(CHILD_WRITE, STDOUT_FILENO) == -1)
-				throw ProcessErr();
+				throw Err();
 			close(CHILD_WRITE);
 
 			if (execlp(cmd, cmd, NULL) == -1)
-				throw ProcessErr();
+				throw Err();
 		}
 		else if (pid > 0)
 		{
@@ -49,9 +49,9 @@ void Process::create(const char *cmd) throw (ProcessErr)
 		}
 		else
 			// fork failed
-			throw ProcessErr();
+			throw Err();
 	}
-	catch (ProcessErr &e)
+	catch (Err &e)
 	{
 		cleanup();
 		throw;

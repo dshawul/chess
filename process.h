@@ -9,14 +9,14 @@
 #include <sys/types.h>
 #include <stdio.h>
 
-struct ProcessErr {};
-struct IOErr: ProcessErr {};
-
 class Process
 {
 public:
+	struct Err {};
+	struct IOErr: Err {};
+
 	Process(): pid(0), in(NULL), out(NULL) {}
-	virtual void create(const char *cmd) throw (ProcessErr);
+	virtual void create(const char *cmd) throw (Err);
 	virtual ~Process();
 
 protected:

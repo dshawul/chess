@@ -4,26 +4,42 @@
  * - and stores UCI options
  * */
 #pragma once
-#include <vector>
+#include <set>
 #include <string>
 #include "process.h"
-
-struct SyntaxErr: ProcessErr {};
 
 class Engine: public Process
 {
 public:
 	Engine(): Process() {}
-	virtual void create(const char *cmd) throw (ProcessErr);
 	virtual ~Engine();
-private:
+
+	struct SyntaxErr: Err {};
+
 	struct Option
 	{
+		struct Err {};
+		struct NotFound: Err {};
+		struct OutOfBounds: Err {};
+
 		enum Type { Boolean, Integer };
 		Type type;
 		std::string name;
 		int value, min, max;
+
+		bool operator < (const Option& o) const;
 	};
-	std::vector<Option> options;
-	std::string name;
+
+	virtual void create(const char *cmd) throw (Err);
+
+	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
+
+private:
+	std::set<Option> options;
+	std::string engine_name;
 };
+
+inline bool Engine::Option::operator < (const Option& o) const
+{
+	return type < o.type || name < o.name;
+}

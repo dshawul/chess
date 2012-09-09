@@ -2,7 +2,7 @@
 #include <sstream>
 #include <iostream>
 
-void Engine::create(const char *cmd) throw (ProcessErr)
+void Engine::create(const char *cmd) throw (Err)
 // Process the uci ... uciok tasks (parse option and engine name)
 {
 	Process::create(cmd);
@@ -22,9 +22,9 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 			if ((s >> token) && token == "name")
 			{
 				while (s >> token)
-					name += std::string(" ", !name.empty()) + token;
+					engine_name += std::string(" ", !engine_name.empty()) + token;
 
-				if (name.empty())
+				if (engine_name.empty())
 					throw SyntaxErr();
 			}
 		}
@@ -70,12 +70,31 @@ void Engine::create(const char *cmd) throw (ProcessErr)
 					throw SyntaxErr();
 			}
 
-			options.push_back(o);
+			options.insert(o);
 		}
 	} while (token != "uciok");
 }
 
 Engine::~Engine()
+{}
+
+void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
 {
-	/* Nothing to do */
+	Option o;
+	o.name = name;
+	o.type = type;
+	
+	auto i = options.find(o);
+	if (i != options.end()) {
+		if (i->min <= value && value <= i->max) {
+			Option copy = *i;
+			copy.value = value;
+			options.erase(o);
+			options.insert(copy);
+		}
+		else
+			throw Option::OutOfBounds();
+	}
+	else
+		throw Option::NotFound();
 }
