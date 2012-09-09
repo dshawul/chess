@@ -1,8 +1,15 @@
+#include <iostream>
 #include "types.h"
-#include "engine.h"
+#include "match.h"
 
 int main(int argc, char **argv)
 {
-	Engine E;
-	E.create("/home/lucas/Chess/Engines/stockfish_2.2.2");
+	init_bitboard();
+	
+	Engine E[NB_COLOR];
+	E[White].create(argv[1]);
+	E[Black].create(argv[2]);
+	
+	int result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	std::cout << result << std::endl;
 }

@@ -76,7 +76,7 @@ extern uint64_t get_BQ(const Board *B, unsigned color);	// Bishops and Queens of
 extern uint64_t get_epsq_bb(const Board *B);			// ep-square, bitboard version
 extern unsigned color_on(const Board *B, unsigned sq);	// color of piece on square (NoColor if empty)
 
-extern int game_over(const Board *B);	// returns enum Result
+extern Result game_over(const Board *B);	// returns enum Result
 
 /* move.c */
 

@@ -385,7 +385,7 @@ uint64_t calc_attacks(const Board *B, unsigned color)
 	return b;
 }
 
-int game_over(const Board *B)
+Result game_over(const Board *B)
 {
 	// insufficient material
 	if (!B->b[White][Pawn] && !B->b[Black][Pawn]

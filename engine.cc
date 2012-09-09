@@ -56,6 +56,8 @@ void Engine::create(const char *cmd) throw (Err)
 				o.value = token == "true";
 				o.min = false;
 				o.max = true;
+				
+				options[std::make_pair(o.type, o.name)] = o;
 			}
 			else if (token == "spin")
 			{
@@ -69,10 +71,9 @@ void Engine::create(const char *cmd) throw (Err)
 
 				if ((o.min > o.value) || (o.max < o.value))
 					throw SyntaxErr();
+				
+				options[std::make_pair(o.type, o.name)] = o;
 			}
-
-			Option::Key key = std::make_pair(o.type, o.name);
-			options[key] = o;
 		}
 	}
 	while (token != "uciok");
@@ -83,12 +84,11 @@ Engine::~Engine()
 
 void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
 {
-	Option::Key key = std::make_pair(type, name);
-	auto it = options.find(key);
-	
+	auto it = options.find(std::make_pair(type, name));
+
 	if (it != options.end())
 	{
-		Option o = it->second;
+		Option& o = it->second;
 		if (o.min <= value && value <= o.max)
 			o.value = value;
 		else
@@ -104,22 +104,64 @@ void Engine::sync() const throw (IOErr)
 {
 	write_line("isready\n");
 	char line[LineSize];
-	do {
+	do
+	{
 		read_line(line, sizeof(line));
-	} while (strcmp(line, "readyok\n"));
+	}
+	while (strcmp(line, "readyok\n"));
 }
 
 void Engine::set_position(const std::string& fen, const std::string& moves) const throw (IOErr)
 {
 	std::string s("position ");
-	
+
 	if (fen != "startpos")
 		s += "fen ";
 	s += fen;
-	
+
 	if (!moves.empty())
 		s += " moves " + moves;
-	
+
+	s += '\n';
 	write_line(s.c_str());
+
 	sync();
+}
+
+std::string Engine::search(const SearchParam& sp) const throw (IOErr)
+{
+	std::string s = "go";
+
+	if (sp.wtime)
+		s += " wtime " + sp.wtime;
+	if (sp.winc)
+		s += " winc " + sp.winc;
+	if (sp.btime)
+		s += " btime " + sp.btime;
+	if (sp.binc)
+		s += " binc " + sp.binc;
+	if (sp.movetime)
+		s += " movetime " + sp.movetime;
+
+	if (sp.depth)
+		s += " depth " + sp.depth;
+	if (sp.nodes)
+		s += " nodes " + sp.depth;
+
+	s += '\n';
+	write_line(s.c_str());
+	char line[LineSize];
+
+	for (;;)
+	{
+		read_line(line, sizeof(line));
+
+		std::istringstream parser(line);
+		std::string token;
+
+		if (parser >> token
+		        && token == "bestmove"
+		        && parser >> token)
+			return token;
+	}
 }
