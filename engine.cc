@@ -1,12 +1,13 @@
 #include "engine.h"
 #include <sstream>
 #include <iostream>
+#include <string.h>
 
 void Engine::create(const char *cmd) throw (Err)
 // Process the uci ... uciok tasks (parse option and engine name)
 {
 	Process::create(cmd);
-	
+
 	char line[0x100];
 	std::string token;
 	write_line("uci\n");
@@ -72,7 +73,8 @@ void Engine::create(const char *cmd) throw (Err)
 
 			options.insert(o);
 		}
-	} while (token != "uciok");
+	}
+	while (token != "uciok");
 }
 
 Engine::~Engine()
@@ -83,10 +85,12 @@ void Engine::set_option(const std::string& name, Option::Type type, int value) t
 	Option o;
 	o.name = name;
 	o.type = type;
-	
+
 	auto i = options.find(o);
-	if (i != options.end()) {
-		if (i->min <= value && value <= i->max) {
+	if (i != options.end())
+	{
+		if (i->min <= value && value <= i->max)
+		{
 			Option copy = *i;
 			copy.value = value;
 			options.erase(o);
@@ -97,4 +101,26 @@ void Engine::set_option(const std::string& name, Option::Type type, int value) t
 	}
 	else
 		throw Option::NotFound();
+}
+
+void Engine::sync() const throw (IOErr)
+/* Send "isready" to the engine, and wait for "readyok". This is used often by the UCI protocol to
+ * synchronize the Interface and the Engine */
+{
+	write_line("isready\n");
+	char line[LineSize];
+	do {
+		read_line(line, sizeof(line));
+	} while (strcmp(line, "readyok\n"));
+}
+
+void Engine::set_position(const std::string& fen, const std::string& moves) const throw (IOErr)
+{
+	std::string s("position ");
+	if (fen != "startpos")
+		s += "fen ";
+	s += fen + " moves " + moves;
+	
+	write_line(s.c_str());
+	sync();
 }

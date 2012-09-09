@@ -73,7 +73,7 @@ Process::~Process()
 	cleanup();
 }
 
-void Process::write_line(const char *s)
+void Process::write_line(const char *s) const throw(Err)
 {
 	fputs(s, out);
 	fflush(out);	// don't forget to flush! (that's what she says)
@@ -82,7 +82,7 @@ void Process::write_line(const char *s)
 		throw IOErr();
 }
 
-void Process::read_line(char *s, int n)
+void Process::read_line(char *s, int n) const throw(Err)
 {
 	if (!fgets(s, n, in))
 		throw IOErr();

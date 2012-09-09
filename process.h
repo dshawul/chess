@@ -22,8 +22,9 @@ public:
 protected:
 	pid_t pid;
 	FILE *in, *out;
+	static const int LineSize = 0x100;
 
 	void cleanup();
-	void write_line(const char *s);
-	void read_line(char *s, int n);
+	void write_line(const char *s) const throw(Err);
+	void read_line(char *s, int n) const throw(Err);
 };
