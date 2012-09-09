@@ -4,7 +4,7 @@
  * - and stores UCI options
  * */
 #pragma once
-#include <set>
+#include <map>
 #include <string>
 #include "process.h"
 
@@ -27,21 +27,16 @@ public:
 		std::string name;
 		int value, min, max;
 
-		bool operator < (const Option& o) const;
+		typedef std::pair<Type, std::string> Key;
 	};
-
+	
 	virtual void create(const char *cmd) throw (Err);
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (IOErr);
 
 private:
-	std::set<Option> options;
+	std::map<Option::Key, Option> options;
 	std::string engine_name;
-	
+
 	void sync() const throw (IOErr);
 };
-
-inline bool Engine::Option::operator < (const Option& o) const
-{
-	return type < o.type || name < o.name;
-}

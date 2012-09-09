@@ -71,7 +71,8 @@ void Engine::create(const char *cmd) throw (Err)
 					throw SyntaxErr();
 			}
 
-			options.insert(o);
+			Option::Key key = std::make_pair(o.type, o.name);
+			options[key] = o;
 		}
 	}
 	while (token != "uciok");
@@ -82,20 +83,14 @@ Engine::~Engine()
 
 void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
 {
-	Option o;
-	o.name = name;
-	o.type = type;
-
-	auto i = options.find(o);
-	if (i != options.end())
+	Option::Key key = std::make_pair(type, name);
+	auto it = options.find(key);
+	
+	if (it != options.end())
 	{
-		if (i->min <= value && value <= i->max)
-		{
-			Option copy = *i;
-			copy.value = value;
-			options.erase(o);
-			options.insert(copy);
-		}
+		Option o = it->second;
+		if (o.min <= value && value <= o.max)
+			o.value = value;
 		else
 			throw Option::OutOfBounds();
 	}
@@ -117,9 +112,13 @@ void Engine::sync() const throw (IOErr)
 void Engine::set_position(const std::string& fen, const std::string& moves) const throw (IOErr)
 {
 	std::string s("position ");
+	
 	if (fen != "startpos")
 		s += "fen ";
-	s += fen + " moves " + moves;
+	s += fen;
+	
+	if (!moves.empty())
+		s += " moves " + moves;
 	
 	write_line(s.c_str());
 	sync();
