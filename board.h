@@ -20,7 +20,8 @@ enum Result
     Result50Move,		// draw by 50 move rule
     ResultMaterial,		// draw by insufficient material
     ResultStalemate,	// stalemate
-    ResultMate			// check mate
+    ResultMate,			// check mate
+	ResultIllegalMove
 };
 
 typedef struct

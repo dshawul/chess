@@ -76,15 +76,15 @@ inline bool is_slider(unsigned piece)
 /* Color */
 
 #define NB_COLOR 2
-enum { White, Black, NoColor };
+enum Color { White, Black, NoColor };
 
 inline bool color_ok(unsigned color)
 {
 	return color <= Black;
 }
 
-inline unsigned opp_color(unsigned color)
+inline Color opp_color(unsigned color)
 {
 	assert(color_ok(color));
-	return color ^ 1;
+	return Color(color ^ 1);
 }
