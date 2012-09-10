@@ -57,7 +57,7 @@ void Engine::create(const char *cmd) throw (Err)
 				o.min = false;
 				o.max = true;
 				
-				options[std::make_pair(o.type, o.name)] = o;
+				options.insert(o);
 			}
 			else if (token == "spin")
 			{
@@ -72,7 +72,7 @@ void Engine::create(const char *cmd) throw (Err)
 				if ((o.min > o.value) || (o.max < o.value))
 					throw SyntaxErr();
 				
-				options[std::make_pair(o.type, o.name)] = o;
+				options.insert(o);
 			}
 		}
 	}
@@ -84,13 +84,20 @@ Engine::~Engine()
 
 void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
 {
-	auto it = options.find(std::make_pair(type, name));
-
+	Option o;
+	o.type = type;
+	o.name = name;
+	
+	auto it = options.find(o);
+	
 	if (it != options.end())
 	{
-		Option& o = it->second;
-		if (o.min <= value && value <= o.max)
+		o = *it;
+		if (o.min <= value && value <= o.max) {
 			o.value = value;
+			options.erase(o);			
+			options.insert(o);
+		}
 		else
 			throw Option::OutOfBounds();
 	}

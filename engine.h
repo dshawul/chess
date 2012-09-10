@@ -4,7 +4,7 @@
  * - and stores UCI options
  * */
 #pragma once
-#include <map>
+#include <set>
 #include <string>
 #include "process.h"
 
@@ -27,7 +27,7 @@ public:
 		std::string name;
 		int value, min, max;
 
-		typedef std::pair<Type, std::string> Key;
+		bool operator< (const Option& o) const;
 	};
 
 	struct SearchParam
@@ -43,7 +43,7 @@ public:
 	std::string search(const SearchParam& sp) const throw (IOErr);
 
 private:
-	std::map<Option::Key, Option> options;
+	std::set<Option> options;
 	std::string engine_name;
 
 	void sync() const throw (IOErr);
@@ -53,3 +53,8 @@ inline Engine::SearchParam::SearchParam():
 	wtime(0), winc(0), btime(0), binc(0),
 	movetime(0), depth(0), nodes(0)
 {}
+
+inline bool Engine::Option::operator< (const Option& o) const
+{
+	return type < o.type && name < o.name;
+}
