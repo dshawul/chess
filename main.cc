@@ -1,4 +1,4 @@
-#include <iostream>
+/*#include <iostream>
 #include <map>
 #include "types.h"
 #include "match.h"
@@ -28,4 +28,11 @@ int main(int argc, char **argv)
 	MatchResult match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	std::cout << winner_desc[match_result.winner] << " by "
 		<< result_desc[match_result.result] << std::endl;
+}*/
+
+#include "test.h"
+
+int main()
+{
+	test_perft();
 }

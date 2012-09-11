@@ -4,14 +4,14 @@ const char *PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
 namespace
 {
-	const move_t NoMove = {0,0,0,0};
+	const move_t NoMove = {0,0,Pawn,0};
 
-	void set_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play);
-	void clear_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play);
+	void set_square(Board *B, Color color, Piece piece, unsigned sq, bool play);
+	void clear_square(Board *B, Color color, Piece piece, unsigned sq, bool play);
 
 	uint64_t calc_key(const Board *B);
-	uint64_t calc_checkers(const Board *B, unsigned kcolor);
-	uint64_t hidden_checkers(const Board *B, unsigned find_pins, unsigned color);
+	uint64_t calc_checkers(const Board *B, Color kcolor);
+	uint64_t hidden_checkers(const Board *B, bool find_pins, Color color);
 
 	bool is_stalemate(const Board *B);
 	bool is_mate(const Board *B);
@@ -56,14 +56,15 @@ void set_fen(Board *B, const char *fen)
 		// piece
 		else
 		{
-			unsigned sq = square(r, f++), piece;
+			unsigned sq = square(r, f++);
+			Piece piece;
 			for (piece = Pawn; piece <= King; piece++)
 			{
 				if (c == PieceLabel[isupper(c) ? White : Black][piece])
 					break;
 			}
 			assert(piece_ok(piece));
-			unsigned color = isupper(c) ? White : Black;
+			Color color = isupper(c) ? White : Black;
 			set_square(B, color, piece, sq, true);
 			if (piece == King)
 				B->king_pos[color] = sq;
@@ -75,7 +76,7 @@ void set_fen(Board *B, const char *fen)
 	assert(c == 'w' || c == 'b');
 	B->turn = c == 'w' ? White : Black;
 	B->st->key ^= B->turn ? zob_turn : 0ULL;
-	const unsigned us = B->turn, them = opp_color(us);
+	const Color us = B->turn, them = opp_color(us);
 
 	// Castling rights
 	if (*fen++ != ' ') assert(0);
@@ -226,8 +227,8 @@ void play(Board *B, move_t m)
 	B->st->last_move = m;
 	B->st->rule50++;
 
-	const unsigned us = B->turn, them = opp_color(us);
-	const unsigned piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
+	const Color us = B->turn, them = opp_color(us);
+	const Piece piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
 
 	if (move_equal(m, NoMove))
 	{
@@ -318,9 +319,9 @@ void play(Board *B, move_t m)
 void undo(Board *B)
 {
 	assert(B->initialized);
-	const unsigned us = opp_color(B->turn), them = B->turn;
+	const Color us = opp_color(B->turn), them = B->turn;
 	const move_t m = B->st->last_move;
-	const unsigned piece = B->st->piece, capture = B->st->capture;
+	const Piece piece = B->st->piece, capture = B->st->capture;
 
 	if (move_equal(m, NoMove))
 		assert(!board_is_check(B));
@@ -358,7 +359,7 @@ void undo(Board *B)
 	--B->st;
 }
 
-uint64_t calc_attacks(const Board *B, unsigned color)
+uint64_t calc_attacks(const Board *B, Color color)
 {
 	assert(B->initialized);
 
@@ -409,19 +410,19 @@ Result game_over(const Board *B)
 		return is_stalemate(B) ? ResultStalemate : ResultNone;
 }
 
-unsigned color_on(const Board *B, unsigned sq)
+Color color_on(const Board *B, unsigned sq)
 {
 	assert(B->initialized && square_ok(sq));
 	return test_bit(B->all[White], sq) ? White : (test_bit(B->all[Black], sq) ? Black : NoColor);
 }
 
-uint64_t get_RQ(const Board *B, unsigned color)
+uint64_t get_RQ(const Board *B, Color color)
 {
 	assert(B->initialized && color_ok(color));
 	return B->b[color][Rook] | B->b[color][Queen];
 }
 
-uint64_t get_BQ(const Board *B, unsigned color)
+uint64_t get_BQ(const Board *B, Color color)
 {
 	assert(B->initialized && color_ok(color));
 	return B->b[color][Bishop] | B->b[color][Queen];
@@ -447,10 +448,10 @@ bool board_is_double_check(const Board *B)
 
 namespace
 {
-	uint64_t hidden_checkers(const Board *B, unsigned find_pins, unsigned color)
+	uint64_t hidden_checkers(const Board *B, bool find_pins, Color color)
 	{
 		assert(B->initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
-		const unsigned aside = color ^ find_pins, kside = opp_color(aside);
+		const Color aside = color ^ find_pins, kside = opp_color(aside);
 		uint64_t result = 0ULL, pinners;
 
 		// Pinned pieces protect our king, dicovery checks attack the enemy king.
@@ -471,15 +472,14 @@ namespace
 		return result;
 	}
 
-	uint64_t calc_checkers(const Board *B, unsigned kcolor)
+	uint64_t calc_checkers(const Board *B, Color kcolor)
 	{
 		assert(B->initialized && color_ok(kcolor));
-		const unsigned
-		kpos = B->king_pos[kcolor],
-		them = opp_color(kcolor);
-		const uint64_t
-		RQ = get_RQ(B, them) & RPseudoAttacks[kpos],
-		BQ = get_BQ(B, them) & BPseudoAttacks[kpos];
+		const unsigned kpos = B->king_pos[kcolor];
+		const Color them = opp_color(kcolor);
+		
+		const uint64_t RQ = get_RQ(B, them) & RPseudoAttacks[kpos];
+		const uint64_t BQ = get_BQ(B, them) & BPseudoAttacks[kpos];
 
 		return (RQ & rook_attack(kpos, B->st->occ))
 		       | (BQ & bishop_attack(kpos, B->st->occ))
@@ -504,7 +504,7 @@ namespace
 		return gen_evasion(B, mlist) == mlist;
 	}
 
-	void set_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play)
+	void set_square(Board *B, Color color, Piece piece, unsigned sq, bool play)
 	{
 		assert(B->initialized);
 		assert(square_ok(sq) && color_ok(color) && piece_ok(piece) && B->piece_on[sq] == NoPiece);
@@ -520,7 +520,7 @@ namespace
 		}
 	}
 
-	void clear_square(Board *B, unsigned color, unsigned piece, unsigned sq, bool play)
+	void clear_square(Board *B, Color color, Piece piece, unsigned sq, bool play)
 	{
 		assert(B->initialized);
 		assert(square_ok(sq) && color_ok(color) && piece_ok(piece) && B->piece_on[sq] == piece);
@@ -541,7 +541,7 @@ namespace
 	{
 		uint64_t key = 0ULL;
 
-		for (unsigned color = White; color <= Black; color++)
+		for (Color color = White; color <= Black; color++)
 			for (unsigned piece = Pawn; piece <= King; piece++)
 			{
 				uint64_t sqs = B->b[color][piece];

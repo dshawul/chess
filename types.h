@@ -10,10 +10,28 @@
 #define min(x, y) ((x) < (y) ? (x) : (y))
 #define max(x, y) ((x) > (y) ? (x) : (y))
 
+#define ENABLE_SAFE_OPERATORS_ON(T)                                         \
+inline T operator+(const T d1, const T d2) { return T(int(d1) + int(d2)); } \
+inline T operator-(const T d1, const T d2) { return T(int(d1) - int(d2)); } \
+inline T operator*(int i, const T d) { return T(i * int(d)); }              \
+inline T operator*(const T d, int i) { return T(int(d) * i); }              \
+inline T operator-(const T d) { return T(-int(d)); }                        \
+inline T& operator+=(T& d1, const T d2) { d1 = d1 + d2; return d1; }        \
+inline T& operator-=(T& d1, const T d2) { d1 = d1 - d2; return d1; }        \
+inline T& operator*=(T& d, int i) { d = T(int(d) * i); return d; }			\
+inline T operator^(const T d1, const T d2) { return T(int(d1) ^ int(d2)); } \
+inline T operator^(const T d1, int i) { return T(int(d1) ^ i); } 			\
+
+#define ENABLE_OPERATORS_ON(T) ENABLE_SAFE_OPERATORS_ON(T)                  \
+inline T operator++(T& d, int) { d = T(int(d) + 1); return d; }             \
+inline T operator--(T& d, int) { d = T(int(d) - 1); return d; }             \
+inline T operator/(const T d, int i) { return T(int(d) / i); }              \
+inline T& operator/=(T& d, int i) { d = T(int(d) / i); return d; }			\
+
 /* Square, Rank, File */
 
 #define NB_SQUARE 64
-enum
+enum Square
 {
     A1, B1, C1, D1, E1, F1, G1, H1,
     A2, B2, C2, D2, E2, F2, G2, H2,
@@ -26,8 +44,8 @@ enum
     NoSquare
 };
 #define NB_RANK_FILE 8
-enum { Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8 };
-enum { FileA, FileB, FileC, FileD, FileE, FileF, FileG, FileH };
+enum Rank { Rank1, Rank2, Rank3, Rank4, Rank5, Rank6, Rank7, Rank8 };
+enum File { FileA, FileB, FileC, FileD, FileE, FileF, FileG, FileH };
 
 inline bool rank_file_ok(unsigned r, unsigned f)
 {
@@ -60,14 +78,15 @@ inline unsigned file(unsigned sq)
 /* Piece */
 
 #define NB_PIECE 6
-enum { Pawn, Knight, Bishop, Rook, Queen, King, NoPiece };
+enum Piece { Pawn, Knight, Bishop, Rook, Queen, King, NoPiece };
+ENABLE_OPERATORS_ON(Piece)
 
-inline bool piece_ok(unsigned piece)
+inline bool piece_ok(Piece piece)
 {
 	return piece < NoPiece;
 }
 
-inline bool is_slider(unsigned piece)
+inline bool is_slider(Piece piece)
 {
 	assert(piece_ok(piece));
 	return Bishop <= piece && piece <= Queen;
@@ -77,14 +96,15 @@ inline bool is_slider(unsigned piece)
 
 #define NB_COLOR 2
 enum Color { White, Black, NoColor };
+ENABLE_OPERATORS_ON(Color)
 
-inline bool color_ok(unsigned color)
+inline bool color_ok(Color color)
 {
 	return color <= Black;
 }
 
-inline Color opp_color(unsigned color)
+inline Color opp_color(Color color)
 {
 	assert(color_ok(color));
-	return Color(color ^ 1);
+	return color ^ 1;
 }

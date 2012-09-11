@@ -8,7 +8,8 @@ namespace
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
 		assert(square_ok(fsq) && square_ok(tsq));
-		const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[us];
+		const Color us = B->turn, them = opp_color(us);
+		unsigned kpos = B->king_pos[us];
 
 		if ((test_bit(B->st->pinned, fsq))				// pinned piece
 		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
@@ -87,7 +88,7 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
 	assert(!king_moves || !board_is_check(B));	// do not use when in check (use gen_evasion)
-	const unsigned us = B->turn;
+	const Color us = B->turn;
 	assert(!(targets & B->all[us]));
 	uint64_t fss;
 
@@ -190,7 +191,7 @@ move_t *gen_pawn_moves(const Board *B, uint64_t targets, move_t *mlist, bool sub
  * pushes, normal captures, en passant captures. Promotions are considered in serialize_moves (so
  * for under-promotion pruning, modify only serialize_moves) */
 {
-	const unsigned us = B->turn, them = opp_color(us);
+	const Color us = B->turn, them = opp_color(us);
 	const int
 	lc_inc = us ? -9 : 7,	// left capture increment
 	rc_inc = us ? -7 : 9,	// right capture increment
@@ -250,8 +251,8 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	assert(board_is_check(B));
 	const unsigned us = B->turn, kpos = B->king_pos[us];
 	const uint64_t checkers = B->st->checkers;
-	const unsigned csq = first_bit(checkers),	// checker square
-	               cpiece = B->piece_on[csq];			// checker piece
+	const unsigned csq = first_bit(checkers);	// checker square
+	const Piece cpiece = B->piece_on[csq];		// checker piece
 	uint64_t tss;
 
 	// normal king escapes
@@ -261,8 +262,8 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	uint64_t _checkers = checkers;
 	while (_checkers)
 	{
-		const unsigned _csq = next_bit(&_checkers),
-		               _cpiece = B->piece_on[_csq];
+		const unsigned _csq = next_bit(&_checkers);
+		const Piece _cpiece = B->piece_on[_csq];
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
 	}
@@ -316,7 +317,8 @@ move_t *gen_moves(const Board *B, move_t *mlist)
 bool has_piece_moves(const Board *B, uint64_t targets)
 {
 	assert(!board_is_check(B));			// do not use when in check (use gen_evasion)
-	const unsigned us = B->turn, kpos = B->king_pos[us];
+	const Color us = B->turn;
+	unsigned kpos = B->king_pos[us];
 	assert(!(targets & B->all[us]));	// do not overwrite our pieces
 	uint64_t fss;
 

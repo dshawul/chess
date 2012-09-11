@@ -27,12 +27,13 @@ enum Result
 typedef struct
 {
 	uint16_t fsq:6, tsq:6;
-	uint16_t promotion:3, ep:1;
+	Piece promotion:3;
+	uint16_t ep:1;
 } move_t;
 
 typedef struct
 {
-	unsigned piece, capture;	// undo info
+	Piece piece, capture;		// undo info
 	unsigned epsq;				// en passant square
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
@@ -48,8 +49,8 @@ typedef struct
 {
 	uint64_t b[NB_COLOR][NB_PIECE];
 	uint64_t all[NB_COLOR];
-	unsigned turn;
-	unsigned piece_on[NB_SQUARE];
+	Color turn;
+	Piece piece_on[NB_SQUARE];
 	unsigned king_pos[NB_COLOR];
 	game_info game_stack[MAX_PLY], *st;
 	bool initialized;
@@ -68,14 +69,14 @@ extern void get_fen(const Board *B, char *fen);	// make FEN string from Board
 extern void play(Board *B, move_t m);	// play a move
 extern void undo(Board *B);				// undo (the last move played)
 
-extern uint64_t calc_attacks(const Board *B, unsigned color);	// squares attacked by color
+extern uint64_t calc_attacks(const Board *B, Color color);	// squares attacked by color
 extern bool board_is_check(const Board *B);
 extern bool board_is_double_check(const Board *B);
 
-extern uint64_t get_RQ(const Board *B, unsigned color);	// Rooks and Queens of color
-extern uint64_t get_BQ(const Board *B, unsigned color);	// Bishops and Queens of color
+extern uint64_t get_RQ(const Board *B, Color color);	// Rooks and Queens of color
+extern uint64_t get_BQ(const Board *B, Color color);	// Bishops and Queens of color
 extern uint64_t get_epsq_bb(const Board *B);			// ep-square, bitboard version
-extern unsigned color_on(const Board *B, unsigned sq);	// color of piece on square (NoColor if empty)
+extern Color color_on(const Board *B, unsigned sq);	// color of piece on square (NoColor if empty)
 
 extern Result game_over(const Board *B);	// returns enum Result
 

@@ -18,7 +18,8 @@ bool move_is_legal(Board *B, move_t m)
  * time should be rather fast (with the notable exception of check evasions)
  * */
 {
-	const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[us];
+	const Color us = B->turn, them = opp_color(us);
+	unsigned kpos = B->king_pos[us];
 	const unsigned piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
 	const unsigned fsq = m.fsq, tsq = m.tsq;
 
@@ -145,7 +146,7 @@ move_t string_to_move(const Board *B, const char *s)
 
 	if (s[4])
 	{
-		unsigned piece;
+		Piece piece;
 		for (piece = Knight; piece <= Queen; piece++)
 			if (PieceLabel[Black][piece] == s[4])
 				break;
@@ -231,7 +232,8 @@ unsigned move_is_check(const Board *B, move_t m)
  * returns 2 for a discovered check, 1 for any other check, 0 otherwise */
 {
 	assert(B->initialized);
-	const unsigned us = B->turn, them = opp_color(us), kpos = B->king_pos[them];
+	const Color us = B->turn, them = opp_color(us);
+	unsigned kpos = B->king_pos[them];
 
 	// test discovered check
 	if ((test_bit(B->st->dcheckers, m.fsq))		// discovery checker

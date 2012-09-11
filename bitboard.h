@@ -74,7 +74,7 @@ inline bool several_bits(uint64_t b)
 }
 
 /* Destination square for a Pawn of color to be pushed */
-inline unsigned pawn_push(unsigned color, unsigned sq)
+inline unsigned pawn_push(Color color, unsigned sq)
 {
 	assert(color_ok(color) && rank(sq) >= Rank2 && rank(sq) <= Rank7);
 	return color ? sq - 8 : sq + 8;
