@@ -19,9 +19,9 @@ bool move_is_legal(Board *B, move_t m)
  * */
 {
 	const Color us = B->turn, them = opp_color(us);
-	unsigned kpos = B->king_pos[us];
-	const unsigned piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
-	const unsigned fsq = m.fsq, tsq = m.tsq;
+	const Square kpos = B->king_pos[us];
+	const Piece piece = B->piece_on[m.fsq], capture = B->piece_on[m.tsq];
+	const Square fsq = m.fsq, tsq = m.tsq;
 
 	// verify fsq and piece
 	if (color_on(B, fsq) != us)
@@ -56,7 +56,7 @@ bool move_is_legal(Board *B, move_t m)
 				return false;
 
 			// self check through en passant captured pawn
-			const unsigned ep_cap = pawn_push(them, tsq);
+			const Square ep_cap = pawn_push(them, tsq);
 			const uint64_t ray = Direction[kpos][ep_cap];
 			if (ray)
 			{
@@ -140,14 +140,14 @@ move_t string_to_move(const Board *B, const char *s)
 	assert(B->initialized && s);
 	move_t m;
 
-	m.fsq = square(s[1]-'1', s[0]-'a');
-	m.tsq = square(s[3]-'1', s[2]-'a');
+	m.fsq = square(Rank(s[1]-'1'), File(s[0]-'a'));
+	m.tsq = square(Rank(s[3]-'1'), File(s[2]-'a'));
 	m.ep = B->piece_on[m.fsq] == Pawn && m.tsq == B->st->epsq;
 
 	if (s[4])
 	{
 		Piece piece;
-		for (piece = Knight; piece <= Queen; piece++)
+		for (piece = Knight; piece <= Queen; ++piece)
 			if (PieceLabel[Black][piece] == s[4])
 				break;
 		assert(piece < King);
@@ -180,7 +180,8 @@ void move_to_string(const Board *B, move_t m, char *s)
 void move_to_san(const Board *B, move_t m, char *s)
 {
 	assert(B->initialized && s);
-	const unsigned us = B->turn, piece = B->piece_on[m.fsq];
+	const Color us = B->turn;
+	const Piece piece = B->piece_on[m.fsq];
 	const bool capture = m.ep || B->piece_on[m.tsq] != NoPiece, castling = move_is_castling(B, m);
 
 	if (piece != Pawn)
@@ -199,7 +200,7 @@ void move_to_san(const Board *B, move_t m, char *s)
 			if (several_bits(b))
 			{
 				clear_bit(&b, m.fsq);
-				const unsigned sq = first_bit(b);
+				const Square sq = first_bit(b);
 				if (file(m.fsq) == file(sq))
 					*s++ = rank(m.fsq) + '1';
 				else
@@ -233,7 +234,7 @@ unsigned move_is_check(const Board *B, move_t m)
 {
 	assert(B->initialized);
 	const Color us = B->turn, them = opp_color(us);
-	unsigned kpos = B->king_pos[them];
+	Square kpos = B->king_pos[them];
 
 	// test discovered check
 	if ((test_bit(B->st->dcheckers, m.fsq))		// discovery checker
@@ -242,7 +243,7 @@ unsigned move_is_check(const Board *B, move_t m)
 	// test direct check
 	else if (m.promotion == NoPiece)
 	{
-		const unsigned piece = B->piece_on[m.fsq];
+		const Piece piece = B->piece_on[m.fsq];
 		uint64_t tss = piece == Pawn ? PAttacks[us][m.tsq]
 		               : piece_attack(piece, m.tsq, B->st->occ);
 		if (test_bit(tss, kpos))
@@ -264,7 +265,7 @@ unsigned move_is_check(const Board *B, move_t m)
 	else if (move_is_castling(B, m))
 	{
 		// position of the Rook after playing the castling move
-		unsigned rook_sq = m.tsq == (m.fsq + m.tsq) / 2;
+		Square rook_sq = Square(int(m.fsq + m.tsq) / 2);
 		uint64_t occ = B->st->occ;
 		clear_bit(&occ, m.fsq);
 		uint64_t RQ = get_RQ(B, us);

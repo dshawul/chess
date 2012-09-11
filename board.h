@@ -1,6 +1,9 @@
 #pragma once
 #include "bitboard.h"
 
+/* ANY modification to board.h or bitboard.h implementation must be submitted to this test */
+bool test_perft();
+
 #define MAX_PLY		0x400	// max number of plies for a game: #(elements) in game stack
 #define MAX_FEN		0x80	// max size for FEN string
 #define MAX_MOVES	0x80	// max number of legal moves
@@ -26,15 +29,15 @@ enum Result
 
 typedef struct
 {
-	uint16_t fsq:6, tsq:6;
-	Piece promotion:3;
-	uint16_t ep:1;
+	Square fsq, tsq;
+	Piece promotion;
+	bool ep:1;
 } move_t;
 
 typedef struct
 {
 	Piece piece, capture;		// undo info
-	unsigned epsq;				// en passant square
+	Square epsq;				// en passant square
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
 	uint64_t key;				// base zobrist key
@@ -51,7 +54,7 @@ typedef struct
 	uint64_t all[NB_COLOR];
 	Color turn;
 	Piece piece_on[NB_SQUARE];
-	unsigned king_pos[NB_COLOR];
+	Square king_pos[NB_COLOR];
 	game_info game_stack[MAX_PLY], *st;
 	bool initialized;
 } Board;
@@ -76,7 +79,7 @@ extern bool board_is_double_check(const Board *B);
 extern uint64_t get_RQ(const Board *B, Color color);	// Rooks and Queens of color
 extern uint64_t get_BQ(const Board *B, Color color);	// Bishops and Queens of color
 extern uint64_t get_epsq_bb(const Board *B);			// ep-square, bitboard version
-extern Color color_on(const Board *B, unsigned sq);	// color of piece on square (NoColor if empty)
+extern Color color_on(const Board *B, Square sq);		// color of piece on square (NoColor if empty)
 
 extern Result game_over(const Board *B);	// returns enum Result
 

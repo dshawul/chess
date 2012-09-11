@@ -2,21 +2,20 @@
 
 namespace
 {
-	move_t *make_pawn_moves(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist,
+	move_t *make_pawn_moves(const Board *B, Square fsq, Square tsq, move_t *mlist,
 	                        bool sub_promotions)
 	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
 		assert(square_ok(fsq) && square_ok(tsq));
 		const Color us = B->turn, them = opp_color(us);
-		unsigned kpos = B->king_pos[us];
+		Square kpos = B->king_pos[us];
 
 		if ((test_bit(B->st->pinned, fsq))				// pinned piece
 		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
 			return mlist;	// illegal move by indirect self check
 
 		move_t m;
-
 		m.fsq = fsq;
 		m.tsq = tsq;
 		m.ep = tsq == B->st->epsq;
@@ -59,7 +58,7 @@ namespace
 		return mlist;
 	}
 
-	move_t *make_piece_move(const Board *B, unsigned fsq, unsigned tsq, move_t *mlist)
+	move_t *make_piece_move(const Board *B, Square fsq, Square tsq, move_t *mlist)
 	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
 	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
 	 * other words, we never put our King in check before calling this function */
@@ -96,11 +95,11 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 	fss = B->b[us][Knight];
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		while (tss)
 		{
-			unsigned tsq = next_bit(&tss);
+			Square tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
 	}
@@ -109,11 +108,11 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 	fss = get_RQ(B, us);
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B->st->occ);
 		while (tss)
 		{
-			unsigned tsq = next_bit(&tss);
+			Square tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
 	}
@@ -122,11 +121,11 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 	fss = get_BQ(B, us);
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B->st->occ);
 		while (tss)
 		{
-			unsigned tsq = next_bit(&tss);
+			Square tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
 	}
@@ -134,12 +133,12 @@ move_t *gen_piece_moves(const Board *B, uint64_t targets, move_t *mlist, bool ki
 	// King moves (king_moves == false is only used for check escapes)
 	if (king_moves)
 	{
-		unsigned fsq = B->king_pos[us];
+		Square fsq = B->king_pos[us];
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
 		uint64_t tss = KAttacks[fsq] & targets & ~B->st->attacked;
 		while (tss)
 		{
-			unsigned tsq = next_bit(&tss);
+			Square tsq = next_bit(&tss);
 			mlist = make_piece_move(B, fsq, tsq, mlist);
 		}
 	}
@@ -153,7 +152,7 @@ move_t *gen_castling(const Board *B, move_t *mlist)
  * serialize_moves with this over-specific code */
 {
 	assert(!board_is_check(B));
-	const unsigned us = B->turn;
+	const Color us = B->turn;
 
 	move_t m;
 	m.fsq = B->king_pos[us];
@@ -225,7 +224,7 @@ move_t *gen_pawn_moves(const Board *B, uint64_t targets, move_t *mlist, bool sub
 
 	while (tss)
 	{
-		const unsigned tsq = next_bit(&tss);
+		const Square tsq = next_bit(&tss);
 
 		if (test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
@@ -249,9 +248,10 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
  * the checking piece. */
 {
 	assert(board_is_check(B));
-	const unsigned us = B->turn, kpos = B->king_pos[us];
+	const Color us = B->turn;
+	const Square kpos = B->king_pos[us];
 	const uint64_t checkers = B->st->checkers;
-	const unsigned csq = first_bit(checkers);	// checker square
+	const Square csq = first_bit(checkers);	// checker square
 	const Piece cpiece = B->piece_on[csq];		// checker piece
 	uint64_t tss;
 
@@ -262,7 +262,7 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	uint64_t _checkers = checkers;
 	while (_checkers)
 	{
-		const unsigned _csq = next_bit(&_checkers);
+		const Square _csq = next_bit(&_checkers);
 		const Piece _cpiece = B->piece_on[_csq];
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
@@ -271,7 +271,7 @@ move_t *gen_evasion(const Board *B, move_t *mlist)
 	// generate King escapes
 	while (tss)
 	{
-		unsigned tsq = next_bit(&tss);
+		Square tsq = next_bit(&tss);
 		mlist = make_piece_move(B, kpos, tsq, mlist);
 	}
 
@@ -318,7 +318,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 {
 	assert(!board_is_check(B));			// do not use when in check (use gen_evasion)
 	const Color us = B->turn;
-	unsigned kpos = B->king_pos[us];
+	const Square kpos = B->king_pos[us];
 	assert(!(targets & B->all[us]));	// do not overwrite our pieces
 	uint64_t fss;
 
@@ -326,7 +326,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 	fss = B->b[us][Knight];
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -335,7 +335,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 	}
 
 	// King moves
-	unsigned fsq = B->king_pos[us];
+	Square fsq = B->king_pos[us];
 	uint64_t tss = KAttacks[fsq] & targets & ~B->st->attacked;
 	if (tss)
 		return true;
@@ -344,7 +344,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 	fss = get_RQ(B, us);
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B->st->occ);
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -356,7 +356,7 @@ bool has_piece_moves(const Board *B, uint64_t targets)
 	fss = get_BQ(B, us);
 	while (fss)
 	{
-		unsigned fsq = next_bit(&fss);
+		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B->st->occ);
 		if (test_bit(B->st->pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray

@@ -39,7 +39,7 @@ namespace
 		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = rand64());
 	}
 
-	void safe_add_bit(uint64_t *b, unsigned r, unsigned f)
+	void safe_add_bit(uint64_t *b, Rank r, File f)
 	{
 		if (rank_file_ok(r, f))
 			set_bit(b, square(r, f));
@@ -51,17 +51,21 @@ namespace
 		memset(Between, 0, sizeof(Between));
 		memset(Direction, 0, sizeof(Direction));
 
-		for (unsigned sq = A1; sq <= H8; sq++)
+		for (Square sq = A1; sq <= H8; ++sq)
 		{
-			unsigned r = rank(sq), f = file(sq);
+			Rank r = rank(sq);
+			File f = file(sq);
 
 			for (unsigned i = 0; i < 8; i++)
 			{
+				uint64_t mask = 0;
 				int dr = dir[i][0], df = dir[i][1];
-				int _r, _f, _sq;
-				uint64_t mask;
+				Rank _r;
+				File _f;
+				Square _sq;				
 
-				for (_r=r+dr,_f=f+df,mask=0ULL; rank_file_ok(_r,_f); _r+=dr,_f+=df)
+				for (_r = r + dr, _f = f + df;
+					rank_file_ok(_r, _f); _r += dr,_f += df)
 				{
 					_sq = square(_r,_f);
 					mask |= 1ULL << _sq;
@@ -461,9 +465,10 @@ namespace
 		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
 		const int Pdir[2][2] = { {1,-1}, {1,1} };
 
-		for (unsigned sq = A1; sq <= H8; sq++)
+		for (Square sq = A1; sq <= H8; ++sq)
 		{
-			const int r = rank(sq), f = file(sq);
+			const Rank r = rank(sq);
+			const File f = file(sq);
 
 			NAttacks[sq] = KAttacks[sq] = 0;
 			for (unsigned d = 0; d < 8; d++)
@@ -498,25 +503,25 @@ void init_bitboard()
 	BitboardInitialized = true;
 }
 
-unsigned first_bit(uint64_t b)
+Square first_bit(uint64_t b)
 {
-	return BitTable[((b & -b) * 0x218a392cd3d5dbfULL) >> 58];
+	return Square(BitTable[((b & -b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
-unsigned next_bit(uint64_t *b)
+Square next_bit(uint64_t *b)
 {
 	uint64_t _b = *b;
 	*b &= *b - 1;
-	return BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58];
+	return Square(BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
 void print_bitboard(uint64_t b)
 {
-	for (int r = Rank8; r >= Rank1; r--)
+	for (Rank r = Rank8; r >= Rank1; --r)
 	{
-		for (int f = FileA; f <= FileH; f++)
+		for (File f = FileA; f <= FileH; ++f)
 		{
-			unsigned sq = square(r, f);
+			Square sq = square(r, f);
 			char c = test_bit(b, sq) ? 'X' : '.';
 			printf(" %c", c);
 		}
@@ -524,7 +529,7 @@ void print_bitboard(uint64_t b)
 	}
 }
 
-uint64_t piece_attack(unsigned piece, unsigned sq, uint64_t occ)
+uint64_t piece_attack(Piece piece, Square sq, uint64_t occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
@@ -549,14 +554,14 @@ uint64_t piece_attack(unsigned piece, unsigned sq, uint64_t occ)
 	}
 }
 
-uint64_t bishop_attack(unsigned sq, uint64_t occ)
+uint64_t bishop_attack(Square sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_b_indices[sq]
 	         + (((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq]));
 }
 
-uint64_t rook_attack(unsigned sq, uint64_t occ)
+uint64_t rook_attack(Square sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_r_indices[sq]

@@ -4,10 +4,10 @@ const char *PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
 namespace
 {
-	const move_t NoMove = {0,0,Pawn,0};
+	const move_t NoMove = {A1, A1, Pawn, false};
 
-	void set_square(Board *B, Color color, Piece piece, unsigned sq, bool play);
-	void clear_square(Board *B, Color color, Piece piece, unsigned sq, bool play);
+	void set_square(Board *B, Color color, Piece piece, Square sq, bool play);
+	void clear_square(Board *B, Color color, Piece piece, Square sq, bool play);
 
 	uint64_t calc_key(const Board *B);
 	uint64_t calc_checkers(const Board *B, Color kcolor);
@@ -22,7 +22,7 @@ void clear_board(Board *B)
 	assert(BitboardInitialized);
 	memset(B, 0, sizeof(Board));
 
-	for (unsigned sq = A1; sq <= H8; B->piece_on[sq++] = NoPiece);
+	for (Square sq = A1; sq <= H8; B->piece_on[sq++] = NoPiece);
 	B->st = B->game_stack;
 	B->st->epsq = NoSquare;
 	B->st->last_move = NoMove;
@@ -33,7 +33,8 @@ void clear_board(Board *B)
 void set_fen(Board *B, const char *fen)
 {
 	assert(fen);
-	unsigned r, f;
+	Rank r;
+	File f;
 	char c = *fen++;
 
 	// load the board
@@ -50,15 +51,15 @@ void set_fen(Board *B, const char *fen)
 		else if (c == '/')
 		{
 			assert(f == NB_RANK_FILE);
-			r--;
+			--r;
 			f = FileA;
 		}
 		// piece
 		else
 		{
-			unsigned sq = square(r, f++);
+			Square sq = square(r, f++);
 			Piece piece;
-			for (piece = Pawn; piece <= King; piece++)
+			for (piece = Pawn; piece <= King; ++piece)
 			{
 				if (c == PieceLabel[isupper(c) ? White : Black][piece])
 					break;
@@ -120,13 +121,14 @@ void set_fen(Board *B, const char *fen)
 	}
 	else
 	{
-		unsigned r, f;
+		Rank r;
+		File f;
 		assert('a' <= c && c <= 'h');
-		f = c - 'a';
+		f = File(c - 'a');
 		c = *fen++;
 		assert(isdigit(c));
-		r = c - '1';
-		B->st->epsq = square (r, f);
+		r = Rank(c - '1');
+		B->st->epsq = square(r, f);
 	}
 
 	B->st->pinned = hidden_checkers(B, 1, us);
@@ -143,12 +145,12 @@ void get_fen(const Board *B, char *fen)
 	assert(B->initialized && fen);
 
 	// write the board
-	for (int r = Rank8; r >= Rank1; r--)
+	for (Rank r = Rank8; r >= Rank1; --r)
 	{
 		unsigned empty_cnt = 0;
-		for (int f = FileA; f <= FileH; f++)
+		for (File f = FileA; f <= FileH; ++f)
 		{
-			unsigned sq = square(r, f);
+			Square sq = square(r, f);
 			if (B->piece_on[sq] == NoPiece)
 				empty_cnt++;
 			else
@@ -183,7 +185,7 @@ void get_fen(const Board *B, char *fen)
 	*fen++ = ' ';
 
 	// en passant square
-	unsigned epsq = B->st->epsq;
+	Square epsq = B->st->epsq;
 	if (epsq != NoSquare)
 	{
 		*fen++ = file(epsq) + 'a';
@@ -199,12 +201,12 @@ void print_board(const Board *B)
 {
 	assert(B->initialized);
 
-	for (int r = Rank8; r >= Rank1; r--)
+	for (Rank r = Rank8; r >= Rank1; --r)
 	{
-		for (int f = FileA; f <= FileH; f++)
+		for (File f = FileA; f <= FileH; ++f)
 		{
-			unsigned sq = square(r, f),
-			         color = color_on(B, sq);
+			Square sq = square(r, f);
+			Color color = color_on(B, sq);
 			char c = color != NoColor
 			         ? PieceLabel[color][B->piece_on[sq]]
 			         : (sq == B->st->epsq ? '*' : '.');
@@ -252,7 +254,7 @@ void play(Board *B, move_t m)
 		{
 			B->st->rule50 = 0;
 			int inc_pp = us ? -8 : 8;
-			// set the epsq if double push
+			// set the epsq if double push			
 			B->st->epsq = (m.tsq - m.fsq == 2 * inc_pp)
 			              ? m.fsq + inc_pp
 			              : NoSquare;
@@ -410,7 +412,7 @@ Result game_over(const Board *B)
 		return is_stalemate(B) ? ResultStalemate : ResultNone;
 }
 
-Color color_on(const Board *B, unsigned sq)
+Color color_on(const Board *B, Square sq)
 {
 	assert(B->initialized && square_ok(sq));
 	return test_bit(B->all[White], sq) ? White : (test_bit(B->all[Black], sq) ? Black : NoColor);
@@ -451,18 +453,18 @@ namespace
 	uint64_t hidden_checkers(const Board *B, bool find_pins, Color color)
 	{
 		assert(B->initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
-		const Color aside = color ^ find_pins, kside = opp_color(aside);
+		const Color aside = color ^ Color(find_pins), kside = opp_color(aside);
 		uint64_t result = 0ULL, pinners;
 
 		// Pinned pieces protect our king, dicovery checks attack the enemy king.
-		const unsigned ksq = B->king_pos[kside];
+		const Square ksq = B->king_pos[kside];
 
 		// Pinners are only sliders with X-ray attacks to ksq
 		pinners = (get_RQ(B, aside) & RPseudoAttacks[ksq]) | (get_BQ(B, aside) & BPseudoAttacks[ksq]);
 
 		while (pinners)
 		{
-			unsigned sq = next_bit(&pinners);
+			Square sq = next_bit(&pinners);
 			uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & B->st->occ;
 			// NB: if b == 0 then we're in check
 
@@ -475,7 +477,7 @@ namespace
 	uint64_t calc_checkers(const Board *B, Color kcolor)
 	{
 		assert(B->initialized && color_ok(kcolor));
-		const unsigned kpos = B->king_pos[kcolor];
+		const Square kpos = B->king_pos[kcolor];
 		const Color them = opp_color(kcolor);
 		
 		const uint64_t RQ = get_RQ(B, them) & RPseudoAttacks[kpos];
@@ -504,10 +506,11 @@ namespace
 		return gen_evasion(B, mlist) == mlist;
 	}
 
-	void set_square(Board *B, Color color, Piece piece, unsigned sq, bool play)
+	void set_square(Board *B, Color color, Piece piece, Square sq, bool play)
 	{
 		assert(B->initialized);
-		assert(square_ok(sq) && color_ok(color) && piece_ok(piece) && B->piece_on[sq] == NoPiece);
+		assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
+		assert(B->piece_on[sq] == NoPiece);
 
 		set_bit(&B->b[color][piece], sq);
 		set_bit(&B->all[color], sq);
@@ -520,10 +523,11 @@ namespace
 		}
 	}
 
-	void clear_square(Board *B, Color color, Piece piece, unsigned sq, bool play)
+	void clear_square(Board *B, Color color, Piece piece, Square sq, bool play)
 	{
 		assert(B->initialized);
-		assert(square_ok(sq) && color_ok(color) && piece_ok(piece) && B->piece_on[sq] == piece);
+		assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
+		assert(B->piece_on[sq] == piece);
 
 		clear_bit(&B->b[color][piece], sq);
 		clear_bit(&B->all[color], sq);
@@ -541,8 +545,8 @@ namespace
 	{
 		uint64_t key = 0ULL;
 
-		for (Color color = White; color <= Black; color++)
-			for (unsigned piece = Pawn; piece <= King; piece++)
+		for (Color color = White; color <= Black; ++color)
+			for (unsigned piece = Pawn; piece <= King; ++piece)
 			{
 				uint64_t sqs = B->b[color][piece];
 				while (sqs)

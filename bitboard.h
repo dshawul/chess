@@ -29,35 +29,35 @@ extern uint64_t BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 extern void init_bitboard();
 
 /* Squares attacked by a bishop/rook for a given board occupancy */
-extern uint64_t bishop_attack(unsigned sq, uint64_t occ);
-extern uint64_t rook_attack(unsigned sq, uint64_t occ);
+extern uint64_t bishop_attack(Square sq, uint64_t occ);
+extern uint64_t rook_attack(Square sq, uint64_t occ);
 
 /* squares attacked by piece on sq, for a given occupancy */
-extern uint64_t piece_attack(unsigned piece, unsigned sq, uint64_t occ);
+extern uint64_t piece_attack(Piece piece, Square sq, uint64_t occ);
 
 /* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
 extern void print_bitboard(uint64_t b);
 
 /* first_bit() and next_bit() return the LSB, next_bit also clears it (for bit loops) */
-extern unsigned first_bit(uint64_t b);
-extern unsigned next_bit(uint64_t *b);
+extern Square first_bit(uint64_t b);
+extern Square next_bit(uint64_t *b);
 
-inline void set_bit(uint64_t *b, unsigned i)
+inline void set_bit(uint64_t *b, Square sq)
 {
-	assert(square_ok(i));
-	*b |= 1ULL << i;
+	assert(square_ok(sq));
+	*b |= 1ULL << unsigned(sq);
 }
 
-inline void clear_bit(uint64_t *b, unsigned i)
+inline void clear_bit(uint64_t *b, Square sq)
 {
-	assert(square_ok(i));
-	*b &= ~(1ULL << i);
+	assert(square_ok(sq));
+	*b &= ~(1ULL << unsigned(sq));
 }
 
-inline bool test_bit(uint64_t b, unsigned i)
+inline bool test_bit(uint64_t b, Square sq)
 {
-	assert(square_ok(i));
-	return b & (1ULL << i);
+	assert(square_ok(sq));
+	return b & (1ULL << unsigned(sq));
 }
 
 inline uint64_t shift_bit(uint64_t b, int i)
@@ -74,7 +74,7 @@ inline bool several_bits(uint64_t b)
 }
 
 /* Destination square for a Pawn of color to be pushed */
-inline unsigned pawn_push(Color color, unsigned sq)
+inline Square pawn_push(Color color, Square sq)
 {
 	assert(color_ok(color) && rank(sq) >= Rank2 && rank(sq) <= Rank7);
 	return color ? sq - 8 : sq + 8;

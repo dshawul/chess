@@ -30,7 +30,7 @@ int main(int argc, char **argv)
 		<< result_desc[match_result.result] << std::endl;
 }*/
 
-#include "test.h"
+#include "board.h"
 
 int main()
 {

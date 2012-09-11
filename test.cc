@@ -1,4 +1,4 @@
-#include "test.h"
+#include "board.h"
 #include <time.h>
 
 typedef struct
