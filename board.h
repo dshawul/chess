@@ -1,3 +1,17 @@
+/*
+ * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * 
+ * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
 #pragma once
 #include "bitboard.h"
 
@@ -24,7 +38,7 @@ enum Result
     ResultMaterial,		// draw by insufficient material
     ResultStalemate,	// stalemate
     ResultMate,			// check mate
-	ResultIllegalMove
+    ResultIllegalMove
 };
 
 struct move_t
@@ -32,7 +46,7 @@ struct move_t
 	Square fsq, tsq;
 	Piece promotion;
 	bool ep:1;
-	
+
 	bool operator== (const move_t& m) const;
 };
 
@@ -63,21 +77,21 @@ class Board
 	void clear();
 	void set_square(Color color, Piece piece, Square sq, bool play);
 	void clear_square(Color color, Piece piece, Square sq, bool play);
-	
+
 	uint64_t calc_key() const;
 	uint64_t calc_attacks(Color color) const;
 	uint64_t calc_checkers(Color kcolor) const;
-	uint64_t hidden_checkers(bool find_pins, Color color) const;	
-	
+	uint64_t hidden_checkers(bool find_pins, Color color) const;
+
 public:
 	game_info *st;
-	
+
 	Color get_turn() const;
 	Square get_king_pos(Color c) const;
 	Color color_on(Square sq) const;
 	Piece get_piece_on(Square sq) const;
 	uint64_t get_epsq_bb() const;
-	uint64_t get_checkers() const;	
+	uint64_t get_checkers() const;
 
 	uint64_t get_pieces(Color color) const;
 	uint64_t get_pieces(Color color, Piece piece) const;
@@ -89,7 +103,7 @@ public:
 
 	void play(move_t m);
 	void undo();
-		
+
 	Result game_over() const;
 };
 

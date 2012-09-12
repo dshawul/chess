@@ -1,3 +1,17 @@
+/*
+ * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * 
+ * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
 #include "board.h"
 
 const char *PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
@@ -9,15 +23,15 @@ void Board::clear()
 	turn = White;
 	all[White] = all[Black] = 0;
 	king_pos[White] = king_pos[Black] = NoSquare;
-	
+
 	for (Square sq = A1; sq <= H8; piece_on[sq++] = NoPiece);
 	memset(b, 0, sizeof(b));
-	
+
 	st = game_stack;
 	memset(st, 0, sizeof(game_info));
 	st->epsq = NoSquare;
 	st->last_move = {NoSquare, NoSquare, NoPiece, false};
-	
+
 	initialized = true;
 }
 
@@ -127,7 +141,7 @@ void Board::set_fen(const char *fen)
 
 	st->attacked = calc_attacks(them);
 	st->checkers = test_bit(st->attacked, king_pos[us])
-		? calc_checkers(us) : 0ULL;
+	               ? calc_checkers(us) : 0ULL;
 
 	assert(calc_key() == st->key);
 }
@@ -237,10 +251,10 @@ void Board::play(move_t m)
 	{
 		st->rule50 = 0;
 		int inc_pp = us ? -8 : 8;
-		// set the epsq if double push			
+		// set the epsq if double push
 		st->epsq = (m.tsq - m.fsq == 2 * inc_pp)
-					  ? m.fsq + inc_pp
-					  : NoSquare;
+		           ? m.fsq + inc_pp
+		           : NoSquare;
 		// capture en passant
 		if (m.ep)
 			clear_square(them, Pawn, m.tsq - inc_pp, true);
@@ -482,14 +496,14 @@ uint64_t Board::calc_checkers(Color kcolor) const
 	assert(initialized && color_ok(kcolor));
 	const Square kpos = king_pos[kcolor];
 	const Color them = opp_color(kcolor);
-	
+
 	const uint64_t RQ = get_RQ(them) & RPseudoAttacks[kpos];
 	const uint64_t BQ = get_BQ(them) & BPseudoAttacks[kpos];
 
 	return (RQ & rook_attack(kpos, st->occ))
-		   | (BQ & bishop_attack(kpos, st->occ))
-		   | (b[them][Knight] & NAttacks[kpos])
-		   | (b[them][Pawn] & PAttacks[kcolor][kpos]);
+	       | (BQ & bishop_attack(kpos, st->occ))
+	       | (b[them][Knight] & NAttacks[kpos])
+	       | (b[them][Pawn] & PAttacks[kcolor][kpos]);
 }
 
 uint64_t Board::calc_key() const
@@ -518,7 +532,7 @@ bool is_stalemate(const Board& B)
 	const uint64_t targets = ~B.get_pieces(B.get_turn());
 
 	return ( !has_piece_moves(B, targets)
-			 && gen_pawn_moves(B, targets, mlist, true) == mlist);
+	         && gen_pawn_moves(B, targets, mlist, true) == mlist);
 }
 
 bool is_mate(const Board& B)

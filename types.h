@@ -1,3 +1,17 @@
+/*
+ * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * 
+ * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
 #pragma once
 #include <stdbool.h>
 #include <inttypes.h>
@@ -37,7 +51,7 @@ ENABLE_OPERATORS_ON(File)
 inline bool rank_file_ok(Rank r, File f)
 {
 	return 0 <= r && r < NB_RANK_FILE
-		&& 0 <= f && f < NB_RANK_FILE;
+	       && 0 <= f && f < NB_RANK_FILE;
 }
 
 inline Square square(Rank r, File f)

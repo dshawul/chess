@@ -1,3 +1,17 @@
+/*
+ * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * 
+ * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
+ * Public License as published by the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
+ * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+ * Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
 #include "match.h"
 
 MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
@@ -29,8 +43,8 @@ MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
 		if ((match_result.result = B.game_over()))
 		{
 			match_result.winner = match_result.result == ResultMate
-				? opp_color(B.get_turn())
-				: NoColor;
+			                      ? opp_color(B.get_turn())
+			                      : NoColor;
 			return match_result;
 		}
 
