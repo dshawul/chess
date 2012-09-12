@@ -110,3 +110,9 @@ inline Color opp_color(Color color)
 	assert(color_ok(color));
 	return color ^ Black;
 }
+
+inline Square pawn_push(Color color, Square sq)
+{
+	assert(color_ok(color) && rank(sq) >= Rank2 && rank(sq) <= Rank7);
+	return color ? sq - 8 : sq + 8;
+}

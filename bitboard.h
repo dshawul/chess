@@ -86,10 +86,3 @@ inline bool several_bits(uint64_t b)
 {
 	return b & (b - 1);
 }
-
-/* Destination square for a Pawn of color to be pushed */
-inline Square pawn_push(Color color, Square sq)
-{
-	assert(color_ok(color) && rank(sq) >= Rank2 && rank(sq) <= Rank7);
-	return color ? sq - 8 : sq + 8;
-}

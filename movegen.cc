@@ -88,10 +88,9 @@ namespace
 		m.fsq = fsq;
 		m.tsq = tsq;
 		m.ep = false;
-
 		m.promotion = NoPiece;
+		
 		*mlist++ = m;
-
 		return mlist;
 	}
 }
@@ -428,7 +427,7 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 
 			if (!ply)
 			{
-				move_to_san(B, *m, s);
+				move_to_string(B, *m, s);
 				printf("%s\t%u\n", s, (uint32_t)count_subtree);
 			}
 		}
@@ -440,7 +439,7 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 		{
 			for (m = begin; m < end; m++)
 			{
-				move_to_san(B, *m, s);
+				move_to_string(B, *m, s);
 				printf("%s\n", s);
 			}
 		}

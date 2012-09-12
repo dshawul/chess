@@ -57,7 +57,7 @@ struct game_info
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
 	uint64_t key;				// base zobrist key
-	uint64_t pinned, dcheckers;	// pinned and discovery check candidates from turn
+	uint64_t pinned, dcheckers;	// pinned and discovery checkers for turn
 	uint64_t attacked;			// squares attacked by opp_color(turn)
 	uint64_t checkers;			// pieces checking turn's King
 	uint64_t occ;				// occupancy
@@ -101,7 +101,7 @@ public:
 	void set_fen(const char *fen);
 	void get_fen(char *fen) const;
 
-	void play(move_t m);
+	void play(const move_t& m);
 	void undo();
 
 	Result game_over() const;
@@ -118,13 +118,13 @@ void print(const Board& B);
 
 /* move.cc */
 
-extern bool move_is_legal(Board& B, move_t m);
-extern bool move_is_castling(const Board& B, move_t m);
-extern unsigned move_is_check(const Board& B, move_t m);
+extern bool move_is_legal(Board& B, const move_t& m);
+extern bool move_is_castling(const Board& B, const move_t& m);
+extern unsigned move_is_check(const Board& B, const move_t& m);
 
 extern move_t string_to_move(const Board& B, const char *s);
-extern void move_to_string(const Board& B, move_t m, char *s);
-extern void move_to_san(const Board& B, move_t m, char *s);
+extern void move_to_string(const Board& B, const move_t& m, char *s);
+void move_to_san(const Board& B, const move_t& m, char *s);
 
 /* movegen.cc */
 

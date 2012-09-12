@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include "bitboard.h"
+
 bool BitboardInitialized = false;
 
 uint64_t zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];

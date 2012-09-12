@@ -19,13 +19,13 @@ bool move_t::operator== (const move_t& m) const
 	return fsq == m.fsq && tsq == m.tsq && promotion == m.promotion && ep == m.ep;
 }
 
-bool move_is_castling(const Board& B, move_t m)
+bool move_is_castling(const Board& B, const move_t& m)
 {
 	return B.get_piece_on(m.fsq) == King
 	       && (m.tsq == m.fsq - 2 || m.tsq == m.fsq + 2);
 }
 
-bool move_is_legal(Board& B, move_t m)
+bool move_is_legal(Board& B, const move_t& m)
 /* Determines whether a move is legal in the current board position. This function makes no
  * assumption or shortcut (like assuming the move is at least pseudo-legal for example), and tests
  * every single component of the move_t structure. So it is quite long and complex, but its execution
@@ -173,7 +173,7 @@ move_t string_to_move(const Board& B, const char *s)
 	return m;
 }
 
-void move_to_string(const Board& B, move_t m, char *s)
+void move_to_string(const Board& B, const move_t& m, char *s)
 {
 	assert(s);
 
@@ -191,7 +191,7 @@ void move_to_string(const Board& B, move_t m, char *s)
 	*s++ = '\0';
 }
 
-void move_to_san(const Board& B, move_t m, char *s)
+void move_to_san(const Board& B, const move_t& m, char *s)
 {
 	assert(s);
 	const Color us = B.get_turn();
@@ -236,11 +236,12 @@ void move_to_san(const Board& B, move_t m, char *s)
 	if (m.promotion != NoPiece)
 		*s++ = PieceLabel[White][m.promotion];
 
-	if (move_is_check(B, m)) *s++ = '+';
+	if (move_is_check(B, m))
+		*s++ = '+';
 	*s++ = '\0';
 }
 
-unsigned move_is_check(const Board& B, move_t m)
+unsigned move_is_check(const Board& B, const move_t& m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
  * (check through a newly revealed sliding attacker, once the ep capture square has been vacated)
@@ -250,7 +251,7 @@ unsigned move_is_check(const Board& B, move_t m)
 	Square kpos = B.get_king_pos(them);
 
 	// test discovered check
-	if ((test_bit(B.st->dcheckers, m.fsq))		// discovery checker
+	if ( (test_bit(B.st->dcheckers, m.fsq))		// discovery checker
 	        && (!test_bit(Direction[kpos][m.fsq], m.tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check

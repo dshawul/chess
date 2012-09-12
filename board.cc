@@ -138,7 +138,7 @@ void Board::set_fen(const char *fen)
 
 	st->pinned = hidden_checkers(1, us);
 	st->dcheckers = hidden_checkers(0, us);
-
+	
 	st->attacked = calc_attacks(them);
 	st->checkers = test_bit(st->attacked, king_pos[us])
 	               ? calc_checkers(us) : 0ULL;
@@ -224,7 +224,7 @@ void print(const Board& B)
 	printf("fen: %s\n", fen);
 }
 
-void Board::play(move_t m)
+void Board::play(const move_t& m)
 {
 	assert(initialized);
 
@@ -301,12 +301,9 @@ void Board::play(move_t m)
 
 	turn = them;
 	st->key ^= zob_turn;
-
 	st->capture = capture;
-
 	st->pinned = hidden_checkers(1, them);
-	st->dcheckers = hidden_checkers(0, them);
-
+	st->dcheckers = hidden_checkers(0, them);	
 	st->attacked = calc_attacks(us);
 	st->checkers = test_bit(st->attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
