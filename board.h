@@ -38,7 +38,7 @@ struct move_t
 
 struct game_info
 {
-	Piece piece, capture;		// undo info
+	Piece capture;				// piece just captured
 	Square epsq;				// en passant square
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)

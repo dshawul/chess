@@ -288,7 +288,6 @@ void Board::play(move_t m)
 	turn = them;
 	st->key ^= zob_turn;
 
-	st->piece = piece;
 	st->capture = capture;
 
 	st->pinned = hidden_checkers(1, them);
@@ -305,7 +304,8 @@ void Board::undo()
 	assert(initialized);
 	const Color us = opp_color(turn), them = turn;
 	const move_t m = st->last_move;
-	const Piece piece = st->piece, capture = st->capture;
+	const Piece piece = piece_ok(m.promotion) ? Pawn : piece_on[m.tsq];
+	const Piece capture = st->capture;
 
 	// move our piece back
 	clear_square(us, m.promotion == NoPiece ? piece : m.promotion, m.tsq, false);
