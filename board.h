@@ -69,7 +69,7 @@ class Board
 	uint64_t b[NB_COLOR][NB_PIECE];
 	uint64_t all[NB_COLOR];
 	Piece piece_on[NB_SQUARE];
-	game_info game_stack[MAX_PLY];
+	game_info game_stack[MAX_PLY], *st;
 	Color turn;
 	Square king_pos[NB_COLOR];
 	bool initialized;
@@ -84,7 +84,7 @@ class Board
 	uint64_t hidden_checkers(bool find_pins, Color color) const;
 
 public:
-	game_info *st;
+	const game_info& get_st() const;
 
 	Color get_turn() const;
 	Square get_king_pos(Color c) const;

@@ -25,18 +25,18 @@ namespace
 		const Color us = B.get_turn(), them = opp_color(us);
 		Square kpos = B.get_king_pos(us);
 
-		if ((test_bit(B.st->pinned, fsq))				// pinned piece
+		if ((test_bit(B.get_st().pinned, fsq))				// pinned piece
 		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
 			return mlist;	// illegal move by indirect self check
 
 		move_t m;
 		m.fsq = fsq;
 		m.tsq = tsq;
-		m.ep = tsq == B.st->epsq;
+		m.ep = tsq == B.get_st().epsq;
 
 		if (m.ep)
 		{
-			uint64_t occ = B.st->occ;
+			uint64_t occ = B.get_st().occ;
 			// play the ep capture on occ
 			clear_bit(&occ, m.fsq);
 			clear_bit(&occ, pawn_push(them, m.tsq));	// remove the ep captured enemy pawn
@@ -80,7 +80,7 @@ namespace
 		assert(square_ok(fsq) && square_ok(tsq));
 		const unsigned kpos = B.get_king_pos(B.get_turn());
 
-		if ((test_bit(B.st->pinned, fsq))				// pinned piece
+		if ((test_bit(B.get_st().pinned, fsq))				// pinned piece
 		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
 			return mlist;	// illegal move by indirect self check
 
@@ -122,7 +122,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	while (fss)
 	{
 		Square fsq = next_bit(&fss);
-		uint64_t tss = targets & rook_attack(fsq, B.st->occ);
+		uint64_t tss = targets & rook_attack(fsq, B.get_st().occ);
 		while (tss)
 		{
 			Square tsq = next_bit(&tss);
@@ -135,7 +135,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	while (fss)
 	{
 		Square fsq = next_bit(&fss);
-		uint64_t tss = targets & bishop_attack(fsq, B.st->occ);
+		uint64_t tss = targets & bishop_attack(fsq, B.get_st().occ);
 		while (tss)
 		{
 			Square tsq = next_bit(&tss);
@@ -148,7 +148,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	{
 		Square fsq = B.get_king_pos(us);
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
-		uint64_t tss = KAttacks[fsq] & targets & ~B.st->attacked;
+		uint64_t tss = KAttacks[fsq] & targets & ~B.get_st().attacked;
 		while (tss)
 		{
 			Square tsq = next_bit(&tss);
@@ -172,23 +172,23 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 	m.promotion = NoPiece;
 	m.ep = 0;
 
-	if (B.st->crights & (OO << (2 * us)))
+	if (B.get_st().crights & (OO << (2 * us)))
 	{
 		uint64_t safe = 3ULL << (m.fsq + 1);	// must not be attacked
 		uint64_t empty = safe;						// must be empty
 
-		if (!(B.st->attacked & safe) && !(B.st->occ & empty))
+		if (!(B.get_st().attacked & safe) && !(B.get_st().occ & empty))
 		{
 			m.tsq = m.fsq + 2;
 			*mlist++ = m;
 		}
 	}
-	if (B.st->crights & (OOO << (2 * us)))
+	if (B.get_st().crights & (OOO << (2 * us)))
 	{
 		uint64_t safe = 3ULL << (m.fsq - 2);	// must not be attacked
 		uint64_t empty = safe | (1ULL << (m.fsq - 3));		// must be empty
 
-		if (!(B.st->attacked & safe) && !(B.st->occ & empty))
+		if (!(B.get_st().attacked & safe) && !(B.get_st().occ & empty))
 		{
 			m.tsq = m.fsq - 2;
 			*mlist++ = m;
@@ -218,12 +218,12 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	uint64_t tss, tss_sp, tss_dp, tss_lc, tss_rc, fssd;
 
 	// single pushes
-	tss_sp = shift_bit(fss, sp_inc) & ~B.st->occ;
+	tss_sp = shift_bit(fss, sp_inc) & ~B.get_st().occ;
 
 	// double pushes
 	fssd = fss & PInitialRank[us]				// pawns on their initial rank
-	       & ~shift_bit(B.st->occ, -sp_inc)	// can push once
-	       & ~shift_bit(B.st->occ, -dp_inc);	// can push twice
+	       & ~shift_bit(B.get_st().occ, -sp_inc)	// can push once
+	       & ~shift_bit(B.get_st().occ, -dp_inc);	// can push twice
 	tss_dp = shift_bit(fssd, dp_inc);			// double push fssd
 
 	// captures (including en passant if epsq != NoSquare)
@@ -263,13 +263,13 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	assert(B.get_checkers());
 	const Color us = B.get_turn();
 	const Square kpos = B.get_king_pos(us);
-	const uint64_t checkers = B.st->checkers;
+	const uint64_t checkers = B.get_st().checkers;
 	const Square csq = first_bit(checkers);	// checker square
 	const Piece cpiece = B.get_piece_on(csq);		// checker piece
 	uint64_t tss;
 
 	// normal king escapes
-	tss = KAttacks[kpos] & ~B.get_pieces(us) & ~B.st->attacked;
+	tss = KAttacks[kpos] & ~B.get_pieces(us) & ~B.get_st().attacked;
 
 	// The king must also get out of all sliding checkers' firing lines
 	uint64_t _checkers = checkers;
@@ -341,7 +341,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	{
 		Square fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
-		if (test_bit(B.st->pinned, fsq))	// pinned piece
+		if (test_bit(B.get_st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
 		if (tss)
 			return true;
@@ -349,7 +349,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 
 	// King moves
 	Square fsq = B.get_king_pos(us);
-	uint64_t tss = KAttacks[fsq] & targets & ~B.st->attacked;
+	uint64_t tss = KAttacks[fsq] & targets & ~B.get_st().attacked;
 	if (tss)
 		return true;
 
@@ -358,8 +358,8 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	while (fss)
 	{
 		Square fsq = next_bit(&fss);
-		uint64_t tss = targets & rook_attack(fsq, B.st->occ);
-		if (test_bit(B.st->pinned, fsq))	// pinned piece
+		uint64_t tss = targets & rook_attack(fsq, B.get_st().occ);
+		if (test_bit(B.get_st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
 		if (tss)
 			return true;
@@ -370,8 +370,8 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	while (fss)
 	{
 		Square fsq = next_bit(&fss);
-		uint64_t tss = targets & bishop_attack(fsq, B.st->occ);
-		if (test_bit(B.st->pinned, fsq))	// pinned piece
+		uint64_t tss = targets & bishop_attack(fsq, B.get_st().occ);
+		if (test_bit(B.get_st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
 		if (tss)
 			return true;

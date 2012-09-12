@@ -213,7 +213,7 @@ void print(const Board& B)
 			Color color = B.color_on(sq);
 			char c = color != NoColor
 			         ? PieceLabel[color][B.get_piece_on(sq)]
-			         : (sq == B.st->epsq ? '*' : '.');
+			         : (sq == B.get_st().epsq ? '*' : '.');
 			printf(" %c", c);
 		}
 		printf("\n");
@@ -567,4 +567,10 @@ Square Board::get_king_pos(Color c) const
 {
 	assert(initialized);
 	return king_pos[c];
+}
+
+const game_info& Board::get_st() const
+{
+	assert(initialized);
+	return *st;
 }
