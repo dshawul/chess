@@ -43,11 +43,11 @@ enum Result
 
 struct move_t
 {
-	Square fsq, tsq;
+	Square fsq:8, tsq:8;
 	Piece promotion:8;
 	bool ep:1;
 
-	bool operator== (const move_t& m) const;
+	bool operator== (move_t m) const;
 };
 
 struct game_info
@@ -101,7 +101,7 @@ public:
 	void set_fen(const char *fen);
 	void get_fen(char *fen) const;
 
-	void play(const move_t& m);
+	void play(move_t m);
 	void undo();
 
 	Result game_over() const;
@@ -118,13 +118,13 @@ void print(const Board& B);
 
 /* move.cc */
 
-extern bool move_is_legal(Board& B, const move_t& m);
-extern bool move_is_castling(const Board& B, const move_t& m);
-extern unsigned move_is_check(const Board& B, const move_t& m);
+extern bool move_is_legal(Board& B, move_t m);
+extern bool move_is_castling(const Board& B, move_t m);
+extern unsigned move_is_check(const Board& B, move_t m);
 
 extern move_t string_to_move(const Board& B, const char *s);
-extern void move_to_string(const Board& B, const move_t& m, char *s);
-void move_to_san(const Board& B, const move_t& m, char *s);
+extern void move_to_string(const Board& B, move_t m, char *s);
+void move_to_san(const Board& B, move_t m, char *s);
 
 /* movegen.cc */
 

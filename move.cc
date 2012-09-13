@@ -14,18 +14,18 @@
 */
 #include "board.h"
 
-bool move_t::operator== (const move_t& m) const
+bool move_t::operator== (move_t m) const
 {
 	return fsq == m.fsq && tsq == m.tsq && promotion == m.promotion && ep == m.ep;
 }
 
-bool move_is_castling(const Board& B, const move_t& m)
+bool move_is_castling(const Board& B, move_t m)
 {
 	return B.get_piece_on(m.fsq) == King
 	       && (m.tsq == m.fsq - 2 || m.tsq == m.fsq + 2);
 }
 
-bool move_is_legal(Board& B, const move_t& m)
+bool move_is_legal(Board& B, move_t m)
 /* Determines whether a move is legal in the current board position. This function makes no
  * assumption or shortcut (like assuming the move is at least pseudo-legal for example), and tests
  * every single component of the move_t structure. So it is quite long and complex, but its execution
@@ -173,7 +173,7 @@ move_t string_to_move(const Board& B, const char *s)
 	return m;
 }
 
-void move_to_string(const Board& B, const move_t& m, char *s)
+void move_to_string(const Board& B, move_t m, char *s)
 {
 	assert(s);
 
@@ -191,7 +191,7 @@ void move_to_string(const Board& B, const move_t& m, char *s)
 	*s++ = '\0';
 }
 
-void move_to_san(const Board& B, const move_t& m, char *s)
+void move_to_san(const Board& B, move_t m, char *s)
 {
 	assert(s);
 	const Color us = B.get_turn();
@@ -241,25 +241,26 @@ void move_to_san(const Board& B, const move_t& m, char *s)
 	*s++ = '\0';
 }
 
-unsigned move_is_check(const Board& B, const move_t& m)
+unsigned move_is_check(const Board& B, move_t m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
  * (check through a newly revealed sliding attacker, once the ep capture square has been vacated)
  * returns 2 for a discovered check, 1 for any other check, 0 otherwise */
 {
 	const Color us = B.get_turn(), them = opp_color(us);
+	const Square fsq = m.fsq, tsq = m.tsq;
 	Square kpos = B.get_king_pos(them);
 
 	// test discovered check
-	if ( (test_bit(B.get_st().dcheckers, m.fsq))		// discovery checker
-	        && (!test_bit(Direction[kpos][m.fsq], m.tsq)))	// move out of its dc-ray
+	if ( (test_bit(B.get_st().dcheckers, fsq))		// discovery checker
+	        && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (m.promotion == NoPiece)
 	{
-		const Piece piece = B.get_piece_on(m.fsq);
-		uint64_t tss = piece == Pawn ? PAttacks[us][m.tsq]
-		               : piece_attack(piece, m.tsq, B.get_st().occ);
+		const Piece piece = B.get_piece_on(fsq);
+		uint64_t tss = piece == Pawn ? PAttacks[us][tsq]
+		               : piece_attack(piece, tsq, B.get_st().occ);
 		if (test_bit(tss, kpos))
 			return 1;
 	}
@@ -268,9 +269,9 @@ unsigned move_is_check(const Board& B, const move_t& m)
 	{
 		uint64_t occ = B.get_st().occ;
 		// play the ep capture on occ
-		clear_bit(&occ, m.fsq);
-		clear_bit(&occ, m.tsq + (us ? 8 : -8));
-		set_bit(&occ, m.tsq);
+		clear_bit(&occ, fsq);
+		clear_bit(&occ, tsq + (us ? 8 : -8));
+		set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
 		if ((B.get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 		        || (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
@@ -279,9 +280,9 @@ unsigned move_is_check(const Board& B, const move_t& m)
 	else if (move_is_castling(B, m))
 	{
 		// position of the Rook after playing the castling move
-		Square rook_sq = Square(int(m.fsq + m.tsq) / 2);
+		Square rook_sq = Square(int(fsq + tsq) / 2);
 		uint64_t occ = B.get_st().occ;
-		clear_bit(&occ, m.fsq);
+		clear_bit(&occ, fsq);
 		uint64_t RQ = B.get_RQ(us);
 		set_bit(&RQ, rook_sq);
 		if (RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
@@ -291,8 +292,8 @@ unsigned move_is_check(const Board& B, const move_t& m)
 	{
 		// test check by the promoted piece
 		uint64_t occ = B.get_st().occ;
-		clear_bit(&occ, m.fsq);
-		if (test_bit(piece_attack(m.promotion, m.tsq, occ), kpos))
+		clear_bit(&occ, fsq);
+		if (test_bit(piece_attack(m.promotion, tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece
 	}
 

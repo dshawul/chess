@@ -224,7 +224,7 @@ void print(const Board& B)
 	printf("fen: %s\n", fen);
 }
 
-void Board::play(const move_t& m)
+void Board::play(move_t m)
 {
 	assert(initialized);
 
@@ -234,30 +234,31 @@ void Board::play(const move_t& m)
 	st->rule50++;
 
 	const Color us = turn, them = opp_color(us);
-	const Piece piece = piece_on[m.fsq], capture = piece_on[m.tsq];
+	const Square fsq = m.fsq, tsq = m.tsq;
+	const Piece piece = piece_on[fsq], capture = piece_on[tsq];
 
 	// normal capture: remove captured piece
 	if (piece_ok(capture))
 	{
 		st->rule50 = 0;
-		clear_square(them, capture, m.tsq, true);
+		clear_square(them, capture, tsq, true);
 	}
 
 	// move our piece
-	clear_square(us, piece, m.fsq, true);
-	set_square(us, m.promotion == NoPiece ? piece : m.promotion, m.tsq, true);
+	clear_square(us, piece, fsq, true);
+	set_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq, true);
 
 	if (piece == Pawn)
 	{
 		st->rule50 = 0;
 		int inc_pp = us ? -8 : 8;
 		// set the epsq if double push
-		st->epsq = (m.tsq - m.fsq == 2 * inc_pp)
-		           ? m.fsq + inc_pp
+		st->epsq = (tsq - fsq == 2 * inc_pp)
+		           ? fsq + inc_pp
 		           : NoSquare;
 		// capture en passant
 		if (m.ep)
-			clear_square(them, Pawn, m.tsq - inc_pp, true);
+			clear_square(them, Pawn, tsq - inc_pp, true);
 	}
 	else
 	{
@@ -266,23 +267,23 @@ void Board::play(const move_t& m)
 		if (piece == Rook)
 		{
 			// a rook move can alter castling rights
-			if (m.fsq == (us ? H8 : H1))
+			if (fsq == (us ? H8 : H1))
 				st->crights &= ~(OO << (2 * us));
-			else if (m.fsq == (us ? A8 : A1))
+			else if (fsq == (us ? A8 : A1))
 				st->crights &= ~(OOO << (2 * us));
 		}
 		else if (piece == King)
 		{
 			// update king_pos and clear crights
-			king_pos[us] = m.tsq;
+			king_pos[us] = tsq;
 			st->crights &= ~((OO | OOO) << (2 * us));
 			// move the rook (jump over the king)
-			if (m.tsq == m.fsq+2)  			// OO
+			if (tsq == fsq+2)  			// OO
 			{
 				clear_square(us, Rook, us ? H8 : H1, true);
 				set_square(us, Rook, us ? F8 : F1, true);
 			}
-			else if (m.tsq == m.fsq-2)  	// OOO
+			else if (tsq == fsq-2)  	// OOO
 			{
 				clear_square(us, Rook, us ? A8 : A1, true);
 				set_square(us, Rook, us ? D8 : D1, true);
@@ -293,9 +294,9 @@ void Board::play(const move_t& m)
 	if (capture == Rook)
 	{
 		// Rook captures can alter opponent's castling rights
-		if (m.tsq == (us ? H1 : H8))
+		if (tsq == (us ? H1 : H8))
 			st->crights &= ~(OO << (2 * them));
-		else if (m.tsq == (us ? A1 : A8))
+		else if (tsq == (us ? A1 : A8))
 			st->crights &= ~(OOO << (2 * them));
 	}
 
@@ -313,37 +314,38 @@ void Board::play(const move_t& m)
 void Board::undo()
 {
 	assert(initialized);
-	const Color us = opp_color(turn), them = turn;
 	const move_t m = st->last_move;
-	const Piece piece = piece_ok(m.promotion) ? Pawn : piece_on[m.tsq];
+	const Color us = opp_color(turn), them = turn;
+	const Square fsq = m.fsq, tsq = m.tsq;
+	const Piece piece = piece_ok(m.promotion) ? Pawn : piece_on[tsq];
 	const Piece capture = st->capture;
 
 	// move our piece back
-	clear_square(us, m.promotion == NoPiece ? piece : m.promotion, m.tsq, false);
-	set_square(us, piece, m.fsq, false);
+	clear_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq, false);
+	set_square(us, piece, fsq, false);
 
 	// restore the captured piece (if any)
 	if (piece_ok(capture))
-		set_square(them, capture, m.tsq, false);
+		set_square(them, capture, tsq, false);
 
 	if (piece == King)
 	{
 		// update king_pos
-		king_pos[us] = m.fsq;
+		king_pos[us] = fsq;
 		// undo rook jump (castling)
-		if (m.tsq == m.fsq+2)  			// OO
+		if (tsq == fsq+2)  			// OO
 		{
 			clear_square(us, Rook, us ? F8 : F1, false);
 			set_square(us, Rook, us ? H8 : H1, false);
 		}
-		else if (m.tsq == m.fsq-2)  	// OOO
+		else if (tsq == fsq-2)  	// OOO
 		{
 			clear_square(us, Rook, us ? D8 : D1, false);
 			set_square(us, Rook, us ? A8 : A1, false);
 		}
 	}
 	else if (m.ep)	// restore the en passant captured pawn
-		set_square(them, Pawn, m.tsq + (us ? 8 : -8), false);
+		set_square(them, Pawn, tsq + (us ? 8 : -8), false);
 
 	turn = us;
 	--st;

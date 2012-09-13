@@ -179,7 +179,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 
 		if (!(B.get_st().attacked & safe) && !(B.get_st().occ & empty))
 		{
-			m.tsq = m.fsq + 2;
+			m.tsq = Square(m.fsq + 2);
 			*mlist++ = m;
 		}
 	}
@@ -190,7 +190,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 
 		if (!(B.get_st().attacked & safe) && !(B.get_st().occ & empty))
 		{
-			m.tsq = m.fsq - 2;
+			m.tsq = Square(m.fsq - 2);
 			*mlist++ = m;
 		}
 	}

@@ -152,26 +152,23 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 
 std::string Engine::search(const SearchParam& sp) const throw (IOErr)
 {
-	std::string s = "go";
-
-	if (sp.wtime)
-		s += " wtime " + sp.wtime;
-	if (sp.winc)
-		s += " winc " + sp.winc;
-	if (sp.btime)
-		s += " btime " + sp.btime;
-	if (sp.binc)
-		s += " binc " + sp.binc;
+	std::ostringstream s;
+	s << "go";
+	
+	if (sp.wtime || sp.winc || sp.btime || sp.binc) {
+		s << " wtime " << sp.wtime << " winc " << sp.winc;
+		s << " btime " << sp.btime << " binc " << sp.binc;
+	}
 	if (sp.movetime)
-		s += " movetime " + sp.movetime;
-
+		s << " movetime " << sp.movetime;
 	if (sp.depth)
-		s += " depth " + sp.depth;
+		s << " depth " << sp.depth;
 	if (sp.nodes)
-		s += " nodes " + sp.depth;
-
-	s += '\n';
-	write_line(s.c_str());
+		s << " nodes " << sp.depth;
+	
+	s << '\n';
+	
+	write_line(std::string(s.str()).c_str());
 	char line[LineSize];
 
 	for (;;)

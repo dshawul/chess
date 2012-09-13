@@ -12,8 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-
-/*#include <iostream>
+#include <iostream>
 #include <map>
 #include "types.h"
 #include "match.h"
@@ -38,16 +37,9 @@ int main(int argc, char **argv)
 	std::map<Color, std::string> winner_desc;
 	winner_desc[White] = "White wins";
 	winner_desc[Black] = "Black wins";
-	winner_desc[Black] = "Draw";
+	winner_desc[NoColor] = "Draw";
 
 	MatchResult match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 	std::cout << winner_desc[match_result.winner] << " by "
 		<< result_desc[match_result.result] << std::endl;
-}*/
-
-#include "board.h"
-
-int main()
-{
-	test_perft();
 }
