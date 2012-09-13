@@ -44,7 +44,7 @@ enum Result
 struct move_t
 {
 	Square fsq, tsq;
-	Piece promotion;
+	Piece promotion:8;
 	bool ep:1;
 
 	bool operator== (const move_t& m) const;

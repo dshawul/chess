@@ -51,7 +51,7 @@ bool test_perft()
 		total += Test[i].value;
 	}
 
-	double elapsed = (clock() - start) / CLOCKS_PER_SEC;
+	double elapsed = double(clock() - start) / CLOCKS_PER_SEC;
 
 	puts("perft: OK");
 	printf("speed: %u leaf/sec\n", (unsigned)(total / elapsed));

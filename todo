@@ -1,3 +1,5 @@
+=> use std::string in Board interface
+
 => Makefile
 
 => Errors in child process ?
@@ -5,10 +7,3 @@
 expecting input from stdin.
 - if the execlp() call fails, we throw an exception in the child process. This should kill the
 process and any call to write_line() or read_line() should throw IOErr()
-
-=> Type safety
-- Historically the board code was written in pure C, so enums are there to improve readability,
-but they're really int (actually more often unsigned int).
-- We need to introduce strong typing. Essentially Square, File, Rank, Piece, Color need to be
-distinct types, so that common errors can be spotted by the compiler. Also thie allows better
-blending of the C code base with all the new C++ hype.
