@@ -1,9 +1,3 @@
-=> use std::string in Board interface
-
-=> Makefile
-
-=> Errors in child process ?
-- If a dup2() call fails, an exception is thrown in the child process, and the father is hung
-expecting input from stdin.
-- if the execlp() call fails, we throw an exception in the child process. This should kill the
-process and any call to write_line() or read_line() should throw IOErr()
+- remove all char * from board code: in progress
+- move_is_legal: does not work for castling moves
+- Makefile

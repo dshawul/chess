@@ -530,7 +530,7 @@ Square next_bit(uint64_t *b)
 	return Square(BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
-void print_bitboard(uint64_t b)
+void print_bitboard(std::ostream& ostrm, uint64_t b)
 {
 	for (Rank r = Rank8; r >= Rank1; --r)
 	{
@@ -538,9 +538,9 @@ void print_bitboard(uint64_t b)
 		{
 			Square sq = square(r, f);
 			char c = test_bit(b, sq) ? 'X' : '.';
-			printf(" %c", c);
+			ostrm << ' ' << c;
 		}
-		printf("\n");
+		ostrm << std::endl;
 	}
 }
 

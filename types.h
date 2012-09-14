@@ -14,12 +14,10 @@
 */
 #pragma once
 #include <stdbool.h>
-#include <inttypes.h>
-#include <assert.h>
-#include <string.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
+#include <cinttypes>
+#include <cassert>
+#include <string.h>		// for memset() and memcpy()
+#include <iostream>
 #include "operator.h"
 
 #define min(x, y) ((x) < (y) ? (x) : (y))

@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <string>
 #include "bitboard.h"
 
 /* ANY modification to board.h or bitboard.h implementation must be submitted to this test */
@@ -98,8 +99,8 @@ public:
 	uint64_t get_RQ(Color color) const;
 	uint64_t get_BQ(Color color) const;
 
-	void set_fen(const char *fen);
-	void get_fen(char *fen) const;
+	void set_fen(const std::string& fen);
+	std::string get_fen() const;
 
 	void play(move_t m);
 	void undo();
@@ -107,14 +108,14 @@ public:
 	Result game_over() const;
 };
 
-extern const char *PieceLabel[NB_COLOR];
+extern const std::string PieceLabel[NB_COLOR];
 
 /* board.cc */
 
 bool is_stalemate(const Board& B);
 bool is_mate(const Board& B);
 
-void print(const Board& B);
+std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
 /* move.cc */
 
@@ -122,9 +123,9 @@ extern bool move_is_legal(Board& B, move_t m);
 extern bool move_is_castling(const Board& B, move_t m);
 extern unsigned move_is_check(const Board& B, move_t m);
 
-extern move_t string_to_move(const Board& B, const char *s);
-extern void move_to_string(const Board& B, move_t m, char *s);
-void move_to_san(const Board& B, move_t m, char *s);
+extern move_t string_to_move(const Board& B, const std::string& s);
+extern std::string move_to_string(const Board& B, move_t m);
+extern std::string move_to_san(const Board& B, move_t m);
 
 /* movegen.cc */
 

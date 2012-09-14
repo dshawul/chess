@@ -50,7 +50,7 @@ extern uint64_t rook_attack(Square sq, uint64_t occ);
 extern uint64_t piece_attack(Piece piece, Square sq, uint64_t occ);
 
 /* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
-extern void print_bitboard(uint64_t b);
+extern void print_bitboard(std::ostream& ostrm, uint64_t b);
 
 /* first_bit() and next_bit() return the LSB, next_bit also clears it (for bit loops) */
 extern Square first_bit(uint64_t b);

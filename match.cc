@@ -39,7 +39,10 @@ MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
 			return match_result;
 		}
 
+		std::cout << move_string << std::endl;
 		B.play(m);
+		std::cout << B << std::endl;
+		
 		if ((match_result.result = B.game_over()))
 		{
 			match_result.winner = match_result.result == ResultMate

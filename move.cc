@@ -149,9 +149,8 @@ bool move_is_legal(Board& B, move_t m)
 	return true;
 }
 
-move_t string_to_move(const Board& B, const char *s)
+move_t string_to_move(const Board& B, const std::string& s)
 {
-	assert(s);
 	move_t m;
 
 	m.fsq = square(Rank(s[1]-'1'), File(s[0]-'a'));
@@ -173,27 +172,27 @@ move_t string_to_move(const Board& B, const char *s)
 	return m;
 }
 
-void move_to_string(const Board& B, move_t m, char *s)
+std::string move_to_string(const Board& B, move_t m)
 {
-	assert(s);
-
-	*s++ = file(m.fsq) + 'a';
-	*s++ = rank(m.fsq) + '1';
+	std::string s;
+	
+	s.push_back(file(m.fsq) + 'a');
+	s.push_back(rank(m.fsq) + '1');
 	assert(square_ok(m.fsq));
 
-	*s++ = file(m.tsq) + 'a';
-	*s++ = rank(m.tsq) + '1';
+	s.push_back(file(m.tsq) + 'a');
+	s.push_back(rank(m.tsq) + '1');
 	assert(square_ok(m.tsq));
 
 	if (piece_ok(m.promotion))
-		*s++ = PieceLabel[Black][m.promotion];
-
-	*s++ = '\0';
+		s.push_back(PieceLabel[Black][m.promotion]);
+	
+	return s;
 }
 
-void move_to_san(const Board& B, move_t m, char *s)
+std::string move_to_san(const Board& B, move_t m)
 {
-	assert(s);
+	std::string s;
 	const Color us = B.get_turn();
 	const Piece piece = B.get_piece_on(m.fsq);
 	const bool capture = m.ep || B.get_piece_on(m.tsq) != NoPiece, castling = move_is_castling(B, m);
@@ -202,43 +201,47 @@ void move_to_san(const Board& B, move_t m, char *s)
 	{
 		if (castling)
 		{
-			*s++ = 'O';
-			*s++ = 'O';
 			if (file(m.tsq) == FileC)
-				*s++ = 'O';
+				s += "OOO";
+			else
+				s += "OO";
 		}
 		else if (piece != King)
 		{
-			*s++ = PieceLabel[White][piece];
-			uint64_t b = B.get_pieces(us, piece) & piece_attack(piece, m.tsq, B.get_st().occ) & ~B.get_st().pinned;
+			s.push_back(PieceLabel[White][piece]);
+			uint64_t b = B.get_pieces(us, piece)
+				& piece_attack(piece, m.tsq, B.get_st().occ)
+				& ~B.get_st().pinned;
 			if (several_bits(b))
 			{
 				clear_bit(&b, m.fsq);
 				const Square sq = first_bit(b);
 				if (file(m.fsq) == file(sq))
-					*s++ = rank(m.fsq) + '1';
+					s.push_back(rank(m.fsq) + '1');
 				else
-					*s++ = file(m.fsq) + 'a';
+					s.push_back(file(m.fsq) + 'a');
 			}
 		}
 	}
 	else if (capture)
-		*s++ = file(m.fsq) + 'a';
+		s.push_back(file(m.fsq) + 'a');
 
-	if (capture) *s++ = 'x';
+	if (capture)
+		s.push_back('x');
 
 	if (!castling)
 	{
-		*s++ = file(m.tsq) + 'a';
-		*s++ = rank(m.tsq) + '1';
+		s.push_back(file(m.tsq) + 'a');
+		s.push_back(rank(m.tsq) + '1');
 	}
 
 	if (m.promotion != NoPiece)
-		*s++ = PieceLabel[White][m.promotion];
+		s.push_back(PieceLabel[White][m.promotion]);
 
 	if (move_is_check(B, m))
-		*s++ = '+';
-	*s++ = '\0';
+		s.push_back('+');
+
+	return s;
 }
 
 unsigned move_is_check(const Board& B, move_t m)

@@ -1,20 +1,21 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
+#include <sstream>
 #include "board.h"
 
-const char *PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
+const std::string PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
 void Board::clear()
 {
@@ -35,120 +36,70 @@ void Board::clear()
 	initialized = true;
 }
 
-void Board::set_fen(const char *fen)
+void Board::set_fen(const std::string& _fen)
 {
-	assert(fen);
-	Rank r;
-	File f;
-	char c = *fen++;
-
-	// load the board
 	clear();
-	for (r = Rank8, f = FileA; c != ' ' && r >= Rank1; c = *fen++)
+
+	std::istringstream fen(_fen);
+	fen >> std::noskipws;
+	Square sq = A8;
+	char c, r, f;
+
+	// piece placement
+	while ((fen >> c) && !isspace(c))
 	{
-		// empty squares
 		if ('1' <= c && c <= '8')
-		{
-			f += c - '0';
-			assert(f <= NB_RANK_FILE);
-		}
-		// EOL separator
+			sq += c - '0';
 		else if (c == '/')
-		{
-			assert(f == NB_RANK_FILE);
-			--r;
-			f = FileA;
-		}
-		// piece
+			sq -= 16;
 		else
 		{
-			Square sq = square(r, f++);
-			Piece piece;
-			for (piece = Pawn; piece <= King; ++piece)
-			{
-				if (c == PieceLabel[isupper(c) ? White : Black][piece])
-					break;
-			}
-			assert(piece_ok(piece));
 			Color color = isupper(c) ? White : Black;
-			set_square(color, piece, sq, true);
-			if (piece == King)
-				king_pos[color] = sq;
+			Piece piece = Piece(PieceLabel[color].find(c));
+			if (piece_ok(piece))
+			{
+				set_square(color, piece, sq, true);
+				if (piece == King)
+					king_pos[color] = sq;
+			}
+			sq++;
 		}
 	}
 
 	// turn of play
-	c = *fen++;
-	assert(c == 'w' || c == 'b');
+	fen >> c;
 	turn = c == 'w' ? White : Black;
 	st->key ^= turn ? zob_turn : 0ULL;
-	const Color us = turn, them = opp_color(us);
+	fen >> c;
 
-	// Castling rights
-	if (*fen++ != ' ') assert(0);
-	c = *fen++;
-	st->crights = 0;
-
-	if (c == '-')	// no castling rights
-		c = *fen++;
-	else  			// set castling rights (in reading order KQkq)
+	// castling rights
+	while ((fen >> c) && !isspace(c))
 	{
+		Color color = isupper(c) ? White : Black;
+		c = toupper(c);
 		if (c == 'K')
-		{
-			st->crights ^= OO;
-			c = *fen++;
-		}
-		if (c == 'Q')
-		{
-			st->crights ^= OOO;
-			c = *fen++;
-		}
-		if (c == 'k')
-		{
-			st->crights ^= OO << 2;
-			c = *fen++;
-		}
-		if (c == 'q')
-		{
-			st->crights ^= OOO << 2;
-			c = *fen++;
-		}
+			st->crights |= OO << (2 * color);
+		else if (c == 'Q')
+			st->crights |= OOO << (2 * color);
 	}
 
-	// en passant square
-	assert(c == ' ');
-	c = *fen++;
-	if (c == '-')
-	{
-		// no en passant square
-		c = *fen++;
-		st->epsq = NoSquare;
-	}
-	else
-	{
-		Rank r;
-		File f;
-		assert('a' <= c && c <= 'h');
-		f = File(c - 'a');
-		c = *fen++;
-		assert(isdigit(c));
-		r = Rank(c - '1');
-		st->epsq = square(r, f);
-	}
+	if ( (fen >> f) && ('a' <= f && f <= 'h')
+	        && (fen >> r) && ('1' <= r && r <= '8') )
+		st->epsq = square(Rank(r - '1'), File(f - 'a'));
 
+	const Color us = turn, them = opp_color(us);
 	st->pinned = hidden_checkers(1, us);
 	st->dcheckers = hidden_checkers(0, us);
-	
 	st->attacked = calc_attacks(them);
-	st->checkers = test_bit(st->attacked, king_pos[us])
-	               ? calc_checkers(us) : 0ULL;
+	st->checkers = test_bit(st->attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(calc_key() == st->key);
 }
 
-void Board::get_fen(char *fen) const
+std::string Board::get_fen() const
 {
-	assert(initialized && fen);
+	assert(initialized);
+	std::string fen;
 
 	// write the board
 	for (Rank r = Rank8; r >= Rank1; --r)
@@ -163,47 +114,52 @@ void Board::get_fen(char *fen) const
 			{
 				if (empty_cnt)
 				{
-					*fen++ = empty_cnt + '0';
+					fen.push_back(empty_cnt + '0');
 					empty_cnt = 0;
 				}
-				*fen++ = PieceLabel[color_on(sq)][piece_on[sq]];
+				fen.push_back(PieceLabel[color_on(sq)][piece_on[sq]]);
 			}
 		}
-		if (empty_cnt) *fen++ = empty_cnt + '0';
-		*fen++ = r == Rank1 ? ' ' : '/';
+		if (empty_cnt)
+			fen.push_back(empty_cnt + '0');
+		fen.push_back(r == Rank1 ? ' ' : '/');
 	}
 
 	// turn of play
-	*fen++ = turn ? 'b' : 'w';
-	*fen++ = ' ';
+	fen.push_back(turn ? 'b' : 'w');
+	fen.push_back(' ');
 
 	// castling rights
 	unsigned crights = st->crights;
 	if (crights)
 	{
-		if (crights & OO) *fen++ = 'K';
-		if (crights & OOO) *fen++ = 'Q';
-		if (crights & (OO << 2)) *fen++ = 'k';
-		if (crights & (OOO << 2)) *fen++ = 'q';
+		if (crights & OO)
+			fen.push_back('K');
+		if (crights & OOO)
+			fen.push_back('Q');
+		if (crights & (OO << 2))
+			fen.push_back('k');
+		if (crights & (OOO << 2))
+			fen.push_back('q');
 	}
 	else
-		*fen++ = '-';
-	*fen++ = ' ';
+		fen.push_back('-');
+	fen.push_back(' ');
 
 	// en passant square
 	Square epsq = st->epsq;
 	if (epsq != NoSquare)
 	{
-		*fen++ = file(epsq) + 'a';
-		*fen++ = rank(epsq) + '1';
+		fen.push_back(file(epsq) + 'a');
+		fen.push_back(rank(epsq) + '1');
 	}
 	else
-		*fen++ = '-';
+		fen.push_back('-');
 
-	*fen++ = '\0';
+	return fen;
 }
 
-void print(const Board& B)
+std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 {
 	for (Rank r = Rank8; r >= Rank1; --r)
 	{
@@ -214,14 +170,12 @@ void print(const Board& B)
 			char c = color != NoColor
 			         ? PieceLabel[color][B.get_piece_on(sq)]
 			         : (sq == B.get_st().epsq ? '*' : '.');
-			printf(" %c", c);
+			ostrm << ' ' << c;
 		}
-		printf("\n");
+		ostrm << std::endl;
 	}
 
-	char fen[MAX_FEN];
-	B.get_fen(fen);
-	printf("fen: %s\n", fen);
+	return ostrm << B.get_fen() << std::endl;
 }
 
 void Board::play(move_t m)
@@ -304,7 +258,7 @@ void Board::play(move_t m)
 	st->key ^= zob_turn;
 	st->capture = capture;
 	st->pinned = hidden_checkers(1, them);
-	st->dcheckers = hidden_checkers(0, them);	
+	st->dcheckers = hidden_checkers(0, them);
 	st->attacked = calc_attacks(us);
 	st->checkers = test_bit(st->attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 

@@ -43,3 +43,8 @@ int main(int argc, char **argv)
 	std::cout << winner_desc[match_result.winner] << " by "
 		<< result_desc[match_result.result] << std::endl;
 }
+/*#include "board.h"
+int main()
+{
+	test_perft();
+}*/

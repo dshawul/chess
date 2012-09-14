@@ -407,11 +407,10 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 	move_t *begin = mlist, *m;
 	move_t *end = gen_moves(B, mlist);
 	uint64_t count;
-	char s[8];
 
 	if (has_moves(B) != (end > begin))
 	{
-		print(B);
+		std::cout << B;
 		exit(EXIT_FAILURE);
 	}
 
@@ -426,23 +425,15 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 			B.undo();
 
 			if (!ply)
-			{
-				move_to_string(B, *m, s);
-				printf("%s\t%u\n", s, (uint32_t)count_subtree);
-			}
+				std::cout << move_to_string(B, *m) << '\t' << count_subtree << std::endl;
 		}
 	}
 	else
 	{
 		count = end - begin;
 		if (!ply)
-		{
 			for (m = begin; m < end; m++)
-			{
-				move_to_string(B, *m, s);
-				printf("%s\n", s);
-			}
-		}
+				std::cout << move_to_string(B, *m) << std::endl;
 	}
 
 	return count;

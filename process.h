@@ -15,7 +15,7 @@
 #pragma once
 #include <stdbool.h>
 #include <sys/types.h>
-#include <stdio.h>
+#include <cstdio>
 
 class Process
 {
