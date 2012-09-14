@@ -1,3 +1,2 @@
-- remove all char * from board code: in progress
-- move_is_legal: does not work for castling moves
+- use std::chrono i/o clock.h
 - Makefile

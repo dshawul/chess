@@ -19,33 +19,33 @@ bool move_t::operator== (move_t m) const
 	return fsq == m.fsq && tsq == m.tsq && promotion == m.promotion && ep == m.ep;
 }
 
-bool move_is_castling(const Board& B, move_t m)
+bool Board::is_castling(move_t m) const
 {
-	return B.get_piece_on(m.fsq) == King
+	return piece_on[m.fsq] == King
 	       && (m.tsq == m.fsq - 2 || m.tsq == m.fsq + 2);
 }
 
-bool move_is_legal(Board& B, move_t m)
+bool Board::is_legal(move_t m) const
 /* Determines whether a move is legal in the current board position. This function makes no
  * assumption or shortcut (like assuming the move is at least pseudo-legal for example), and tests
  * every single component of the move_t structure. So it is quite long and complex, but its execution
  * time should be rather fast (with the notable exception of check evasions)
  * */
 {
-	const Color us = B.get_turn(), them = opp_color(us);
-	const Square kpos = B.get_king_pos(us);
-	const Piece piece = B.get_piece_on(m.fsq), capture = B.get_piece_on(m.tsq);
+	const Color us = turn, them = opp_color(us);
+	const Square kpos = king_pos[us];
+	const Piece piece = piece_on[m.fsq], capture = piece_on[m.tsq];
 	const Square fsq = m.fsq, tsq = m.tsq;
 
 	// verify fsq and piece
-	if (B.color_on(fsq) != us)
+	if (color_on(fsq) != us)
 		return false;
 
 	// verify tsq and capture
-	if (B.color_on(tsq) != (capture == NoPiece ? NoColor : them))
+	if (color_on(tsq) != (capture == NoPiece ? NoColor : them))
 		return false;
 
-	bool pinned = test_bit(B.get_st().pinned, fsq);
+	bool pinned = test_bit(st->pinned, fsq);
 	uint64_t pin_ray = Direction[kpos][fsq];
 
 	// pawn moves
@@ -66,7 +66,7 @@ bool move_is_legal(Board& B, move_t m)
 		if (m.ep)
 		{
 			// must be a capture and land on the epsq
-			if (B.get_st().epsq != tsq || !is_capture)
+			if (st->epsq != tsq || !is_capture)
 				return false;
 
 			// self check through en passant captured pawn
@@ -74,15 +74,15 @@ bool move_is_legal(Board& B, move_t m)
 			const uint64_t ray = Direction[kpos][ep_cap];
 			if (ray)
 			{
-				uint64_t occ = B.get_st().occ;
+				uint64_t occ = st->occ;
 				clear_bit(&occ, ep_cap);
 				set_bit(&occ, tsq);
 
-				const uint64_t RQ = B.get_RQ(them);
+				const uint64_t RQ = get_RQ(them);
 				if (ray & RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 					return false;
 
-				const uint64_t BQ = B.get_BQ(them);
+				const uint64_t BQ = get_BQ(them);
 				if (ray & BQ & BPseudoAttacks[kpos] & bishop_attack(kpos, occ))
 					return false;
 			}
@@ -96,7 +96,7 @@ bool move_is_legal(Board& B, move_t m)
 			return capture == NoPiece;
 		else if (is_dpush)
 			return capture == NoPiece
-			       && B.get_piece_on(pawn_push(us, fsq)) == NoPiece
+			       && piece_on[pawn_push(us, fsq)] == NoPiece
 			       && test_bit(PInitialRank[us], fsq);
 		else
 			return false;
@@ -105,32 +105,32 @@ bool move_is_legal(Board& B, move_t m)
 	if (m.ep || m.promotion != NoPiece)
 		return false;
 
-	uint64_t tss = piece_attack(piece, fsq, B.get_st().occ);
+	uint64_t tss = piece_attack(piece, fsq, st->occ);
 
 	if (piece == King)
 	{
 		// castling moves
-		if (move_is_castling(B, m))
+		if (is_castling(m))
 		{
 			uint64_t safe /* must not be attacked */, empty /* must be empty */;
 
-			if ((fsq+2 == tsq) && (B.get_st().crights & (OO << (2 * us))))
+			if ((fsq+2 == tsq) && (st->crights & (OO << (2 * us))))
 			{
 				empty = safe = 3ULL << (m.fsq + 1);
-				return !(B.get_st().attacked & safe) && !(B.get_st().occ & empty);
+				return !(st->attacked & safe) && !(st->occ & empty);
 			}
-			else if ((fsq-2 == tsq) && (B.get_st().crights & (OOO << (2 * us))))
+			else if ((fsq-2 == tsq) && (st->crights & (OOO << (2 * us))))
 			{
 				safe = 3ULL << (m.fsq - 2);
 				empty = safe | (1ULL << (m.fsq - 3));
-				return !(B.get_st().attacked & safe) && !(B.get_st().occ & empty);
+				return !(st->attacked & safe) && !(st->occ & empty);
 			}
 			else
 				return false;
 		}
 
 		// normal king moves
-		return test_bit(tss & ~B.get_st().attacked, tsq);
+		return test_bit(tss & ~st->attacked, tsq);
 	}
 
 	// piece moves
@@ -138,12 +138,12 @@ bool move_is_legal(Board& B, move_t m)
 	if (!test_bit(tss, tsq)) return false;
 
 	// check evasion: use the slow method (optimize later if needs be)
-	if (B.get_checkers())
+	if (st->checkers)
 	{
-		B.play(m);
-		bool ok = !test_bit(B.get_st().attacked, kpos);
-		B.undo();
-		return ok;
+		const_cast<Board*>(this)->play(m);
+		bool check = calc_checkers(us);
+		const_cast<Board*>(this)->undo();
+		return !check;
 	}
 
 	return true;
@@ -195,7 +195,7 @@ std::string move_to_san(const Board& B, move_t m)
 	std::string s;
 	const Color us = B.get_turn();
 	const Piece piece = B.get_piece_on(m.fsq);
-	const bool capture = m.ep || B.get_piece_on(m.tsq) != NoPiece, castling = move_is_castling(B, m);
+	const bool capture = m.ep || B.get_piece_on(m.tsq) != NoPiece, castling = B.is_castling(m);
 
 	if (piece != Pawn)
 	{
@@ -238,55 +238,55 @@ std::string move_to_san(const Board& B, move_t m)
 	if (m.promotion != NoPiece)
 		s.push_back(PieceLabel[White][m.promotion]);
 
-	if (move_is_check(B, m))
+	if (B.is_check(m))
 		s.push_back('+');
 
 	return s;
 }
 
-unsigned move_is_check(const Board& B, move_t m)
+unsigned Board::is_check(move_t m) const
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
  * (check through a newly revealed sliding attacker, once the ep capture square has been vacated)
  * returns 2 for a discovered check, 1 for any other check, 0 otherwise */
 {
-	const Color us = B.get_turn(), them = opp_color(us);
+	const Color us = turn, them = opp_color(us);
 	const Square fsq = m.fsq, tsq = m.tsq;
-	Square kpos = B.get_king_pos(them);
+	Square kpos = king_pos[them];
 
 	// test discovered check
-	if ( (test_bit(B.get_st().dcheckers, fsq))		// discovery checker
+	if ( (test_bit(st->dcheckers, fsq))		// discovery checker
 	        && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (m.promotion == NoPiece)
 	{
-		const Piece piece = B.get_piece_on(fsq);
+		const Piece piece = piece_on[fsq];
 		uint64_t tss = piece == Pawn ? PAttacks[us][tsq]
-		               : piece_attack(piece, tsq, B.get_st().occ);
+		               : piece_attack(piece, tsq, st->occ);
 		if (test_bit(tss, kpos))
 			return 1;
 	}
 
 	if (m.ep)
 	{
-		uint64_t occ = B.get_st().occ;
+		uint64_t occ = st->occ;
 		// play the ep capture on occ
 		clear_bit(&occ, fsq);
 		clear_bit(&occ, tsq + (us ? 8 : -8));
 		set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
-		if ((B.get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-		        || (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+		if ((get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
+		        || (get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
 	}
-	else if (move_is_castling(B, m))
+	else if (is_castling(m))
 	{
 		// position of the Rook after playing the castling move
 		Square rook_sq = Square(int(fsq + tsq) / 2);
-		uint64_t occ = B.get_st().occ;
+		uint64_t occ = st->occ;
 		clear_bit(&occ, fsq);
-		uint64_t RQ = B.get_RQ(us);
+		uint64_t RQ = get_RQ(us);
 		set_bit(&RQ, rook_sq);
 		if (RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
@@ -294,7 +294,7 @@ unsigned move_is_check(const Board& B, move_t m)
 	else if (m.promotion < NoPiece)
 	{
 		// test check by the promoted piece
-		uint64_t occ = B.get_st().occ;
+		uint64_t occ = st->occ;
 		clear_bit(&occ, fsq);
 		if (test_bit(piece_attack(m.promotion, tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece

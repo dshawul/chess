@@ -58,7 +58,7 @@ void Board::set_fen(const std::string& _fen)
 			Piece piece = Piece(PieceLabel[color].find(c));
 			if (piece_ok(piece))
 			{
-				set_square(color, piece, sq, true);
+				set_square(color, piece, sq);
 				if (piece == King)
 					king_pos[color] = sq;
 			}
@@ -195,12 +195,12 @@ void Board::play(move_t m)
 	if (piece_ok(capture))
 	{
 		st->rule50 = 0;
-		clear_square(them, capture, tsq, true);
+		clear_square(them, capture, tsq);
 	}
 
 	// move our piece
-	clear_square(us, piece, fsq, true);
-	set_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq, true);
+	clear_square(us, piece, fsq);
+	set_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq);
 
 	if (piece == Pawn)
 	{
@@ -212,7 +212,7 @@ void Board::play(move_t m)
 		           : NoSquare;
 		// capture en passant
 		if (m.ep)
-			clear_square(them, Pawn, tsq - inc_pp, true);
+			clear_square(them, Pawn, tsq - inc_pp);
 	}
 	else
 	{
@@ -234,13 +234,13 @@ void Board::play(move_t m)
 			// move the rook (jump over the king)
 			if (tsq == fsq+2)  			// OO
 			{
-				clear_square(us, Rook, us ? H8 : H1, true);
-				set_square(us, Rook, us ? F8 : F1, true);
+				clear_square(us, Rook, us ? H8 : H1);
+				set_square(us, Rook, us ? F8 : F1);
 			}
 			else if (tsq == fsq-2)  	// OOO
 			{
-				clear_square(us, Rook, us ? A8 : A1, true);
-				set_square(us, Rook, us ? D8 : D1, true);
+				clear_square(us, Rook, us ? A8 : A1);
+				set_square(us, Rook, us ? D8 : D1);
 			}
 		}
 	}
@@ -351,9 +351,9 @@ Result Board::game_over() const
 			return ResultThreefold;
 
 	if (get_checkers())
-		return is_mate(*this) ? ResultMate : ResultNone;
+		return is_mate() ? ResultMate : ResultNone;
 	else
-		return is_stalemate(*this) ? ResultStalemate : ResultNone;
+		return is_stalemate() ? ResultStalemate : ResultNone;
 }
 
 Color Board::color_on(Square sq) const
@@ -478,21 +478,21 @@ uint64_t Board::calc_key() const
 	return turn ? key ^ zob_turn : key;
 }
 
-bool is_stalemate(const Board& B)
+bool Board::is_stalemate() const
 {
-	assert(!B.get_checkers());
+	assert(get_checkers());
 	move_t mlist[MAX_MOVES];
-	const uint64_t targets = ~B.get_pieces(B.get_turn());
+	const uint64_t targets = ~get_pieces(get_turn());
 
-	return ( !has_piece_moves(B, targets)
-	         && gen_pawn_moves(B, targets, mlist, true) == mlist);
+	return ( !has_piece_moves(*this, targets)
+	         && gen_pawn_moves(*this, targets, mlist, true) == mlist);
 }
 
-bool is_mate(const Board& B)
+bool Board::is_mate() const
 {
-	assert(B.get_checkers());
+	assert(get_checkers());
 	move_t mlist[MAX_MOVES];
-	return gen_evasion(B, mlist) == mlist;
+	return gen_evasion(*this, mlist) == mlist;
 }
 
 Piece Board::get_piece_on(Square sq) const

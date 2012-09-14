@@ -76,13 +76,16 @@ class Board
 	bool initialized;
 
 	void clear();
-	void set_square(Color color, Piece piece, Square sq, bool play);
-	void clear_square(Color color, Piece piece, Square sq, bool play);
+	void set_square(Color color, Piece piece, Square sq, bool play = true);
+	void clear_square(Color color, Piece piece, Square sq, bool play = true);
 
 	uint64_t calc_key() const;
 	uint64_t calc_attacks(Color color) const;
 	uint64_t calc_checkers(Color kcolor) const;
 	uint64_t hidden_checkers(bool find_pins, Color color) const;
+
+	bool is_stalemate() const;
+	bool is_mate() const;
 
 public:
 	const game_info& get_st() const;
@@ -105,23 +108,17 @@ public:
 	void play(move_t m);
 	void undo();
 
+	bool is_legal(move_t m) const;
+	bool is_castling(move_t m) const;
+	unsigned is_check(move_t m) const;
+	
 	Result game_over() const;
 };
 
 extern const std::string PieceLabel[NB_COLOR];
-
-/* board.cc */
-
-bool is_stalemate(const Board& B);
-bool is_mate(const Board& B);
-
 std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
 /* move.cc */
-
-extern bool move_is_legal(Board& B, move_t m);
-extern bool move_is_castling(const Board& B, move_t m);
-extern unsigned move_is_check(const Board& B, move_t m);
 
 extern move_t string_to_move(const Board& B, const std::string& s);
 extern std::string move_to_string(const Board& B, move_t m);

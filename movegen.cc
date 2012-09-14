@@ -391,7 +391,7 @@ bool has_moves(const Board& B)
 		const uint64_t targets = ~B.get_pieces(B.get_turn());
 		if (has_piece_moves(B, targets))
 			return true;
-		if (gen_pawn_moves(B, targets, mlist, true) != mlist)
+		if (gen_pawn_moves(B, targets, mlist, false) != mlist)
 			return true;
 	}
 

@@ -32,7 +32,7 @@ MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
 		std::string move_string = E[B.get_turn()].search(sp);
 
 		move_t m = string_to_move(B, move_string.c_str());
-		if (!move_is_legal(B, m))
+		if (!B.is_legal(m))
 		{
 			match_result.result = ResultIllegalMove;
 			match_result.winner = opp_color(B.get_turn());
