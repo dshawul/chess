@@ -25,29 +25,32 @@ MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
 	sp.movetime = 100;
 
 	std::string moves;
+	Color stm;
 
 	for (;;)
 	{
-		E[B.get_turn()].set_position(fen, moves);
-		std::string move_string = E[B.get_turn()].search(sp);
+		stm = B.get_turn();
+		
+		E[stm].set_position(fen, moves);
+		std::string move_string = E[stm].search(sp);
 
 		move_t m = string_to_move(B, move_string.c_str());
 		if (!B.is_legal(m))
 		{
 			match_result.result = ResultIllegalMove;
-			match_result.winner = opp_color(B.get_turn());
+			match_result.winner = opp_color(stm);
 			return match_result;
 		}
 
-		std::cout << move_string << std::endl;
+		std::cout << move_to_san(B, m) << '\t';
+		if (stm == Black)
+			std::cout << std::endl;
+		
 		B.play(m);
-		std::cout << B << std::endl;
 		
 		if ((match_result.result = B.game_over()))
 		{
-			match_result.winner = match_result.result == ResultMate
-			                      ? opp_color(B.get_turn())
-			                      : NoColor;
+			match_result.winner = match_result.result == ResultMate ? stm : NoColor;
 			return match_result;
 		}
 

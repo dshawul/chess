@@ -40,26 +40,7 @@ int main(int argc, char **argv)
 	winner_desc[NoColor] = "Draw";
 	
 	MatchResult match_result;
-	do {
-		match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-		std::cout << winner_desc[match_result.winner] << " by "
-			<< result_desc[match_result.result] << std::endl;
-	} while (match_result.result != ResultIllegalMove);
+	match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	std::cout << winner_desc[match_result.winner] << " by "
+		<< result_desc[match_result.result] << std::endl;
 }
-/*#include "board.h"
-int main()
-{
-	init_bitboard();
-	Board B;
-	B.set_fen("r2R2k1/ppp3pp/4b3/4N3/4pn2/BP5q/P3BP2/5RK1 b - -");
-	std::cout << B;
-	
-	move_t m;
-	m.fsq = A8;
-	m.tsq = D8;
-	m.promotion = NoPiece;
-	m.ep = false;
-	
-	bool x = B.is_legal(m);
-	std::cout << x << std::endl;
-}*/

@@ -206,7 +206,7 @@ std::string move_to_san(const Board& B, move_t m)
 			else
 				s += "OO";
 		}
-		else if (piece != King)
+		else
 		{
 			s.push_back(PieceLabel[White][piece]);
 			uint64_t b = B.get_pieces(us, piece)
