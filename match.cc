@@ -14,15 +14,11 @@
 */
 #include "match.h"
 
-MatchResult match(const Engine E[NB_COLOR], const std::string& fen)
+MatchResult match(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp)
 {
 	MatchResult match_result;
 	Board B;
 	B.set_fen(fen.c_str());
-
-	// hardcode 100 ms/move for the moment
-	Engine::SearchParam sp;
-	sp.movetime = 100;
 
 	std::string moves;
 	Color stm;

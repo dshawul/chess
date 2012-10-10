@@ -40,7 +40,11 @@ int main(int argc, char **argv)
 	winner_desc[NoColor] = "Draw";
 	
 	MatchResult match_result;
-	match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	Engine::SearchParam sp;
+	sp.movetime = 100;
+	
+	match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", sp);
+	
 	std::cout << winner_desc[match_result.winner] << " by "
 		<< result_desc[match_result.result] << std::endl;
 }

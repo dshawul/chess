@@ -22,4 +22,4 @@ struct MatchResult
 	Result result;
 };
 
-extern MatchResult match(const Engine E[NB_COLOR], const std::string& fen);
+extern MatchResult match(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp);
