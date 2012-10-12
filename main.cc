@@ -48,3 +48,13 @@ int main(int argc, char **argv)
 	std::cout << winner_desc[match_result.winner] << " by "
 		<< result_desc[match_result.result] << std::endl;
 }
+/*
+#include <iostream>
+#include "epd.h"
+
+int main()
+{
+	EPD epd("/home/lucas/Chess/test.epd");
+	for (int i = 0; i < 10; i++)
+		std::cout << epd.next() << std::endl;
+}*/
