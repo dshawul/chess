@@ -13,13 +13,25 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <map>
 #include "board.h"
 #include "engine.h"
+#include "epd.h"
 
-struct MatchResult
+struct GameResult
 {
 	Color winner;
 	Result result;
 };
 
-extern MatchResult match(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp);
+extern GameResult game(const Engine E[NB_COLOR], Color color, const std::string& fen,
+	const Engine::SearchParam& sp);
+
+struct MatchResult
+{
+	int win, draw, loss;
+	MatchResult();
+};
+
+extern MatchResult match(const Engine E[2], const EPD& epd, const Engine::SearchParam& sp,
+	size_t nb_games);

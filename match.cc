@@ -14,42 +14,87 @@
 */
 #include "match.h"
 
-MatchResult match(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp)
+GameResult game(const Engine E[NB_COLOR], Color color, const std::string& fen,
+	const Engine::SearchParam& sp)
+/*
+ * Play a game between E[0] and E[1], with given FEN starting position, and SearchParam
+ * E[0] plays color, and E[1] plays opp_color(color)
+ * */
 {
-	MatchResult match_result;
+	GameResult game_result;
 	Board B;
 	B.set_fen(fen.c_str());
-
 	std::string moves;
-	Color stm;
 
 	for (;;)
 	{
-		stm = B.get_turn();
+		Color stm = B.get_turn();
+		int idx = stm ^ color;
 		
-		E[stm].set_position(fen, moves);
-		std::string move_string = E[stm].search(sp);
+		E[idx].set_position(fen, moves);
+		std::string move_string = E[idx].search(sp);
 
 		move_t m = string_to_move(B, move_string.c_str());
 		if (!B.is_legal(m))
 		{
-			match_result.result = ResultIllegalMove;
-			match_result.winner = opp_color(stm);
-			return match_result;
+			game_result.result = ResultIllegalMove;
+			game_result.winner = opp_color(stm);
+			return game_result;
 		}
 
-		std::cout << move_to_san(B, m) << '\t';
-		if (stm == Black)
-			std::cout << std::endl;
-		
 		B.play(m);
 		
-		if ((match_result.result = B.game_over()))
+		if ((game_result.result = B.game_over()))
 		{
-			match_result.winner = match_result.result == ResultMate ? stm : NoColor;
-			return match_result;
+			game_result.winner = game_result.result == ResultMate ? stm : NoColor;
+			return game_result;
 		}
 
 		moves += move_string + " ";
 	}
+}
+
+MatchResult::MatchResult()
+	: win(0), draw(0), loss(0)
+{}
+
+MatchResult match(const Engine E[2], const EPD& epd, const Engine::SearchParam& sp, size_t nb_games)
+{
+	std::map<Result, std::string> result_desc;
+	result_desc[ResultMate] = "check mate";
+	result_desc[ResultThreefold] = "3-fold repetition";
+	result_desc[Result50Move] = "50-move rule";
+	result_desc[ResultMaterial] = "insufficient material";
+	result_desc[ResultStalemate] = "stalemate";
+	result_desc[ResultIllegalMove] = "illegal move";
+	result_desc[ResultNone] = "ERROR";
+
+	std::map<Color, std::string> winner_desc;
+	winner_desc[White] = "White wins";
+	winner_desc[Black] = "Black wins";
+	winner_desc[NoColor] = "Draw";
+
+	MatchResult match_result;
+	
+	for (size_t cnt = 0; cnt < nb_games; cnt++)
+	{
+		std::string fen = epd.next();
+		Color color = Color(cnt & 1);
+		GameResult game_result = game(E, color, fen, sp);
+		
+		if (game_result.winner == NoColor)
+			match_result.draw++;
+		else {
+			if (game_result.winner == color)
+				match_result.win++;
+			else
+				match_result.loss++;
+		}
+
+		std::cout << match_result.win << " - " << match_result.loss << " - " << match_result.draw << '\t';
+		std::cout << winner_desc[game_result.winner] << " by ";
+		std::cout << result_desc[game_result.result] << std::endl;
+	}
+	
+	return match_result;
 }

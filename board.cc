@@ -481,7 +481,7 @@ uint64_t Board::calc_key() const
 
 bool Board::is_stalemate() const
 {
-	assert(get_checkers());
+	assert(!get_checkers());
 	move_t mlist[MAX_MOVES];
 	const uint64_t targets = ~get_pieces(get_turn());
 

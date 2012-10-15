@@ -12,49 +12,22 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include <map>
 #include "types.h"
 #include "match.h"
-#include "epd.h"
 
 int main(int argc, char **argv)
 {
 	init_bitboard();
-
+	
 	Engine E[NB_COLOR];
 	E[White].create(argv[1]);
 	E[Black].create(argv[2]);
-
-	std::map<Result, std::string> result_desc;
-	result_desc[ResultMate] = "check mate";
-	result_desc[ResultThreefold] = "3-fold repetition";
-	result_desc[Result50Move] = "50-move rule";
-	result_desc[ResultMaterial] = "insufficient material";
-	result_desc[ResultStalemate] = "stalemate";
-	result_desc[ResultIllegalMove] = "illegal move";
-	result_desc[ResultNone] = "ERROR";
-
-	std::map<Color, std::string> winner_desc;
-	winner_desc[White] = "White wins";
-	winner_desc[Black] = "Black wins";
-	winner_desc[NoColor] = "Draw";
 	
 	MatchResult match_result;
 	Engine::SearchParam sp;
 	sp.movetime = 100;
 	
-	match_result = match(E, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", sp);
+	EPD epd(argv[3]);
 	
-	std::cout << winner_desc[match_result.winner] << " by "
-		<< result_desc[match_result.result] << std::endl;
+	match_result = match(E, epd, sp, atoi(argv[4]));
 }
-/*
-#include <iostream>
-#include "epd.h"
-
-int main()
-{
-	EPD epd("/home/lucas/Chess/test.epd");
-	for (int i = 0; i < 10; i++)
-		std::cout << epd.next() << std::endl;
-}*/
