@@ -13,15 +13,10 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include <stdbool.h>
 #include <cinttypes>
 #include <cassert>
-#include <string.h>		// for memset() and memcpy()
 #include <iostream>
 #include "operator.h"
-
-#define min(x, y) ((x) < (y) ? (x) : (y))
-#define max(x, y) ((x) > (y) ? (x) : (y))
 
 /* Square, Rank, File */
 

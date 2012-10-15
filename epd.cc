@@ -19,10 +19,9 @@ EPD::EPD(const std::string& epd_file)
 
 std::string EPD::next() const
 {
-	std::string fen = fen_list[idx];
-	
+	const size_t idx0 = idx;
 	idx++;
 	idx %= count;
 	
-	return fen;
+	return fen_list[idx0];
 }

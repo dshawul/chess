@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include <sstream>
+#include <cstring>
 #include "board.h"
 
 const std::string PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
