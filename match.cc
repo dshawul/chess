@@ -75,11 +75,14 @@ MatchResult match(const Engine E[2], const EPD& epd, const Engine::SearchParam& 
 	winner_desc[NoColor] = "Draw";
 
 	MatchResult match_result;
+	std::string fen;
 	
 	for (size_t cnt = 0; cnt < nb_games; cnt++)
 	{
-		std::string fen = epd.next();
 		Color color = Color(cnt & 1);
+		if (color == White)
+			fen = epd.next();
+		
 		GameResult game_result = game(E, color, fen, sp);
 		
 		if (game_result.winner == NoColor)

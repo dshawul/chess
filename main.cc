@@ -25,7 +25,7 @@ int main(int argc, char **argv)
 	
 	MatchResult match_result;
 	Engine::SearchParam sp;
-	sp.movetime = 100;
+	sp.movetime = 200;
 	
 	EPD epd(argv[3]);
 	
