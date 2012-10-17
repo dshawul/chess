@@ -1,21 +1,22 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
 #include "engine.h"
 #include <sstream>
 #include <iostream>
-#include <string.h>
+#include <cstring>
+#include <chrono>
 
 void Engine::create(const char *cmd) throw (Err)
 // Process the uci ... uciok tasks (parse option and engine name)
@@ -150,12 +151,13 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 	sync();
 }
 
-std::string Engine::search(const SearchParam& sp) const throw (IOErr)
+std::string Engine::search(const SearchParam& sp, int& elapsed) const throw (IOErr)
 {
 	std::ostringstream s;
 	s << "go";
-	
-	if (sp.wtime || sp.winc || sp.btime || sp.binc) {
+
+	if (sp.wtime || sp.winc || sp.btime || sp.binc)
+	{
 		s << " wtime " << sp.wtime << " winc " << sp.winc;
 		s << " btime " << sp.btime << " binc " << sp.binc;
 	}
@@ -165,9 +167,12 @@ std::string Engine::search(const SearchParam& sp) const throw (IOErr)
 		s << " depth " << sp.depth;
 	if (sp.nodes)
 		s << " nodes " << sp.depth;
-	
+
 	s << '\n';
-	
+
+	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
+	start = std::chrono::system_clock::now();
+
 	write_line(std::string(s.str()).c_str());
 	char line[LineSize];
 
@@ -181,6 +186,10 @@ std::string Engine::search(const SearchParam& sp) const throw (IOErr)
 		if (parser >> token
 		        && token == "bestmove"
 		        && parser >> token)
+		{
+			stop = std::chrono::system_clock::now();
+			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();			
 			return token;
+		}
 	}
 }

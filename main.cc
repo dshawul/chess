@@ -24,8 +24,10 @@ int main(int argc, char **argv)
 	E[Black].create(argv[2]);
 	
 	MatchResult match_result;
+	
 	Engine::SearchParam sp;
-	sp.movetime = 200;
+	sp.wtime = sp.btime = 12000;
+	sp.winc = sp.binc = 200;	
 	
 	EPD epd(argv[3]);
 	

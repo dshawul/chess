@@ -49,7 +49,7 @@ public:
 	virtual void create(const char *cmd) throw (Err);
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (IOErr);
-	std::string search(const SearchParam& sp) const throw (IOErr);
+	std::string search(const SearchParam& sp, int& elapsed) const throw (IOErr);
 
 private:
 	std::set<Option> options;

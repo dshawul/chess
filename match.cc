@@ -26,14 +26,22 @@ GameResult game(const Engine E[NB_COLOR], Color color, const std::string& fen,
 	B.set_fen(fen.c_str());
 	std::string moves;
 
+	Engine::SearchParam current_sp(sp);
+	
 	for (;;)
 	{
 		Color stm = B.get_turn();
 		int idx = stm ^ color;
+		int elapsed;
 		
 		E[idx].set_position(fen, moves);
-		std::string move_string = E[idx].search(sp);
-
+		std::string move_string = E[idx].search(current_sp, elapsed);
+		
+		if (stm == White)
+			current_sp.wtime += sp.winc - elapsed;
+		else
+			current_sp.btime += sp.binc - elapsed;
+		
 		move_t m = string_to_move(B, move_string.c_str());
 		if (!B.is_legal(m))
 		{
