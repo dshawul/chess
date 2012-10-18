@@ -23,13 +23,12 @@ int main(int argc, char **argv)
 	E[White].create(argv[1]);
 	E[Black].create(argv[2]);
 	
-	MatchResult match_result;
-	
 	Engine::SearchParam sp;
 	sp.wtime = sp.btime = 12000;
-	sp.winc = sp.binc = 200;	
+	sp.winc = sp.binc = 200;
 	
 	EPD epd(argv[3]);
+	std::string fen = epd.next();
 	
-	match_result = match(E, epd, sp, atoi(argv[4]));
+	GameResult game_result = game(E, fen, sp);
 }
