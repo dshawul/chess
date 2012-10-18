@@ -170,8 +170,7 @@ std::string Engine::search(const SearchParam& sp, int& elapsed) const throw (IOE
 
 	s << '\n';
 
-	std::chrono::time_point<std::chrono::high_resolution_clock> start, stop;
-	start = std::chrono::system_clock::now();
+	auto start = std::chrono::high_resolution_clock::now();
 
 	write_line(std::string(s.str()).c_str());
 	char line[LineSize];
@@ -187,8 +186,8 @@ std::string Engine::search(const SearchParam& sp, int& elapsed) const throw (IOE
 		        && token == "bestmove"
 		        && parser >> token)
 		{
-			stop = std::chrono::system_clock::now();
-			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();			
+			auto stop = std::chrono::high_resolution_clock::now();
+			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
 			return token;
 		}
 	}
