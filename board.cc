@@ -33,7 +33,8 @@ void Board::clear()
 	memset(st, 0, sizeof(game_info));
 	st->epsq = NoSquare;
 	st->last_move = {NoSquare, NoSquare, NoPiece, false};
-
+	move_count = 1;
+	
 	initialized = true;
 }
 
@@ -88,6 +89,8 @@ void Board::set_fen(const std::string& _fen)
 	        && (fen >> r) && ('1' <= r && r <= '8') )
 		st->epsq = square(Rank(r - '1'), File(f - 'a'));
 
+	fen >> std::skipws >> st->rule50 >> move_count;
+
 	const Color us = turn, them = opp_color(us);
 	st->pinned = hidden_checkers(1, us);
 	st->dcheckers = hidden_checkers(0, us);
@@ -100,7 +103,7 @@ void Board::set_fen(const std::string& _fen)
 std::string Board::get_fen() const
 {
 	assert(initialized);
-	std::string fen;
+	std::ostringstream fen;
 
 	// write the board
 	for (Rank r = Rank8; r >= Rank1; --r)
@@ -115,49 +118,51 @@ std::string Board::get_fen() const
 			{
 				if (empty_cnt)
 				{
-					fen.push_back(empty_cnt + '0');
+					fen << empty_cnt;
 					empty_cnt = 0;
 				}
-				fen.push_back(PieceLabel[color_on(sq)][piece_on[sq]]);
+				fen << PieceLabel[color_on(sq)][piece_on[sq]];
 			}
 		}
 		if (empty_cnt)
-			fen.push_back(empty_cnt + '0');
-		fen.push_back(r == Rank1 ? ' ' : '/');
+			fen << empty_cnt;
+		if (r > Rank1)
+			fen << '/';
 	}
 
 	// turn of play
-	fen.push_back(turn ? 'b' : 'w');
-	fen.push_back(' ');
+	fen << (turn ? " b " : " w ");
 
 	// castling rights
 	unsigned crights = st->crights;
 	if (crights)
 	{
 		if (crights & OO)
-			fen.push_back('K');
+			fen << 'K';
 		if (crights & OOO)
-			fen.push_back('Q');
+			fen << 'Q';
 		if (crights & (OO << 2))
-			fen.push_back('k');
+			fen << 'k';
 		if (crights & (OOO << 2))
-			fen.push_back('q');
+			fen << 'q';
 	}
 	else
-		fen.push_back('-');
-	fen.push_back(' ');
+		fen << '-';
+	fen << ' ';
 
 	// en passant square
 	Square epsq = st->epsq;
 	if (epsq != NoSquare)
 	{
-		fen.push_back(file(epsq) + 'a');
-		fen.push_back(rank(epsq) + '1');
+		fen << char(file(epsq) + 'a');
+		fen << char(rank(epsq) + '1');
 	}
 	else
-		fen.push_back('-');
-
-	return fen;
+		fen << '-';
+		
+	fen << ' ' << st->rule50 << ' ' << move_count;
+	
+	return fen.str();
 }
 
 std::ostream& operator<< (std::ostream& ostrm, const Board& B)
@@ -256,6 +261,9 @@ void Board::play(move_t m)
 	}
 
 	turn = them;
+	if (turn == White)
+		++move_count;
+	
 	st->key ^= zob_turn;
 	st->capture = capture;
 	st->pinned = hidden_checkers(1, them);
@@ -303,6 +311,9 @@ void Board::undo()
 		set_square(them, Pawn, tsq + (us ? 8 : -8), false);
 
 	turn = us;
+	if (turn == Black)
+		--move_count;
+	
 	--st;
 }
 

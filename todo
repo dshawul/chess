@@ -1,6 +1,3 @@
-- Handle the move_count and the 50 move rule counter in Board::set_fen(), Board::get_fen(). Update
-the move_count in Board::play() and Board::undo()
-
 - PGN needs to know the starting color and move_count. Then update these values with every pgn << san
 call. And to print the move_count's in pgn >> ostrm.
 

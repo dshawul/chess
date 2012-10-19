@@ -12,8 +12,8 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
+#include <chrono>
 #include "board.h"
-#include <time.h>
 
 typedef struct
 {
@@ -37,7 +37,7 @@ bool test_perft()
 	};
 
 	uint64_t total = 0;
-	clock_t start = clock();
+	auto start = std::chrono::high_resolution_clock::now();
 
 	for (unsigned i = 0; Test[i].s; i++)
 	{
@@ -51,8 +51,9 @@ bool test_perft()
 		total += Test[i].value;
 	}
 
-	double elapsed = double(clock() - start) / CLOCKS_PER_SEC;
-	std::cout << "speed: " << (unsigned)(total / elapsed) << " leaf/sec" << std::endl;
+	auto stop = std::chrono::high_resolution_clock::now();
+	int elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+	std::cout << "speed: " << (unsigned)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
 	
 	return true;
 }

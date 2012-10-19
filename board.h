@@ -73,6 +73,7 @@ class Board
 	game_info game_stack[MAX_PLY], *st;
 	Color turn;
 	Square king_pos[NB_COLOR];
+	int move_count;				// full move count, as per FEN standard
 	bool initialized;
 
 	void clear();
