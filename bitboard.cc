@@ -14,6 +14,7 @@
 */
 #include <cstring>
 #include "bitboard.h"
+#include "prng.h"
 
 bool BitboardInitialized = false;
 
@@ -24,35 +25,17 @@ uint64_t Between[NB_SQUARE][NB_SQUARE], Direction[NB_SQUARE][NB_SQUARE];
 
 namespace
 {
-	uint64_t rol(uint64_t x, unsigned k)
-	{
-		return (x << k) | (x >> (64 - k));
-	}
-
-	uint64_t rand64()
-	// 64-bit KISS PRNG by Bob Jenkins
-	{
-		static uint64_t	// seeds
-		a = 0x5bc5cd8748be9fe8,
-		b = 0x5164ed10aa17c81,
-		c = 0x105730377a2a0e9c,
-		d = 0xe6b137acae0d8b76;
-		const uint64_t e = a - rol(b,  7);
-		a = b ^ rol(c, 13);
-		b = c + rol(d, 37);
-		c = d + e;
-		return d = e + a;
-	}
-
 	void init_zobrist()
 	{
+		PRNG prng;
+		
 		for (unsigned c = White; c <= Black; c++)
 			for (unsigned p = Pawn; p <= King; p++)
-				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = rand64());
+				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = prng.draw());
 
-		zob_turn = rand64();
-		for (unsigned crights = 0; crights < 16; zob_castle[crights++] = rand64());
-		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = rand64());
+		zob_turn = prng.draw();
+		for (unsigned crights = 0; crights < 16; zob_castle[crights++] = prng.draw());
+		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = prng.draw());
 	}
 
 	void safe_add_bit(uint64_t *b, Rank r, File f)
