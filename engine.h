@@ -50,6 +50,8 @@ public:
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (IOErr);
 	std::string search(const SearchParam& sp, int& elapsed) const throw (IOErr);
+	
+	std::string get_name() const;
 
 private:
 	std::set<Option> options;
@@ -66,4 +68,9 @@ inline Engine::SearchParam::SearchParam():
 inline bool Engine::Option::operator< (const Option& o) const
 {
 	return type < o.type && name < o.name;
+}
+
+inline std::string Engine::get_name() const
+{
+	return engine_name;
 }
