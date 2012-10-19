@@ -17,7 +17,6 @@
 #include <string>
 #include <ostream>
 #include "engine.h"
-#include "types.h"
 
 class PGN
 {
@@ -28,7 +27,7 @@ public:
 		Color winner;
 		std::string fen;
 		Engine::SearchParam sp;
-
+		
 		void operator>> (std::ostream& ostrm) const;
 	};
 

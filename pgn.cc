@@ -33,6 +33,9 @@ void PGN::Header::operator>> (std::ostream& ostrm) const
 
 	if (!fen.empty())
 		ostrm << "[FEN \"" << fen << "\"]\n";
+	
+	/* TODO print the TimeControl tag. based on sp. Many cases to consider, including asymetric time
+	 * control, or control based on nodes or depth, instead of time. */
 }
 
 void PGN::operator>> (std::ostream& ostrm) const

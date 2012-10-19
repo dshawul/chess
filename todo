@@ -1,2 +1,8 @@
-- use std::chrono i/o clock.h
-- Makefile
+- Handle the move_count and the 50 move rule counter in Board::set_fen(), Board::get_fen(). Update
+the move_count in Board::play() and Board::undo()
+
+- PGN needs to know the starting color and move_count. Then update these values with every pgn << san
+call. And to print the move_count's in pgn >> ostrm.
+
+- game() sbhould be a class, as there will be more and more parameters and things to update. In
+parcitular, it should have a PGN member, and an ostream member too, to dump PGN output.

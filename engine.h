@@ -1,14 +1,14 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
@@ -16,6 +16,7 @@
 #include <set>
 #include <string>
 #include "process.h"
+#include "types.h"
 
 class Engine: public Process
 {
@@ -44,13 +45,15 @@ public:
 		SearchParam();
 		int wtime, winc, btime, binc, movetime;
 		unsigned depth, nodes;
+
+		bool has_clock(Color color) const;
 	};
 
 	virtual void create(const char *cmd) throw (Err);
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (IOErr);
 	std::string search(const SearchParam& sp, int& elapsed) const throw (IOErr);
-	
+
 	std::string get_name() const;
 
 private:
@@ -73,4 +76,11 @@ inline bool Engine::Option::operator< (const Option& o) const
 inline std::string Engine::get_name() const
 {
 	return engine_name;
+}
+
+inline bool Engine::SearchParam::has_clock(Color color) const
+{
+	return color == White
+	       ? wtime || winc
+	       : btime || binc;
 }

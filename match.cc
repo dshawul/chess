@@ -23,7 +23,7 @@ GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::
 	std::string moves;
 
 	Engine::SearchParam current_sp(sp);
-	const bool update_clock[NB_COLOR] = { sp.wtime || sp.winc, sp.btime || sp.binc };
+	const bool update_clock[NB_COLOR] = { sp.has_clock(White), sp.has_clock(Black) };
 
 	for (;;)
 	{
