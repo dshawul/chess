@@ -24,8 +24,8 @@ int main(int argc, char **argv)
 	E[Black].create(argv[2]);
 	
 	Engine::SearchParam sp;
-	sp.wtime = sp.btime = 12000;
-	sp.winc = sp.binc = 200;
+	sp.wtime = sp.btime = 6000;
+	sp.winc = sp.binc = 100;
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();
