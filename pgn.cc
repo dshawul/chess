@@ -14,8 +14,8 @@
 */
 #include "pgn.h"
 
-PGN::PGN(const Header& _hdeader)
-	: header(_hdeader)
+PGN::PGN(const Header& _header)
+	: header(_header)
 {}
 
 void PGN::operator<< (const std::string& san)
@@ -28,26 +28,46 @@ void PGN::Header::operator>> (std::ostream& ostrm) const
 	ostrm << "[White \"" << white << "\"]\n";
 	ostrm << "[Black \"" << black << "\"]\n";
 
-	std::string result = (winner == White) ? "1-0" : (winner == Black ? "0-1" : "1/2-1/2");
-	ostrm << "[Result \"" << result << "\"]\n";
-
 	if (!fen.empty())
 		ostrm << "[FEN \"" << fen << "\"]\n";
-	
-	/* TODO print the TimeControl tag. based on sp. Many cases to consider, including asymetric time
-	 * control, or control based on nodes or depth, instead of time. */
+
+	/* TODO: print TimeControl tag, based on SearchParam sp. Many cases to consider, including
+	 * asymetric time control, or limits not based on time (eg. nodes, depth) */
 }
 
 void PGN::operator>> (std::ostream& ostrm) const
 /* FIXME: simplistic, need to implement things like "5.. Nf6 6. c4 (...) 35. Qxg7# 1-0" */
 {
 	header >> ostrm;
-	ostrm << std::endl;
+	ostrm << "[Result \"" << result << "\"]\n";
 
-	for (auto it = san_list.begin(); it != san_list.end(); ++it)
+	ostrm << std::endl;
+	Color color = header.color;
+	int move_count = header.move_count;
+
+	for (auto it = san_list.begin(); it != san_list.end(); ++it, color = opp_color(color))
 	{
+		if (color == Black)
+		{
+			if (it == san_list.begin())
+				ostrm << move_count << ".. ";
+			move_count++;
+		}
+		else if (color == White)
+			ostrm << move_count << ". ";
+
 		ostrm << *it << ' ';
 	}
 
-	ostrm << std::endl;
+	ostrm << result << std::endl;
+}
+
+void PGN::set_result(const std::string& _result)
+/*
+ * A result string is typically "1-0", "0-1" or "1/2-1/2". It will be printed as is in the PGN (both
+ * in the header section, and at the end of the move list), so you can make it more verbose. eg.
+ * "1-0 {Black resigns}", "0-1 {White loses on time}" etc.
+ * */
+{
+	result = _result;
 }

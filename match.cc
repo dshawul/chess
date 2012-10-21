@@ -12,10 +12,12 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include <fstream>
+#include <ostream>
 #include "match.h"
+#include "pgn.h"
 
-GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp)
+GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp,
+                std::ostream *ostrm)
 {
 	GameResult game_result;
 	Board B;
@@ -24,6 +26,15 @@ GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::
 
 	Engine::SearchParam current_sp(sp);
 	const bool update_clock[NB_COLOR] = { sp.has_clock(White), sp.has_clock(Black) };
+
+	PGN::Header header;
+	header.white = E[White].get_name();
+	header.black = E[Black].get_name();
+	header.sp = sp;
+	header.fen = fen;
+	header.color = B.get_turn();
+	header.move_count = B.get_move_count();
+	PGN pgn(header);
 
 	for (;;)
 	{
@@ -49,11 +60,18 @@ GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::
 			return game_result;
 		}
 
+		pgn << move_to_san(B, m);
+
 		B.play(m);
 
 		if ((game_result.result = B.game_over()))
 		{
 			game_result.winner = game_result.result == ResultMate ? stm : NoColor;
+
+			pgn.set_result(game_result.winner == White ? "1-0"
+			               : (game_result.winner == Black ? "0-1" : "1/2-1/2"));
+			pgn >> *ostrm;
+
 			return game_result;
 		}
 

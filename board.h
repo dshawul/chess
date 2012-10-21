@@ -97,6 +97,7 @@ public:
 	Piece get_piece_on(Square sq) const;
 	uint64_t get_epsq_bb() const;
 	uint64_t get_checkers() const;
+	int get_move_count() const;
 
 	uint64_t get_pieces(Color color) const;
 	uint64_t get_pieces(Color color, Piece piece) const;

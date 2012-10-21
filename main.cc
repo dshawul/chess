@@ -24,11 +24,11 @@ int main(int argc, char **argv)
 	E[Black].create(argv[2]);
 	
 	Engine::SearchParam sp;
-	sp.wtime = sp.btime = 6000;
-	sp.winc = sp.binc = 100;
+	sp.wtime = sp.btime = 3000;
+	sp.winc = sp.binc = 50;
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();
 	
-	GameResult game_result = game(E, fen, sp);
+	GameResult game_result = game(E, fen, sp, &std::cout);
 }

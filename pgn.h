@@ -24,14 +24,16 @@ public:
 	struct Header
 	{
 		std::string white, black;
-		Color winner;
 		std::string fen;
+		Color color;
+		int move_count;
 		Engine::SearchParam sp;
-		
+
 		void operator>> (std::ostream& ostrm) const;
 	};
 
 	PGN(const Header& _header);
+	void set_result(const std::string& _result);
 
 	void operator<< (const std::string& san);
 	void operator>> (std::ostream& ostrm) const;
@@ -39,4 +41,5 @@ public:
 private:
 	Header header;
 	std::vector<std::string> san_list;
+	std::string result;
 };

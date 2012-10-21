@@ -16,10 +16,10 @@
 
 namespace
 {
-	uint64_t rol(uint64_t x, unsigned k)
-	{
-		return (x << k) | (x >> (64 - k));
-	}
+uint64_t rol(uint64_t x, unsigned k)
+{
+	return (x << k) | (x >> (64 - k));
+}
 }
 
 PRNG::PRNG(uint64_t seed)
@@ -37,5 +37,5 @@ uint64_t PRNG::draw()
 	a = b ^ rol(c, 13);
 	b = c + rol(d, 37);
 	c = d + e;
-	return d = e + a;	
+	return d = e + a;
 }

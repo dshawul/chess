@@ -24,4 +24,5 @@ struct GameResult
 	Result result;
 };
 
-extern GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp);
+extern GameResult game(const Engine E[NB_COLOR], const std::string& fen, const Engine::SearchParam& sp,
+	std::ostream *ostrm = NULL);
