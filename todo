@@ -1,2 +1,12 @@
-- game() sbhould be a class, as there will be more and more parameters and things to update. In
-parcitular, it should have a PGN member, and an ostream member too, to dump PGN output.
+PGN:
+- print TimeControl tag in PGN header. Need to handle asymetric tc or limits that are not (like nodes
+or depth)
+- Newline every N moves on PGN output
+- Use a token type for SAN+depth+score in PGN. Print score and depth in PGN (with a bool option to
+control it)
+
+EPD:
+- Choice between random and sequential mode (currently sequential)
+
+Polyglot
+- Import and adapt the Stockfish source
