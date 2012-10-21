@@ -25,7 +25,9 @@ int main(int argc, char **argv)
 	
 	Engine::SearchParam sp;
 	sp.wtime = sp.btime = 3000;
-	sp.winc = sp.binc = 50;
+	sp.winc = 50;
+	sp.nodes = 100000;
+	sp.binc = 100;
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();

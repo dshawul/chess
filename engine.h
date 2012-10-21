@@ -47,6 +47,8 @@ public:
 		unsigned depth, nodes;
 
 		bool has_clock(Color color) const;
+		int get_time(Color color) const;
+		int get_inc(Color color) const;
 	};
 
 	virtual void create(const char *cmd) throw (Err);
@@ -83,4 +85,14 @@ inline bool Engine::SearchParam::has_clock(Color color) const
 	return color == White
 	       ? wtime || winc
 	       : btime || binc;
+}
+
+inline int Engine::SearchParam::get_time(Color color) const
+{
+	return color == White ? wtime : btime;
+}
+
+inline int Engine::SearchParam::get_inc(Color color) const
+{
+	return color == White ? winc : binc;
 }
