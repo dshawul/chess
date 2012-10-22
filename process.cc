@@ -1,14 +1,14 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
@@ -19,6 +19,11 @@
 #include <cstring>
 
 void Process::create(const char *cmd) throw (Err)
+/*
+ * Spawn a child process, and executes cmd. On success:
+ * - pid is the process id
+ * - in, out are FILE* to read/write from/to the process' stdout/stdin
+ * */
 {
 	pid = 0;
 	int readpipe[2], writepipe[2];
@@ -87,7 +92,7 @@ Process::~Process()
 	cleanup();
 }
 
-void Process::write_line(const char *s) const throw(Err)
+void Process::write_line(const char *s) const throw(IOErr)
 {
 	fputs(s, out);
 	fflush(out);	// don't forget to flush! (that's what she says)
@@ -96,7 +101,7 @@ void Process::write_line(const char *s) const throw(Err)
 		throw IOErr();
 }
 
-void Process::read_line(char *s, int n) const throw(Err)
+void Process::read_line(char *s, int n) const throw(IOErr)
 {
 	if (!fgets(s, n, in))
 		throw IOErr();

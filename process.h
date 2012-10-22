@@ -33,6 +33,6 @@ protected:
 	static const int LineSize = 0x100;
 
 	void cleanup();
-	void write_line(const char *s) const throw(Err);
-	void read_line(char *s, int n) const throw(Err);
+	void write_line(const char *s) const throw(IOErr);
+	void read_line(char *s, int n) const throw(IOErr);
 };
