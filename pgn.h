@@ -27,7 +27,7 @@ public:
 		std::string fen;
 		Color color;
 		int move_count;
-		Engine::SearchParam sp;
+		std::string time_control;
 
 		void operator>> (std::ostream& ostrm) const;
 	};

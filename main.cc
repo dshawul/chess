@@ -13,7 +13,9 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include "types.h"
-#include "match.h"
+#include "board.h"
+#include "epd.h"
+#include "engine.h"
 
 int main(int argc, char **argv)
 {
@@ -31,6 +33,4 @@ int main(int argc, char **argv)
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();
-	
-	GameResult game_result = game(E, fen, sp, &std::cout);
 }

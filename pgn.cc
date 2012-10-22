@@ -31,26 +31,8 @@ void PGN::Header::operator>> (std::ostream& ostrm) const
 
 	if (!fen.empty())
 		ostrm << "[FEN \"" << fen << "\"]\n";
-
-	std::ostringstream tc[NB_COLOR];
-	for (Color color = White; color <= Black; color++)
-	{
-		if (sp.has_clock(color))
-		{
-			tc[color] << float(sp.get_time(color))/1000 << '+'
-				<< float(sp.get_inc(color))/1000;
-		}
-		if (sp.nodes)
-			tc[color] << std::string(',', !tc[color].str().empty()) << "nodes=" << sp.nodes;
-		if (sp.depth)
-			tc[color] << std::string(',', !tc[color].str().empty()) << "depth=" << sp.nodes;
-	}
 	
-	std::string tc_tag = tc[White].str();
-	if (tc[White].str() != tc[Black].str())
-		tc_tag += " / " + tc[Black].str();
-	
-	ostrm << "[TimeControl \"" << tc_tag << "\"]\n";
+	ostrm << "[TimeControl \"" << time_control << "\"]\n";
 }
 
 void PGN::operator>> (std::ostream& ostrm) const
