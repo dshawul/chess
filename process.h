@@ -17,6 +17,8 @@
 #include <sys/types.h>
 #include <cstdio>
 
+#define LineSize	0x100
+
 class Process
 {
 public:
@@ -24,15 +26,15 @@ public:
 	struct IOErr: Err {};
 
 	Process(): pid(0), in(NULL), out(NULL) {}
-	virtual void create(const char *cmd) throw (Err);
-	virtual ~Process();
+	void run(const char *cmd) throw (Err);
+	~Process();
 
-protected:
-	pid_t pid;
-	FILE *in, *out;
-	static const int LineSize = 0x100;
-
-	void cleanup();
 	void write_line(const char *s) const throw(IOErr);
 	void read_line(char *s, int n) const throw(IOErr);
+
+private:
+	pid_t pid;
+	FILE *in, *out;
+
+	void cleanup();
 };

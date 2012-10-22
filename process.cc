@@ -18,7 +18,7 @@
 #include <signal.h>
 #include <cstring>
 
-void Process::create(const char *cmd) throw (Err)
+void Process::run(const char *cmd) throw (Err)
 /*
  * Spawn a child process, and executes cmd. On success:
  * - pid is the process id

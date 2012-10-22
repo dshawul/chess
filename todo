@@ -1,7 +1,3 @@
-SearchParam
-- wtime, winc, btime, binc is UCI dependant. Use something like time[NB_COLOR], inc[NB_COLOR]. nodes
-and depth should also depend on the color (asymetric SearchParam)
-
 PGN
 - Newline every N moves on PGN output
 - Use a token type for SAN+depth+score in PGN. Print score and depth in PGN (with a bool option to

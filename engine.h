@@ -16,14 +16,12 @@
 #include <set>
 #include <string>
 #include "process.h"
-#include "types.h"
+#include "chessclock.h"
 
-class Engine: public Process
+class Engine
 {
 public:
-	Engine(): Process() {}
-	virtual ~Engine();
-
+	struct Err {};
 	struct SyntaxErr: Err {};
 
 	struct Option
@@ -39,60 +37,23 @@ public:
 
 		bool operator< (const Option& o) const;
 	};
-
-	struct SearchParam
-	{
-		SearchParam();
-		int wtime, winc, btime, binc, movetime;
-		unsigned depth, nodes;
-
-		bool has_clock(Color color) const;
-		int get_time(Color color) const;
-		int get_inc(Color color) const;
-	};
-
-	virtual void create(const char *cmd) throw (Err);
+	
+	std::string engine_name;
+	ChessClock clk;
+	
+	void create(const char *cmd) throw (Process::Err, Err);
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
-	void set_position(const std::string& fen, const std::string& moves) const throw (IOErr);
-	std::string search(const SearchParam& sp, int& elapsed) const throw (IOErr);
-
-	std::string get_name() const;
+	void set_position(const std::string& fen, const std::string& moves) const throw (Process::Err);
+	std::string search(Color color) const throw (Process::Err);
 
 private:
+	Process p;
 	std::set<Option> options;
-	std::string engine_name;
 
-	void sync() const throw (IOErr);
+	void sync() const;
 };
-
-inline Engine::SearchParam::SearchParam():
-	wtime(0), winc(0), btime(0), binc(0),
-	movetime(0), depth(0), nodes(0)
-{}
 
 inline bool Engine::Option::operator< (const Option& o) const
 {
 	return type < o.type && name < o.name;
-}
-
-inline std::string Engine::get_name() const
-{
-	return engine_name;
-}
-
-inline bool Engine::SearchParam::has_clock(Color color) const
-{
-	return color == White
-	       ? wtime || winc
-	       : btime || binc;
-}
-
-inline int Engine::SearchParam::get_time(Color color) const
-{
-	return color == White ? wtime : btime;
-}
-
-inline int Engine::SearchParam::get_inc(Color color) const
-{
-	return color == White ? winc : binc;
 }

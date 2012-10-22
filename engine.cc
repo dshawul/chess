@@ -18,18 +18,18 @@
 #include <cstring>
 #include <chrono>
 
-void Engine::create(const char *cmd) throw (Err)
+void Engine::create(const char *cmd) throw (Process::Err, Err)
 // Process the uci ... uciok tasks (parse option and engine name)
 {
-	Process::create(cmd);
+	p.run(cmd);
 
 	char line[0x100];
 	std::string token;
-	write_line("uci\n");
+	p.write_line("uci\n");
 
 	do
 	{
-		read_line(line, sizeof(line));
+		p.read_line(line, sizeof(line));
 		std::istringstream s(line);
 		s >> token;
 
@@ -94,9 +94,6 @@ void Engine::create(const char *cmd) throw (Err)
 	while (token != "uciok");
 }
 
-Engine::~Engine()
-{}
-
 void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
 {
 	Option o;
@@ -121,20 +118,20 @@ void Engine::set_option(const std::string& name, Option::Type type, int value) t
 		throw Option::NotFound();
 }
 
-void Engine::sync() const throw (IOErr)
+void Engine::sync() const
 /* Send "isready" to the engine, and wait for "readyok". This is used often by the UCI protocol to
  * synchronize the Interface and the Engine */
 {
-	write_line("isready\n");
+	p.write_line("isready\n");
 	char line[LineSize];
 	do
 	{
-		read_line(line, sizeof(line));
+		p.read_line(line, sizeof(line));
 	}
 	while (strcmp(line, "readyok\n"));
 }
 
-void Engine::set_position(const std::string& fen, const std::string& moves) const throw (IOErr)
+void Engine::set_position(const std::string& fen, const std::string& moves) const throw (Process::Err)
 {
 	std::string s("position ");
 
@@ -146,38 +143,23 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 		s += " moves " + moves;
 
 	s += '\n';
-	write_line(s.c_str());
+	p.write_line(s.c_str());
 
 	sync();
 }
 
-std::string Engine::search(const SearchParam& sp, int& elapsed) const throw (IOErr)
+std::string Engine::search(Color color) const throw (Process::Err)
 {
-	std::ostringstream s;
-	s << "go";
+	// start chrono
+	auto start = std::chrono::system_clock::now();
 
-	if (sp.wtime || sp.winc || sp.btime || sp.binc)
-	{
-		s << " wtime " << sp.wtime << " winc " << sp.winc;
-		s << " btime " << sp.btime << " binc " << sp.binc;
-	}
-	if (sp.movetime)
-		s << " movetime " << sp.movetime;
-	if (sp.depth)
-		s << " depth " << sp.depth;
-	if (sp.nodes)
-		s << " nodes " << sp.depth;
+	// send go command
+	p.write_line(clk.uci_str(color).c_str());
 
-	s << '\n';
-
-	auto start = std::chrono::high_resolution_clock::now();
-
-	write_line(std::string(s.str()).c_str());
 	char line[LineSize];
-
 	for (;;)
 	{
-		read_line(line, sizeof(line));
+		p.read_line(line, sizeof(line));
 
 		std::istringstream parser(line);
 		std::string token;
@@ -186,8 +168,17 @@ std::string Engine::search(const SearchParam& sp, int& elapsed) const throw (IOE
 		        && token == "bestmove"
 		        && parser >> token)
 		{
-			auto stop = std::chrono::high_resolution_clock::now();
-			elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
+			// stop chrono
+			auto stop = std::chrono::system_clock::now();
+
+			int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
+			if (clk.has_clock())
+			{
+				clk.time -= elapsed;
+				// TODO: test for out of time here (before adding inc)
+				clk.time += clk.time;
+			}
+			
 			return token;
 		}
 	}

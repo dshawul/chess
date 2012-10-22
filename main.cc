@@ -25,11 +25,8 @@ int main(int argc, char **argv)
 	E[White].create(argv[1]);
 	E[Black].create(argv[2]);
 	
-	Engine::SearchParam sp;
-	sp.wtime = sp.btime = 3000;
-	sp.winc = 50;
-	sp.nodes = 100000;
-	sp.binc = 100;
+	ChessClock clk;
+	clk.time = 3000; clk.inc =100; clk.nodes = 10000;
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();
