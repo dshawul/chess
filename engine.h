@@ -50,7 +50,7 @@ private:
 	Process p;
 	std::set<Option> options;
 
-	void sync() const;
+	void sync() const throw (Process::Err);
 };
 
 inline bool Engine::Option::operator< (const Option& o) const

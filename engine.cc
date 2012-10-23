@@ -118,7 +118,7 @@ void Engine::set_option(const std::string& name, Option::Type type, int value) t
 		throw Option::NotFound();
 }
 
-void Engine::sync() const
+void Engine::sync() const throw (Process::Err)
 /* Send "isready" to the engine, and wait for "readyok". This is used often by the UCI protocol to
  * synchronize the Interface and the Engine */
 {

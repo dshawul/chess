@@ -10,6 +10,7 @@ struct ChessClock
 	
 	bool has_clock() const;
 	std::string uci_str(Color color) const;
+	std::string pgn_str(Color color) const;
 };
 
 inline ChessClock::ChessClock()
