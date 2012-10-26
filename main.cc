@@ -27,7 +27,13 @@ int main(int argc, char **argv)
 	
 	ChessClock clk;
 	clk.time = 3000; clk.inc =100; clk.nodes = 10000;
+	E[White].clk = clk;
+	E[Black].clk = clk;
 	
 	EPD epd(argv[3]);
 	std::string fen = epd.next();
+	
+	E[White].set_position(fen, "");
+	Engine::SearchResult r = E[White].search(White);
+	std::cout << r.bestmove << '\t' << r.depth << '\t' << r.score << std::endl;
 }

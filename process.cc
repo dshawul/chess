@@ -17,6 +17,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <cstring>
+#include <iostream>
 
 void Process::run(const char *cmd) throw (Err)
 /*

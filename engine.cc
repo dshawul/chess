@@ -148,8 +148,10 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 	sync();
 }
 
-std::string Engine::search(Color color) const throw (Process::Err)
+Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 {
+	SearchResult result;
+	
 	// start chrono
 	auto start = std::chrono::system_clock::now();
 
@@ -163,10 +165,9 @@ std::string Engine::search(Color color) const throw (Process::Err)
 
 		std::istringstream parser(line);
 		std::string token;
+		parser >> token;
 
-		if (parser >> token
-		        && token == "bestmove"
-		        && parser >> token)
+		if (token == "bestmove" && parser >> token)
 		{
 			// stop chrono
 			auto stop = std::chrono::system_clock::now();
@@ -178,8 +179,19 @@ std::string Engine::search(Color color) const throw (Process::Err)
 				// TODO: test for out of time here (before adding inc)
 				clk.time += clk.time;
 			}
-			
-			return token;
+
+			result.bestmove = token;
+			return result;
+		}
+		else if (token == "info")
+		{
+			while (parser >> token)
+			{
+				if (token == "score" && parser >> token && token == "cp")
+					parser >> result.score;
+				if (token == "depth")
+					parser >> result.depth;
+			}
 		}
 	}
 }
