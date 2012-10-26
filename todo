@@ -1,4 +1,3 @@
-- PGN::operator<< should "eat" SearchResult instead of std::string. Output nicely in {} in the PGN.
 - Newline every N moves on PGN output
 - Use a token type for SAN+depth+score in PGN. Print score and depth in PGN (with a bool option to
 control it)

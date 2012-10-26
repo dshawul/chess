@@ -19,9 +19,9 @@ PGN::PGN(const Header& _header)
 	: header(_header)
 {}
 
-void PGN::operator<< (const std::string& san)
+void PGN::operator<< (const PGN::Token& token)
 {
-	san_list.push_back(san);
+	tokens.push_back(token);
 }
 
 void PGN::Header::operator>> (std::ostream& ostrm) const
@@ -45,18 +45,18 @@ void PGN::operator>> (std::ostream& ostrm) const
 	Color color = header.color;
 	int move_count = header.move_count;
 
-	for (auto it = san_list.begin(); it != san_list.end(); ++it, color = opp_color(color))
+	for (auto it = tokens.begin(); it != tokens.end(); ++it, color = opp_color(color))
 	{
 		if (color == Black)
 		{
-			if (it == san_list.begin())
+			if (it == tokens.begin())
 				ostrm << move_count << ".. ";
 			move_count++;
 		}
 		else if (color == White)
 			ostrm << move_count << ". ";
 
-		ostrm << *it << ' ';
+		ostrm << it->str();
 	}
 
 	ostrm << result << std::endl;
@@ -70,4 +70,11 @@ void PGN::set_result(const std::string& _result)
  * */
 {
 	result = _result;
+}
+
+std::string PGN::Token::str() const
+{
+	std::ostringstream s;
+	s << san << " {" << float(score)/100 << '/' << depth << "} ";
+	return s.str();
 }

@@ -189,8 +189,10 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 			{
 				if (token == "score" && parser >> token && token == "cp")
 					parser >> result.score;
-				if (token == "depth")
+				else if (token == "depth")
 					parser >> result.depth;
+				else if (token == "pv")
+					break;
 			}
 		}
 	}

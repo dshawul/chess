@@ -32,14 +32,21 @@ public:
 		void operator>> (std::ostream& ostrm) const;
 	};
 
+	struct Token
+	{
+		std::string san;
+		int depth, score;
+		std::string str() const;
+	};
+
 	PGN(const Header& _header);
 	void set_result(const std::string& _result);
 
-	void operator<< (const std::string& san);
+	void operator<< (const Token& token);
 	void operator>> (std::ostream& ostrm) const;
 
 private:
 	Header header;
-	std::vector<std::string> san_list;
+	std::vector<Token> tokens;
 	std::string result;
 };
