@@ -21,8 +21,7 @@
 class PGN
 {
 public:
-	struct Header
-	{
+	struct Header {
 		std::string white, black;
 		std::string fen;
 		Color color;
@@ -32,8 +31,7 @@ public:
 		void operator>> (std::ostream& ostrm) const;
 	};
 
-	struct Token
-	{
+	struct Token {
 		std::string san;
 		int depth, score;
 		std::string str() const;

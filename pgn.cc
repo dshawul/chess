@@ -31,7 +31,7 @@ void PGN::Header::operator>> (std::ostream& ostrm) const
 
 	if (!fen.empty())
 		ostrm << "[FEN \"" << fen << "\"]\n";
-	
+
 	ostrm << "[TimeControl \"" << time_control << "\"]\n";
 }
 
@@ -45,15 +45,12 @@ void PGN::operator>> (std::ostream& ostrm) const
 	Color color = header.color;
 	int move_count = header.move_count;
 
-	for (auto it = tokens.begin(); it != tokens.end(); ++it, color = opp_color(color))
-	{
-		if (color == Black)
-		{
+	for (auto it = tokens.begin(); it != tokens.end(); ++it, color = opp_color(color)) {
+		if (color == Black) {
 			if (it == tokens.begin())
 				ostrm << move_count << ".. ";
 			move_count++;
-		}
-		else if (color == White)
+		} else if (color == White)
 			ostrm << move_count << ". ";
 
 		ostrm << it->str();

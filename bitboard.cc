@@ -1,14 +1,14 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
@@ -28,7 +28,7 @@ namespace
 	void init_zobrist()
 	{
 		PRNG prng;
-		
+
 		for (unsigned c = White; c <= Black; c++)
 			for (unsigned p = Pawn; p <= King; p++)
 				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = prng.draw());
@@ -50,13 +50,11 @@ namespace
 		memset(Between, 0, sizeof(Between));
 		memset(Direction, 0, sizeof(Direction));
 
-		for (Square sq = A1; sq <= H8; ++sq)
-		{
+		for (Square sq = A1; sq <= H8; ++sq) {
 			Rank r = rank(sq);
 			File f = file(sq);
 
-			for (unsigned i = 0; i < 8; i++)
-			{
+			for (unsigned i = 0; i < 8; i++) {
 				uint64_t mask = 0;
 				int dr = dir[i][0], df = dir[i][1];
 				Rank _r;
@@ -64,8 +62,7 @@ namespace
 				Square _sq;
 
 				for (_r = r + dr, _f = f + df;
-				        rank_file_ok(_r, _f); _r += dr,_f += df)
-				{
+				        rank_file_ok(_r, _f); _r += dr,_f += df) {
 					_sq = square(_r,_f);
 					mask |= 1ULL << _sq;
 					Between[sq][_sq] = mask;
@@ -73,8 +70,7 @@ namespace
 
 				uint64_t direction = mask;
 
-				while (mask)
-				{
+				while (mask) {
 					_sq = next_bit(&mask);
 					Direction[sq][_sq] = direction;
 				}
@@ -82,16 +78,14 @@ namespace
 		}
 	}
 
-	const unsigned BitTable[NB_SQUARE] =
-	{
+	const unsigned BitTable[NB_SQUARE] = {
 		0, 1, 2, 7, 3, 13, 8, 19, 4, 25, 14, 28, 9, 34, 20, 40, 5, 17, 26, 38, 15,
 		46, 29, 48, 10, 31, 35, 54, 21, 50, 41, 57, 63, 6, 12, 18, 24, 27, 33, 39,
 		16, 37, 45, 47, 30, 53, 49, 56, 62, 11, 23, 32, 36, 44, 52, 55, 61, 22, 43,
 		51, 60, 42, 59, 58
 	};
 
-	const unsigned magic_bb_r_shift[NB_SQUARE] =
-	{
+	const unsigned magic_bb_r_shift[NB_SQUARE] = {
 		52, 53, 53, 53, 53, 53, 53, 52,
 		53, 54, 54, 54, 54, 54, 54, 53,
 		53, 54, 54, 54, 54, 54, 54, 53,
@@ -102,8 +96,7 @@ namespace
 		53, 54, 54, 53, 53, 53, 53, 53
 	};
 
-	const uint64_t magic_bb_r_magics[NB_SQUARE] =
-	{
+	const uint64_t magic_bb_r_magics[NB_SQUARE] = {
 		0x0080001020400080ull, 0x0040001000200040ull, 0x0080081000200080ull, 0x0080040800100080ull,
 		0x0080020400080080ull, 0x0080010200040080ull, 0x0080008001000200ull, 0x0080002040800100ull,
 		0x0000800020400080ull, 0x0000400020005000ull, 0x0000801000200080ull, 0x0000800800100080ull,
@@ -122,8 +115,7 @@ namespace
 		0x0001000204080011ull, 0x0001000204000801ull, 0x0001000082000401ull, 0x0001FFFAABFAD1A2ull
 	};
 
-	const uint64_t magic_bb_r_mask[NB_SQUARE] =
-	{
+	const uint64_t magic_bb_r_mask[NB_SQUARE] = {
 		0x000101010101017Eull, 0x000202020202027Cull, 0x000404040404047Aull, 0x0008080808080876ull,
 		0x001010101010106Eull, 0x002020202020205Eull, 0x004040404040403Eull, 0x008080808080807Eull,
 		0x0001010101017E00ull, 0x0002020202027C00ull, 0x0004040404047A00ull, 0x0008080808087600ull,
@@ -142,8 +134,7 @@ namespace
 		0x6E10101010101000ull, 0x5E20202020202000ull, 0x3E40404040404000ull, 0x7E80808080808000ull
 	};
 
-	const unsigned magic_bb_b_shift[NB_SQUARE] =
-	{
+	const unsigned magic_bb_b_shift[NB_SQUARE] = {
 		58, 59, 59, 59, 59, 59, 59, 58,
 		59, 59, 59, 59, 59, 59, 59, 59,
 		59, 59, 57, 57, 57, 57, 59, 59,
@@ -154,8 +145,7 @@ namespace
 		58, 59, 59, 59, 59, 59, 59, 58
 	};
 
-	const uint64_t magic_bb_b_magics[NB_SQUARE] =
-	{
+	const uint64_t magic_bb_b_magics[NB_SQUARE] = {
 		0x0002020202020200ull, 0x0002020202020000ull, 0x0004010202000000ull, 0x0004040080000000ull,
 		0x0001104000000000ull, 0x0000821040000000ull, 0x0000410410400000ull, 0x0000104104104000ull,
 		0x0000040404040400ull, 0x0000020202020200ull, 0x0000040102020000ull, 0x0000040400800000ull,
@@ -174,8 +164,7 @@ namespace
 		0x0000000010020200ull, 0x0000000404080200ull, 0x0000040404040400ull, 0x0002020202020200ull
 	};
 
-	const uint64_t magic_bb_b_mask[NB_SQUARE] =
-	{
+	const uint64_t magic_bb_b_mask[NB_SQUARE] = {
 		0x0040201008040200ull, 0x0000402010080400ull, 0x0000004020100A00ull, 0x0000000040221400ull,
 		0x0000000002442800ull, 0x0000000204085000ull, 0x0000020408102000ull, 0x0002040810204000ull,
 		0x0020100804020000ull, 0x0040201008040000ull, 0x00004020100A0000ull, 0x0000004022140000ull,
@@ -197,8 +186,7 @@ namespace
 	uint64_t magic_bb_r_db[0x19000];
 	uint64_t magic_bb_b_db[0x1480];
 
-	const uint64_t* magic_bb_b_indices[NB_SQUARE] =
-	{
+	const uint64_t* magic_bb_b_indices[NB_SQUARE] = {
 		magic_bb_b_db+4992, magic_bb_b_db+2624, magic_bb_b_db+256,	magic_bb_b_db+896,
 		magic_bb_b_db+1280, magic_bb_b_db+1664, magic_bb_b_db+4800, magic_bb_b_db+5120,
 		magic_bb_b_db+2560, magic_bb_b_db+2656, magic_bb_b_db+288,  magic_bb_b_db+928,
@@ -217,8 +205,7 @@ namespace
 		magic_bb_b_db+1632, magic_bb_b_db+2272, magic_bb_b_db+4896, magic_bb_b_db+5184
 	};
 
-	const uint64_t* magic_bb_r_indices[64] =
-	{
+	const uint64_t* magic_bb_r_indices[64] = {
 		magic_bb_r_db+86016, magic_bb_r_db+73728, magic_bb_r_db+36864, magic_bb_r_db+43008,
 		magic_bb_r_db+47104, magic_bb_r_db+51200, magic_bb_r_db+77824, magic_bb_r_db+94208,
 		magic_bb_r_db+69632, magic_bb_r_db+32768, magic_bb_r_db+38912, magic_bb_r_db+10240,
@@ -244,42 +231,34 @@ namespace
 		uint64_t rowbits = 0xFFULL << (sq & ~7);
 
 		bit = 1ULL << sq;
-		do
-		{
+		do {
 			bit <<= 8;
 			ret |= bit;
-		}
-		while (bit && !(bit & occ));
+		} while (bit && !(bit & occ));
 
 		bit = 1ULL << sq;
-		do
-		{
+		do {
 			bit >>= 8;
 			ret |= bit;
-		}
-		while(bit && !(bit & occ));
+		} while(bit && !(bit & occ));
 
 		bit = 1ULL << sq;
-		do
-		{
+		do {
 			bit<<=1;
 			if(bit&rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while (!(bit & occ));
+		} while (!(bit & occ));
 
 		bit = 1ULL << sq;
-		do
-		{
+		do {
 			bit >>= 1;
 			if (bit & rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while (!(bit & occ));
+		} while (!(bit & occ));
 		return ret;
 	}
 
@@ -291,55 +270,47 @@ namespace
 
 		bit = 1ULL << sq;
 		bit2 = bit;
-		do
-		{
+		do {
 			bit <<= 8-1;
 			bit2 >>= 1;
 			if (bit2 & rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while(bit && !(bit & occ));
+		} while(bit && !(bit & occ));
 
 		bit = 1ULL << sq;
 		bit2 = bit;
-		do
-		{
+		do {
 			bit <<= 8+1;
 			bit2 <<= 1;
 			if (bit2 & rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while (bit && !(bit & occ));
+		} while (bit && !(bit & occ));
 
 		bit = 1ULL << sq;
 		bit2 = bit;
-		do
-		{
+		do {
 			bit >>= 8-1;
 			bit2 <<= 1;
 			if (bit2 & rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while(bit && !(bit & occ));
+		} while(bit && !(bit & occ));
 
 		bit = 1ULL << sq;
 		bit2 = bit;
-		do
-		{
+		do {
 			bit >>= 8+1;
 			bit2 >>= 1;
 			if (bit2 & rowbits)
 				ret |= bit;
 			else
 				break;
-		}
-		while (bit && !(bit & occ));
+		} while (bit && !(bit & occ));
 
 		return ret;
 	}
@@ -355,8 +326,7 @@ namespace
 
 	void init_magics()
 	{
-		const unsigned init_magic_bitpos64_db[64] =
-		{
+		const unsigned init_magic_bitpos64_db[64] = {
 			63,  0, 58,  1, 59, 47, 53,  2,
 			60, 39, 48, 27, 54, 33, 42,  3,
 			61, 51, 37, 40, 49, 18, 28, 20,
@@ -367,8 +337,7 @@ namespace
 			44, 24, 15,  8, 23,  7,  6,  5
 		};
 
-		uint64_t* const magic_bb_b_indices2[64] =
-		{
+		uint64_t* const magic_bb_b_indices2[64] = {
 			magic_bb_b_db+4992, magic_bb_b_db+2624, magic_bb_b_db+256,
 			magic_bb_b_db+896,  magic_bb_b_db+1280, magic_bb_b_db+1664,
 			magic_bb_b_db+4800, magic_bb_b_db+5120, magic_bb_b_db+2560,
@@ -393,8 +362,7 @@ namespace
 			magic_bb_b_db+5184
 		};
 
-		uint64_t* const magic_bb_r_indices2[64] =
-		{
+		uint64_t* const magic_bb_r_indices2[64] = {
 			magic_bb_r_db+86016, magic_bb_r_db+73728, magic_bb_r_db+36864,
 			magic_bb_r_db+43008, magic_bb_r_db+47104, magic_bb_r_db+51200,
 			magic_bb_r_db+77824, magic_bb_r_db+94208, magic_bb_r_db+69632,
@@ -419,38 +387,32 @@ namespace
 			magic_bb_r_db+98304
 		};
 
-		for(unsigned i = A1; i <= H8; i++)
-		{
+		for(unsigned i = A1; i <= H8; i++) {
 			unsigned sq[NB_SQUARE];
 			unsigned numSq = 0;
 			uint64_t temp = magic_bb_b_mask[i];
-			while(temp)
-			{
+			while(temp) {
 				uint64_t bit = temp & -temp;
 				sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
 				temp ^= bit;
 			}
-			for(temp = 0; temp < (1ULL << numSq); temp++)
-			{
+			for(temp = 0; temp < (1ULL << numSq); temp++) {
 				uint64_t tempocc = init_magic_bb_occ(sq, numSq, temp);
 				*(magic_bb_b_indices2[i] + ((tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i])) =
 				    init_magic_bb_b(i,tempocc);
 			}
 		}
 
-		for(unsigned i = A1; i <= H8; i++)
-		{
+		for(unsigned i = A1; i <= H8; i++) {
 			unsigned sq[NB_SQUARE];
 			unsigned numSq = 0;
 			uint64_t temp = magic_bb_r_mask[i];
-			while(temp)
-			{
+			while(temp) {
 				uint64_t bit = temp & -temp;
 				sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
 				temp ^= bit;
 			}
-			for(temp = 0; temp < (1ULL << numSq); temp++)
-			{
+			for(temp = 0; temp < (1ULL << numSq); temp++) {
 				uint64_t tempocc = init_magic_bb_occ(sq, numSq, temp);
 				*(magic_bb_r_indices2[i] + ((tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i])) =
 				    init_magic_bb_r(i, tempocc);
@@ -464,21 +426,18 @@ namespace
 		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
 		const int Pdir[2][2] = { {1,-1}, {1,1} };
 
-		for (Square sq = A1; sq <= H8; ++sq)
-		{
+		for (Square sq = A1; sq <= H8; ++sq) {
 			const Rank r = rank(sq);
 			const File f = file(sq);
 
 			NAttacks[sq] = KAttacks[sq] = 0;
-			for (unsigned d = 0; d < 8; d++)
-			{
+			for (unsigned d = 0; d < 8; d++) {
 				safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
 				safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 			}
 
 			PAttacks[White][sq] = PAttacks[Black][sq] = 0;
-			for (unsigned d = 0; d < 2; d++)
-			{
+			for (unsigned d = 0; d < 2; d++) {
 				safe_add_bit(&PAttacks[White][sq], r + Pdir[d][0], f + Pdir[d][1]);
 				safe_add_bit(&PAttacks[Black][sq], r - Pdir[d][0], f - Pdir[d][1]);
 			}
@@ -516,10 +475,8 @@ Square next_bit(uint64_t *b)
 
 void print_bitboard(std::ostream& ostrm, uint64_t b)
 {
-	for (Rank r = Rank8; r >= Rank1; --r)
-	{
-		for (File f = FileA; f <= FileH; ++f)
-		{
+	for (Rank r = Rank8; r >= Rank1; --r) {
+		for (File f = FileA; f <= FileH; ++f) {
 			Square sq = square(r, f);
 			char c = test_bit(b, sq) ? 'X' : '.';
 			ostrm << ' ' << c;
@@ -535,8 +492,7 @@ uint64_t piece_attack(Piece piece, Square sq, uint64_t occ)
 	assert(BitboardInitialized);
 	assert(Knight <= piece && piece <= King && square_ok(sq));
 
-	switch (piece)
-	{
+	switch (piece) {
 		case Knight:
 			return NAttacks[sq];
 		case Bishop:

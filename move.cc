@@ -1,14 +1,14 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
@@ -49,8 +49,7 @@ bool Board::is_legal(move_t m) const
 	uint64_t pin_ray = Direction[kpos][fsq];
 
 	// pawn moves
-	if (piece == Pawn)
-	{
+	if (piece == Pawn) {
 		// generic self check
 		if (pinned && !test_bit(pin_ray, tsq))
 			return false;
@@ -63,8 +62,7 @@ bool Board::is_legal(move_t m) const
 		const bool is_push = tsq == (us ? fsq - 8 : fsq + 8);
 		const bool is_dpush = tsq == (us ? fsq - 16 : fsq + 16);
 
-		if (m.ep)
-		{
+		if (m.ep) {
 			// must be a capture and land on the epsq
 			if (st->epsq != tsq || !is_capture)
 				return false;
@@ -72,8 +70,7 @@ bool Board::is_legal(move_t m) const
 			// self check through en passant captured pawn
 			const Square ep_cap = pawn_push(them, tsq);
 			const uint64_t ray = Direction[kpos][ep_cap];
-			if (ray)
-			{
+			if (ray) {
 				uint64_t occ = st->occ;
 				clear_bit(&occ, ep_cap);
 				set_bit(&occ, tsq);
@@ -107,25 +104,19 @@ bool Board::is_legal(move_t m) const
 
 	uint64_t tss = piece_attack(piece, fsq, st->occ);
 
-	if (piece == King)
-	{
+	if (piece == King) {
 		// castling moves
-		if (is_castling(m))
-		{
+		if (is_castling(m)) {
 			uint64_t safe /* must not be attacked */, empty /* must be empty */;
 
-			if ((fsq+2 == tsq) && (st->crights & (OO << (2 * us))))
-			{
+			if ((fsq+2 == tsq) && (st->crights & (OO << (2 * us)))) {
 				empty = safe = 3ULL << (m.fsq + 1);
 				return !(st->attacked & safe) && !(st->occ & empty);
-			}
-			else if ((fsq-2 == tsq) && (st->crights & (OOO << (2 * us))))
-			{
+			} else if ((fsq-2 == tsq) && (st->crights & (OOO << (2 * us)))) {
 				safe = 3ULL << (m.fsq - 2);
 				empty = safe | (1ULL << (m.fsq - 3));
 				return !(st->attacked & safe) && !(st->occ & empty);
-			}
-			else
+			} else
 				return false;
 		}
 
@@ -138,8 +129,7 @@ bool Board::is_legal(move_t m) const
 	if (!test_bit(tss, tsq)) return false;
 
 	// check evasion: use the slow method (optimize later if needs be)
-	if (st->checkers)
-	{
+	if (st->checkers) {
 		const_cast<Board*>(this)->play(m);
 		bool check = calc_checkers(us);
 		const_cast<Board*>(this)->undo();
@@ -157,16 +147,14 @@ move_t string_to_move(const Board& B, const std::string& s)
 	m.tsq = square(Rank(s[3]-'1'), File(s[2]-'a'));
 	m.ep = B.get_piece_on(m.fsq) == Pawn && m.tsq == B.get_st().epsq;
 
-	if (s[4])
-	{
+	if (s[4]) {
 		Piece piece;
 		for (piece = Knight; piece <= Queen; ++piece)
 			if (PieceLabel[Black][piece] == s[4])
 				break;
 		assert(piece < King);
 		m.promotion = piece;
-	}
-	else
+	} else
 		m.promotion = NoPiece;
 
 	return m;
@@ -175,7 +163,7 @@ move_t string_to_move(const Board& B, const std::string& s)
 std::string move_to_string(const Board& B, move_t m)
 {
 	std::string s;
-	
+
 	s.push_back(file(m.fsq) + 'a');
 	s.push_back(rank(m.fsq) + '1');
 	assert(square_ok(m.fsq));
@@ -186,7 +174,7 @@ std::string move_to_string(const Board& B, move_t m)
 
 	if (piece_ok(m.promotion))
 		s.push_back(PieceLabel[Black][m.promotion]);
-	
+
 	return s;
 }
 
@@ -197,23 +185,18 @@ std::string move_to_san(const Board& B, move_t m)
 	const Piece piece = B.get_piece_on(m.fsq);
 	const bool capture = m.ep || B.get_piece_on(m.tsq) != NoPiece, castling = B.is_castling(m);
 
-	if (piece != Pawn)
-	{
-		if (castling)
-		{
+	if (piece != Pawn) {
+		if (castling) {
 			if (file(m.tsq) == FileC)
 				s += "OOO";
 			else
 				s += "OO";
-		}
-		else
-		{
+		} else {
 			s.push_back(PieceLabel[White][piece]);
 			uint64_t b = B.get_pieces(us, piece)
-				& piece_attack(piece, m.tsq, B.get_st().occ)
-				& ~B.get_st().pinned;
-			if (several_bits(b))
-			{
+			             & piece_attack(piece, m.tsq, B.get_st().occ)
+			             & ~B.get_st().pinned;
+			if (several_bits(b)) {
 				clear_bit(&b, m.fsq);
 				const Square sq = first_bit(b);
 				if (file(m.fsq) == file(sq))
@@ -222,15 +205,13 @@ std::string move_to_san(const Board& B, move_t m)
 					s.push_back(file(m.fsq) + 'a');
 			}
 		}
-	}
-	else if (capture)
+	} else if (capture)
 		s.push_back(file(m.fsq) + 'a');
 
 	if (capture)
 		s.push_back('x');
 
-	if (!castling)
-	{
+	if (!castling) {
 		s.push_back(file(m.tsq) + 'a');
 		s.push_back(rank(m.tsq) + '1');
 	}
@@ -259,8 +240,7 @@ unsigned Board::is_check(move_t m) const
 	        && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
-	else if (m.promotion == NoPiece)
-	{
+	else if (m.promotion == NoPiece) {
 		const Piece piece = piece_on[fsq];
 		uint64_t tss = piece == Pawn ? PAttacks[us][tsq]
 		               : piece_attack(piece, tsq, st->occ);
@@ -268,8 +248,7 @@ unsigned Board::is_check(move_t m) const
 			return 1;
 	}
 
-	if (m.ep)
-	{
+	if (m.ep) {
 		uint64_t occ = st->occ;
 		// play the ep capture on occ
 		clear_bit(&occ, fsq);
@@ -279,9 +258,7 @@ unsigned Board::is_check(move_t m) const
 		if ((get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 		        || (get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
-	}
-	else if (is_castling(m))
-	{
+	} else if (is_castling(m)) {
 		// position of the Rook after playing the castling move
 		Square rook_sq = Square(int(fsq + tsq) / 2);
 		uint64_t occ = st->occ;
@@ -290,9 +267,7 @@ unsigned Board::is_check(move_t m) const
 		set_bit(&RQ, rook_sq);
 		if (RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
-	}
-	else if (m.promotion < NoPiece)
-	{
+	} else if (m.promotion < NoPiece) {
 		// test check by the promoted piece
 		uint64_t occ = st->occ;
 		clear_bit(&occ, fsq);

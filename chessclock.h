@@ -1,13 +1,12 @@
 #pragma once
 #include "types.h"
 
-struct ChessClock
-{
+struct ChessClock {
 	ChessClock();
 	mutable int time;
 	int inc, movetime;
 	unsigned depth, nodes;
-	
+
 	bool has_clock() const;
 	std::string uci_str(Color color) const;
 	std::string pgn_str(Color color) const;

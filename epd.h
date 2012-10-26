@@ -21,10 +21,10 @@ class EPD
 public:
 	EPD(const std::string& epd_file);
 	std::string next() const;
-	
+
 private:
 	std::vector<std::string> fen_list;
-	
+
 	mutable size_t idx;
 	size_t count;
 };

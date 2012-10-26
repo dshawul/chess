@@ -1,14 +1,14 @@
 /*
  * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
- * 
+ *
  * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
  * Public License as published by the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
  * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
  * Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
@@ -24,15 +24,13 @@ bool test_perft();
 #define MAX_MOVES	0x80	// max number of legal moves
 
 /* Castling flags: those are for White, use << 2 for Black */
-enum
-{
+enum {
     OO = 1,		// King side castle (OO = chess notation)
     OOO = 2		// Queen side castle (OOO = chess notation)
 };
 
 /* Possible results of a game */
-enum Result
-{
+enum Result {
     ResultNone,			// game is not over
     ResultThreefold,	// draw by 3-fold repetition
     Result50Move,		// draw by 50 move rule
@@ -42,8 +40,7 @@ enum Result
     ResultIllegalMove
 };
 
-struct move_t
-{
+struct move_t {
 	Square fsq:8, tsq:8;
 	Piece promotion:8;
 	bool ep:1;
@@ -51,8 +48,7 @@ struct move_t
 	bool operator== (move_t m) const;
 };
 
-struct game_info
-{
+struct game_info {
 	Piece capture;				// piece just captured
 	Square epsq;				// en passant square
 	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
@@ -113,7 +109,7 @@ public:
 	bool is_legal(move_t m) const;
 	bool is_castling(move_t m) const;
 	unsigned is_check(move_t m) const;
-	
+
 	Result game_over() const;
 };
 

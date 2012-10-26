@@ -34,7 +34,7 @@ void Board::clear()
 	st->epsq = NoSquare;
 	st->last_move = {NoSquare, NoSquare, NoPiece, false};
 	move_count = 1;
-	
+
 	initialized = true;
 }
 
@@ -48,18 +48,15 @@ void Board::set_fen(const std::string& _fen)
 	char c, r, f;
 
 	// piece placement
-	while ((fen >> c) && !isspace(c))
-	{
+	while ((fen >> c) && !isspace(c)) {
 		if ('1' <= c && c <= '8')
 			sq += c - '0';
 		else if (c == '/')
 			sq -= 16;
-		else
-		{
+		else {
 			Color color = isupper(c) ? White : Black;
 			Piece piece = Piece(PieceLabel[color].find(c));
-			if (piece_ok(piece))
-			{
+			if (piece_ok(piece)) {
 				set_square(color, piece, sq);
 				if (piece == King)
 					king_pos[color] = sq;
@@ -75,8 +72,7 @@ void Board::set_fen(const std::string& _fen)
 	fen >> c;
 
 	// castling rights
-	while ((fen >> c) && !isspace(c))
-	{
+	while ((fen >> c) && !isspace(c)) {
 		Color color = isupper(c) ? White : Black;
 		c = toupper(c);
 		if (c == 'K')
@@ -106,18 +102,14 @@ std::string Board::get_fen() const
 	std::ostringstream fen;
 
 	// write the board
-	for (Rank r = Rank8; r >= Rank1; --r)
-	{
+	for (Rank r = Rank8; r >= Rank1; --r) {
 		unsigned empty_cnt = 0;
-		for (File f = FileA; f <= FileH; ++f)
-		{
+		for (File f = FileA; f <= FileH; ++f) {
 			Square sq = square(r, f);
 			if (piece_on[sq] == NoPiece)
 				empty_cnt++;
-			else
-			{
-				if (empty_cnt)
-				{
+			else {
+				if (empty_cnt) {
 					fen << empty_cnt;
 					empty_cnt = 0;
 				}
@@ -135,8 +127,7 @@ std::string Board::get_fen() const
 
 	// castling rights
 	unsigned crights = st->crights;
-	if (crights)
-	{
+	if (crights) {
 		if (crights & OO)
 			fen << 'K';
 		if (crights & OOO)
@@ -145,32 +136,27 @@ std::string Board::get_fen() const
 			fen << 'k';
 		if (crights & (OOO << 2))
 			fen << 'q';
-	}
-	else
+	} else
 		fen << '-';
 	fen << ' ';
 
 	// en passant square
 	Square epsq = st->epsq;
-	if (epsq != NoSquare)
-	{
+	if (epsq != NoSquare) {
 		fen << char(file(epsq) + 'a');
 		fen << char(rank(epsq) + '1');
-	}
-	else
+	} else
 		fen << '-';
-		
+
 	fen << ' ' << st->rule50 << ' ' << move_count;
-	
+
 	return fen.str();
 }
 
 std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 {
-	for (Rank r = Rank8; r >= Rank1; --r)
-	{
-		for (File f = FileA; f <= FileH; ++f)
-		{
+	for (Rank r = Rank8; r >= Rank1; --r) {
+		for (File f = FileA; f <= FileH; ++f) {
 			Square sq = square(r, f);
 			Color color = B.color_on(sq);
 			char c = color != NoColor
@@ -198,8 +184,7 @@ void Board::play(move_t m)
 	const Piece piece = piece_on[fsq], capture = piece_on[tsq];
 
 	// normal capture: remove captured piece
-	if (piece_ok(capture))
-	{
+	if (piece_ok(capture)) {
 		st->rule50 = 0;
 		clear_square(them, capture, tsq);
 	}
@@ -208,8 +193,7 @@ void Board::play(move_t m)
 	clear_square(us, piece, fsq);
 	set_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq);
 
-	if (piece == Pawn)
-	{
+	if (piece == Pawn) {
 		st->rule50 = 0;
 		int inc_pp = us ? -8 : 8;
 		// set the epsq if double push
@@ -219,40 +203,31 @@ void Board::play(move_t m)
 		// capture en passant
 		if (m.ep)
 			clear_square(them, Pawn, tsq - inc_pp);
-	}
-	else
-	{
+	} else {
 		st->epsq = NoSquare;
 
-		if (piece == Rook)
-		{
+		if (piece == Rook) {
 			// a rook move can alter castling rights
 			if (fsq == (us ? H8 : H1))
 				st->crights &= ~(OO << (2 * us));
 			else if (fsq == (us ? A8 : A1))
 				st->crights &= ~(OOO << (2 * us));
-		}
-		else if (piece == King)
-		{
+		} else if (piece == King) {
 			// update king_pos and clear crights
 			king_pos[us] = tsq;
 			st->crights &= ~((OO | OOO) << (2 * us));
 			// move the rook (jump over the king)
-			if (tsq == fsq+2)  			// OO
-			{
+			if (tsq == fsq+2) {			// OO
 				clear_square(us, Rook, us ? H8 : H1);
 				set_square(us, Rook, us ? F8 : F1);
-			}
-			else if (tsq == fsq-2)  	// OOO
-			{
+			} else if (tsq == fsq-2) {	// OOO
 				clear_square(us, Rook, us ? A8 : A1);
 				set_square(us, Rook, us ? D8 : D1);
 			}
 		}
 	}
 
-	if (capture == Rook)
-	{
+	if (capture == Rook) {
 		// Rook captures can alter opponent's castling rights
 		if (tsq == (us ? H1 : H8))
 			st->crights &= ~(OO << (2 * them));
@@ -263,7 +238,7 @@ void Board::play(move_t m)
 	turn = them;
 	if (turn == White)
 		++move_count;
-	
+
 	st->key ^= zob_turn;
 	st->capture = capture;
 	st->pinned = hidden_checkers(1, them);
@@ -291,29 +266,24 @@ void Board::undo()
 	if (piece_ok(capture))
 		set_square(them, capture, tsq, false);
 
-	if (piece == King)
-	{
+	if (piece == King) {
 		// update king_pos
 		king_pos[us] = fsq;
 		// undo rook jump (castling)
-		if (tsq == fsq+2)  			// OO
-		{
+		if (tsq == fsq+2) {			// OO
 			clear_square(us, Rook, us ? F8 : F1, false);
 			set_square(us, Rook, us ? H8 : H1, false);
-		}
-		else if (tsq == fsq-2)  	// OOO
-		{
+		} else if (tsq == fsq-2) {	// OOO
 			clear_square(us, Rook, us ? D8 : D1, false);
 			set_square(us, Rook, us ? A8 : A1, false);
 		}
-	}
-	else if (m.ep)	// restore the en passant captured pawn
+	} else if (m.ep)	// restore the en passant captured pawn
 		set_square(them, Pawn, tsq + (us ? 8 : -8), false);
 
 	turn = us;
 	if (turn == Black)
 		--move_count;
-	
+
 	--st;
 }
 
@@ -408,8 +378,7 @@ void Board::set_square(Color color, Piece piece, Square sq, bool play)
 	set_bit(&all[color], sq);
 	piece_on[sq] = piece;
 
-	if (play)
-	{
+	if (play) {
 		set_bit(&st->occ, sq);
 		st->key ^= zob[color][piece][sq];
 	}
@@ -425,8 +394,7 @@ void Board::clear_square(Color color, Piece piece, Square sq, bool play)
 	clear_bit(&all[color], sq);
 	piece_on[sq] = NoPiece;
 
-	if (play)
-	{
+	if (play) {
 		clear_bit(&st->occ, sq);
 		st->key ^= zob[color][piece][sq];
 	}
@@ -444,8 +412,7 @@ uint64_t Board::hidden_checkers(bool find_pins, Color color) const
 	// Pinners are only sliders with X-ray attacks to ksq
 	pinners = (get_RQ(aside) & RPseudoAttacks[ksq]) | (get_BQ(aside) & BPseudoAttacks[ksq]);
 
-	while (pinners)
-	{
+	while (pinners) {
 		Square sq = next_bit(&pinners);
 		uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & st->occ;
 		// NB: if b == 0 then we're in check
@@ -477,11 +444,9 @@ uint64_t Board::calc_key() const
 	uint64_t key = 0ULL;
 
 	for (Color color = White; color <= Black; ++color)
-		for (unsigned piece = Pawn; piece <= King; ++piece)
-		{
+		for (unsigned piece = Pawn; piece <= King; ++piece) {
 			uint64_t sqs = b[color][piece];
-			while (sqs)
-			{
+			while (sqs) {
 				const unsigned sq = next_bit(&sqs);
 				key ^= zob[color][piece][sq];
 			}

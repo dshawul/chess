@@ -27,25 +27,20 @@ void Engine::create(const char *cmd) throw (Process::Err, Err)
 	std::string token;
 	p.write_line("uci\n");
 
-	do
-	{
+	do {
 		p.read_line(line, sizeof(line));
 		std::istringstream s(line);
 		s >> token;
 
-		if (token == "id")
-		{
-			if ((s >> token) && token == "name")
-			{
+		if (token == "id") {
+			if ((s >> token) && token == "name") {
 				while (s >> token)
 					engine_name += std::string(" ", !engine_name.empty()) + token;
 
 				if (engine_name.empty())
 					throw SyntaxErr();
 			}
-		}
-		else if (token == "option")
-		{
+		} else if (token == "option") {
 			Option o;
 
 			if (!(s >> token) || token != "name")
@@ -60,8 +55,7 @@ void Engine::create(const char *cmd) throw (Process::Err, Err)
 			if (!(s >> token))
 				throw SyntaxErr();
 
-			if (token == "check")
-			{
+			if (token == "check") {
 				o.type = Option::Boolean;
 
 				if (!(	(s >> token) && token == "default"
@@ -73,9 +67,7 @@ void Engine::create(const char *cmd) throw (Process::Err, Err)
 				o.max = true;
 
 				options.insert(o);
-			}
-			else if (token == "spin")
-			{
+			} else if (token == "spin") {
 				o.type = Option::Integer;
 
 				if (!(	(s >> token) && token == "default"
@@ -90,8 +82,7 @@ void Engine::create(const char *cmd) throw (Process::Err, Err)
 				options.insert(o);
 			}
 		}
-	}
-	while (token != "uciok");
+	} while (token != "uciok");
 }
 
 void Engine::set_option(const std::string& name, Option::Type type, int value) throw (Option::Err)
@@ -102,19 +93,15 @@ void Engine::set_option(const std::string& name, Option::Type type, int value) t
 
 	auto it = options.find(o);
 
-	if (it != options.end())
-	{
+	if (it != options.end()) {
 		o = *it;
-		if (o.min <= value && value <= o.max)
-		{
+		if (o.min <= value && value <= o.max) {
 			o.value = value;
 			options.erase(o);
 			options.insert(o);
-		}
-		else
+		} else
 			throw Option::OutOfBounds();
-	}
-	else
+	} else
 		throw Option::NotFound();
 }
 
@@ -124,11 +111,9 @@ void Engine::sync() const throw (Process::Err)
 {
 	p.write_line("isready\n");
 	char line[LineSize];
-	do
-	{
+	do {
 		p.read_line(line, sizeof(line));
-	}
-	while (strcmp(line, "readyok\n"));
+	} while (strcmp(line, "readyok\n"));
 }
 
 void Engine::set_position(const std::string& fen, const std::string& moves) const throw (Process::Err)
@@ -151,7 +136,7 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 {
 	SearchResult result;
-	
+
 	// start chrono
 	auto start = std::chrono::system_clock::now();
 
@@ -159,22 +144,19 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 	p.write_line(clk.uci_str(color).c_str());
 
 	char line[LineSize];
-	for (;;)
-	{
+	for (;;) {
 		p.read_line(line, sizeof(line));
 
 		std::istringstream parser(line);
 		std::string token;
 		parser >> token;
 
-		if (token == "bestmove" && parser >> token)
-		{
+		if (token == "bestmove" && parser >> token) {
 			// stop chrono
 			auto stop = std::chrono::system_clock::now();
 
 			int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
-			if (clk.has_clock())
-			{
+			if (clk.has_clock()) {
 				clk.time -= elapsed;
 				// TODO: test for out of time here (before adding inc)
 				clk.time += clk.time;
@@ -182,11 +164,8 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 
 			result.bestmove = token;
 			return result;
-		}
-		else if (token == "info")
-		{
-			while (parser >> token)
-			{
+		} else if (token == "info") {
+			while (parser >> token) {
 				if (token == "score" && parser >> token && token == "cp")
 					parser >> result.score;
 				else if (token == "depth")
