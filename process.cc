@@ -33,15 +33,13 @@ void Process::run(const char *cmd) throw (Err)
 #define CHILD_READ		writepipe[0]
 #define PARENT_WRITE	writepipe[1]
 
-	try
-	{
+	try {
 		if (pipe(readpipe) < 0 || pipe(writepipe) < 0)
 			throw Err();
 
 		pid = fork();
 
-		if (pid == 0)
-		{
+		if (pid == 0) {
 			// in the child process
 			close(PARENT_WRITE);
 			close(PARENT_READ);
@@ -56,9 +54,7 @@ void Process::run(const char *cmd) throw (Err)
 
 			if (execlp(cmd, cmd, NULL) == -1)
 				throw Err();
-		}
-		else if (pid > 0)
-		{
+		} else if (pid > 0) {
 			// in the parent process
 			close(CHILD_READ);
 			close(CHILD_WRITE);
@@ -66,13 +62,10 @@ void Process::run(const char *cmd) throw (Err)
 			if ( !(in = fdopen(PARENT_READ, "r"))
 			        || !(out = fdopen(PARENT_WRITE, "w")) )
 				throw IOErr();
-		}
-		else
+		} else
 			// fork failed
 			throw Err();
-	}
-	catch (Err &e)
-	{
+	} catch (Err &e) {
 		cleanup();
 		throw;
 	}

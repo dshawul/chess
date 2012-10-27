@@ -49,7 +49,8 @@ void PGN::operator>> (std::ostream& ostrm) const
 		if (color == Black) {
 			if (it == tokens.begin())
 				ostrm << move_count << ".. ";
-			move_count++;
+			if (move_count++ % 2 == 0)
+				ostrm << '\n';
 		} else if (color == White)
 			ostrm << move_count << ". ";
 
@@ -72,6 +73,6 @@ void PGN::set_result(const std::string& _result)
 std::string PGN::Token::str() const
 {
 	std::ostringstream s;
-	s << san << " {" << float(score)/100 << '/' << depth << "} ";
+	s << san << " {" << float(score)/100 << '/' << depth << ' ' << float(time)/1000 << "s} ";
 	return s.str();
 }

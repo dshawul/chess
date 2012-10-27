@@ -40,7 +40,7 @@ public:
 	struct SearchResult {
 		SearchResult(): depth(0), score(0) {}
 		std::string bestmove;
-		int depth, score;
+		int depth, score, time;
 	};
 
 	std::string engine_name;
@@ -50,7 +50,7 @@ public:
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (Process::Err);
 	SearchResult search(Color color) const throw (Process::Err);
-
+	
 private:
 	Process p;
 	std::set<Option> options;

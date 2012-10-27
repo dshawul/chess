@@ -1,7 +1,3 @@
-- Newline every N moves on PGN output
-- Use a token type for SAN+depth+score in PGN. Print score and depth in PGN (with a bool option to
-control it)
-
 EPD:
 - Choice between random and sequential mode (currently sequential)
 

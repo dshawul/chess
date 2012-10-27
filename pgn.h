@@ -16,7 +16,7 @@
 #include <vector>
 #include <string>
 #include <ostream>
-#include "engine.h"
+#include "types.h"
 
 class PGN
 {
@@ -33,7 +33,7 @@ public:
 
 	struct Token {
 		std::string san;
-		int depth, score;
+		int depth, score, time;
 		std::string str() const;
 	};
 

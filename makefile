@@ -1,8 +1,8 @@
 all:
-	g++ *.cc -o ./chess -DNDEBUG -std=c++11 -O3 -flto -Wall
+	g++ *.cc -o ./chess -DNDEBUG -std=c++11 -O4 -flto -fno-rtti -Wall
 	
 debug:
-	g++ *.cc -o ./chess -std=c++0x -g -flto -Wall
+	g++ *.cc -o ./chess -std=c++11 -g -flto -Wall
 
 clean:
 	rm -f *.o

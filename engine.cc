@@ -155,9 +155,9 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 			// stop chrono
 			auto stop = std::chrono::system_clock::now();
 
-			int elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
+			result.time = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
 			if (clk.has_clock()) {
-				clk.time -= elapsed;
+				clk.time -= result.time;
 				// TODO: test for out of time here (before adding inc)
 				clk.time += clk.time;
 			}
