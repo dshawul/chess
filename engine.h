@@ -55,6 +55,10 @@ private:
 	Process p;
 	std::set<Option> options;
 
+	void parse_id(std::istringstream& s) throw (Err);
+	void parse_option(std::istringstream& s) throw (Err);
+	void parse_info(std::istringstream& s, SearchResult& result) const;
+	
 	void sync() const throw (Process::Err);
 };
 

@@ -18,6 +18,64 @@
 #include <cstring>
 #include <chrono>
 
+void Engine::parse_option(std::istringstream& s) throw (Err)
+{
+	Option o;
+	std::string token;
+
+	if (!(s >> token) || token != "name")
+		throw SyntaxErr();
+
+	while ((s >> token) && token != "type")
+		o.name += std::string(" ", !o.name.empty()) + token;
+
+	if (o.name.empty())
+		throw SyntaxErr();
+
+	if (!(s >> token))
+		throw SyntaxErr();
+
+	if (token == "check") {
+		o.type = Option::Boolean;
+
+		if (!(	(s >> token) && token == "default"
+		        && (s >> token) && (token == "true" || token == "false")) )
+			throw SyntaxErr();
+
+		o.value = token == "true";
+		o.min = false;
+		o.max = true;
+
+		options.insert(o);
+	} else if (token == "spin") {
+		o.type = Option::Integer;
+
+		if (!(	(s >> token) && token == "default"
+		        && (s >> o.value)
+		        && (s >> token) && token == "min" && (s >> o.min)
+		        && (s >> token) && token == "max" && (s >> o.max)) )
+			throw SyntaxErr();
+
+		if ((o.min > o.value) || (o.max < o.value))
+			throw SyntaxErr();
+
+		options.insert(o);
+	}
+}
+
+void Engine::parse_id(std::istringstream& s) throw (Err)
+{
+	std::string token;
+
+	if ((s >> token) && token == "name") {
+		while (s >> token)
+			engine_name += std::string(" ", !engine_name.empty()) + token;
+
+		if (engine_name.empty())
+			throw SyntaxErr();
+	}
+}
+
 void Engine::create(const char *cmd) throw (Process::Err, Err)
 // Process the uci ... uciok tasks (parse option and engine name)
 {
@@ -32,56 +90,10 @@ void Engine::create(const char *cmd) throw (Process::Err, Err)
 		std::istringstream s(line);
 		s >> token;
 
-		if (token == "id") {
-			if ((s >> token) && token == "name") {
-				while (s >> token)
-					engine_name += std::string(" ", !engine_name.empty()) + token;
-
-				if (engine_name.empty())
-					throw SyntaxErr();
-			}
-		} else if (token == "option") {
-			Option o;
-
-			if (!(s >> token) || token != "name")
-				throw SyntaxErr();
-
-			while ((s >> token) && token != "type")
-				o.name += std::string(" ", !o.name.empty()) + token;
-
-			if (o.name.empty())
-				throw SyntaxErr();
-
-			if (!(s >> token))
-				throw SyntaxErr();
-
-			if (token == "check") {
-				o.type = Option::Boolean;
-
-				if (!(	(s >> token) && token == "default"
-				        && (s >> token) && (token == "true" || token == "false")) )
-					throw SyntaxErr();
-
-				o.value = token == "true";
-				o.min = false;
-				o.max = true;
-
-				options.insert(o);
-			} else if (token == "spin") {
-				o.type = Option::Integer;
-
-				if (!(	(s >> token) && token == "default"
-				        && (s >> o.value)
-				        && (s >> token) && token == "min" && (s >> o.min)
-				        && (s >> token) && token == "max" && (s >> o.max)) )
-					throw SyntaxErr();
-
-				if ((o.min > o.value) || (o.max < o.value))
-					throw SyntaxErr();
-
-				options.insert(o);
-			}
-		}
+		if (token == "id")
+			parse_id(s);
+		else if (token == "option")
+			parse_option(s);
 	} while (token != "uciok");
 }
 
@@ -133,6 +145,20 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 	sync();
 }
 
+void Engine::parse_info(std::istringstream& s, SearchResult& result) const
+{
+	std::string token;
+	
+	while (s >> token) {
+		if (token == "score" && s >> token && token == "cp")
+			s >> result.score;
+		else if (token == "depth")
+			s >> result.depth;
+		else if (token == "pv")
+			break;
+	}	
+}
+
 Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 {
 	SearchResult result;
@@ -147,11 +173,11 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 	for (;;) {
 		p.read_line(line, sizeof(line));
 
-		std::istringstream parser(line);
+		std::istringstream s(line);
 		std::string token;
-		parser >> token;
+		s >> token;
 
-		if (token == "bestmove" && parser >> token) {
+		if (token == "bestmove" && s >> token) {
 			// stop chrono
 			auto stop = std::chrono::system_clock::now();
 
@@ -164,15 +190,7 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 
 			result.bestmove = token;
 			return result;
-		} else if (token == "info") {
-			while (parser >> token) {
-				if (token == "score" && parser >> token && token == "cp")
-					parser >> result.score;
-				else if (token == "depth")
-					parser >> result.depth;
-				else if (token == "pv")
-					break;
-			}
-		}
+		} else if (token == "info")
+			parse_info(s, result);
 	}
 }
