@@ -32,7 +32,7 @@ int main(int argc, char **argv)
 	E[White].clk = clk;
 	E[Black].clk = clk;
 
-	EPD epd(argv[3]);
+	EPD epd(argv[3], EPD::Random);
 	std::string fen = epd.next();
 
 	E[White].set_position(fen, "");

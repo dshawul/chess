@@ -15,16 +15,20 @@
 #pragma once
 #include <string>
 #include <vector>
+#include "prng.h"
 
 class EPD
 {
 public:
-	EPD(const std::string& epd_file);
+	enum Mode { Random, Sequential };
+
+	EPD(const std::string& epd_file, Mode _mode);
 	std::string next() const;
 
 private:
 	std::vector<std::string> fen_list;
-
+	Mode mode;
+	mutable PRNG prng;
 	mutable size_t idx;
 	size_t count;
 };
