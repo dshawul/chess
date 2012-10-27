@@ -36,7 +36,7 @@ std::string EPD::next()
 	if (mode == Random)
 		idx = prng.draw();
 
-	const size_t idx_result = idx;
+	const size_t idx_result = idx % count;
 	
 	if (mode == Sequential)
 		++idx;
