@@ -23,12 +23,11 @@ public:
 	enum Mode { Random, Sequential };
 
 	EPD(const std::string& epd_file, Mode _mode);
-	std::string next() const;
+	std::string next();
 
 private:
 	std::vector<std::string> fen_list;
+	size_t idx, count;
 	Mode mode;
-	mutable PRNG prng;
-	mutable size_t idx;
-	size_t count;
+	PRNG prng;
 };

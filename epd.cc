@@ -17,7 +17,7 @@
 #include "epd.h"
 
 EPD::EPD(const std::string& epd_file, Mode _mode)
-	: mode(_mode)
+	: mode(_mode), idx(0)
 {
 	std::ifstream f(epd_file);
 
@@ -29,19 +29,17 @@ EPD::EPD(const std::string& epd_file, Mode _mode)
 	}
 
 	count = fen_list.size();
-	idx = 0;
 }
 
-std::string EPD::next() const
-{
-	const size_t idx0 = idx;
-	
+std::string EPD::next()
+{	
 	if (mode == Random)
 		idx = prng.draw();
-	else
-		idx++;
-	
-	idx %= count;
 
-	return fen_list[idx0];
+	const size_t idx_result = idx;
+	
+	if (mode == Sequential)
+		++idx;
+	
+	return fen_list[idx_result];
 }
