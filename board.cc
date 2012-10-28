@@ -91,9 +91,9 @@ void Board::set_fen(const std::string& _fen)
 	_st->pinned = hidden_checkers(1, us);
 	_st->dcheckers = hidden_checkers(0, us);
 	_st->attacked = calc_attacks(them);
-	_st->checkers = test_bit(get_st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
+	_st->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
-	assert(calc_key() == get_st().key);
+	assert(calc_key() == st().key);
 }
 
 std::string Board::get_fen() const
@@ -126,7 +126,7 @@ std::string Board::get_fen() const
 	fen << (turn ? " b " : " w ");
 
 	// castling rights
-	unsigned crights = get_st().crights;
+	unsigned crights = st().crights;
 	if (crights) {
 		if (crights & OO)
 			fen << 'K';
@@ -141,14 +141,14 @@ std::string Board::get_fen() const
 	fen << ' ';
 
 	// en passant square
-	Square epsq = get_st().epsq;
+	Square epsq = st().epsq;
 	if (epsq != NoSquare) {
 		fen << char(file(epsq) + 'a');
 		fen << char(rank(epsq) + '1');
 	} else
 		fen << '-';
 
-	fen << ' ' << get_st().rule50 << ' ' << move_count;
+	fen << ' ' << st().rule50 << ' ' << move_count;
 
 	return fen.str();
 }
@@ -161,7 +161,7 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 			Color color = B.get_color_on(sq);
 			char c = color != NoColor
 			         ? PieceLabel[color][B.get_piece_on(sq)]
-			         : (sq == B.get_st().epsq ? '*' : '.');
+			         : (sq == B.st().epsq ? '*' : '.');
 			ostrm << ' ' << c;
 		}
 		ostrm << std::endl;
@@ -244,19 +244,19 @@ void Board::play(move_t m)
 	_st->pinned = hidden_checkers(1, them);
 	_st->dcheckers = hidden_checkers(0, them);
 	_st->attacked = calc_attacks(us);
-	_st->checkers = test_bit(get_st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
+	_st->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
-	assert(calc_key() == get_st().key);
+	assert(calc_key() == st().key);
 }
 
 void Board::undo()
 {
 	assert(initialized);
-	const move_t m = get_st().last_move;
+	const move_t m = st().last_move;
 	const Color us = opp_color(turn), them = turn;
 	const Square fsq = m.fsq, tsq = m.tsq;
 	const Piece piece = piece_ok(m.promotion) ? Pawn : piece_on[tsq];
-	const Piece capture = get_st().capture;
+	const Piece capture = st().capture;
 
 	// move our piece back
 	clear_square(us, m.promotion == NoPiece ? piece : m.promotion, tsq, false);
@@ -300,12 +300,12 @@ uint64_t Board::calc_attacks(Color color) const
 	// Lateral
 	fss = get_RQ(color);
 	while (fss)
-		r |= rook_attack(next_bit(&fss), get_st().occ);
+		r |= rook_attack(next_bit(&fss), st().occ);
 
 	// Diagonal
 	fss = get_BQ(color);
 	while (fss)
-		r |= bishop_attack(next_bit(&fss), get_st().occ);
+		r |= bishop_attack(next_bit(&fss), st().occ);
 
 	// Pawns
 	r |= shift_bit((b[color][Pawn] & ~FileA_bb), color ? -9 : 7);
@@ -324,15 +324,15 @@ Result Board::game_over() const
 		return ResultMaterial;
 
 	// 50 move rule
-	if (get_st().rule50 >= 100)
+	if (st().rule50 >= 100)
 		return Result50Move;
 
 	// 3-fold repetition
-	for (int i = 4; i <= get_st().rule50; i += 2)
+	for (int i = 4; i <= st().rule50; i += 2)
 		if (_st[-i].key == _st->key)
 			return ResultThreefold;
 
-	if (get_st().checkers)
+	if (st().checkers)
 		return is_mate() ? ResultMate : ResultNone;
 	else
 		return is_stalemate() ? ResultStalemate : ResultNone;
@@ -402,7 +402,7 @@ uint64_t Board::hidden_checkers(bool find_pins, Color color) const
 
 	while (pinners) {
 		Square sq = next_bit(&pinners);
-		uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & get_st().occ;
+		uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & st().occ;
 		// NB: if b == 0 then we're in check
 
 		if (!several_bits(b) && (b & all[color]))
@@ -420,8 +420,8 @@ uint64_t Board::calc_checkers(Color kcolor) const
 	const uint64_t RQ = get_RQ(them) & RPseudoAttacks[kpos];
 	const uint64_t BQ = get_BQ(them) & BPseudoAttacks[kpos];
 
-	return (RQ & rook_attack(kpos, get_st().occ))
-	       | (BQ & bishop_attack(kpos, get_st().occ))
+	return (RQ & rook_attack(kpos, st().occ))
+	       | (BQ & bishop_attack(kpos, st().occ))
 	       | (b[them][Knight] & NAttacks[kpos])
 	       | (b[them][Pawn] & PAttacks[kcolor][kpos]);
 }
@@ -445,7 +445,7 @@ uint64_t Board::calc_key() const
 
 bool Board::is_stalemate() const
 {
-	assert(!get_st().checkers);
+	assert(!st().checkers);
 	move_t mlist[MAX_MOVES];
 	const uint64_t targets = ~get_pieces(get_turn());
 
@@ -455,7 +455,7 @@ bool Board::is_stalemate() const
 
 bool Board::is_mate() const
 {
-	assert(get_st().checkers);
+	assert(st().checkers);
 	move_t mlist[MAX_MOVES];
 	return gen_evasion(*this, mlist) == mlist;
 }
@@ -490,7 +490,7 @@ Square Board::get_king_pos(Color c) const
 	return king_pos[c];
 }
 
-const game_info& Board::get_st() const
+const game_info& Board::st() const
 {
 	assert(initialized);
 	return *_st;

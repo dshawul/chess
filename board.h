@@ -87,7 +87,7 @@ class Board
 	bool is_mate() const;
 
 public:
-	const game_info& get_st() const;
+	const game_info& st() const;
 
 	Color get_turn() const;
 	int get_move_count() const;
