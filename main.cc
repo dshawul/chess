@@ -12,7 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "types.h"
+/*#include "types.h"
 #include "board.h"
 #include "epd.h"
 #include "engine.h"
@@ -39,4 +39,9 @@ int main(int argc, char **argv)
 	E[White].set_position(fen, "");
 	SearchResult r = E[White].search(White);
 	std::cout << r.bestmove << '\t' << r.depth << '\t' << r.score << std::endl;
+}*/
+#include "board.h"
+int main()
+{
+	test_perft();
 }

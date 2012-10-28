@@ -95,7 +95,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 /* Generates piece moves, when the board is not in check. Uses targets to filter the tss, eg.
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
-	assert(!king_moves || !B.get_checkers());	// do not use when in check (use gen_evasion)
+	assert(!king_moves || !B.get_st().checkers);	// do not use when in check (use gen_evasion)
 	const Color us = B.get_turn();
 	assert(!(targets & B.get_pieces(us)));
 	uint64_t fss;
@@ -152,7 +152,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
  * through serialize_moves, as castling moves are very peculiar, and we don't want to pollute
  * serialize_moves with this over-specific code */
 {
-	assert(!B.get_checkers());
+	assert(!B.get_st().checkers);
 	const Color us = B.get_turn();
 
 	move_t m;
@@ -195,7 +195,7 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	dp_inc = 2 * sp_inc;	// double push increment
 	const uint64_t
 	fss = B.get_pieces(us, Pawn),
-	enemies = B.get_pieces(them) | B.get_epsq_bb();
+	enemies = B.get_pieces(them) | B.get_st().epsq_bb();
 
 	/* First we calculate the to squares (tss) */
 
@@ -242,7 +242,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
  * covers the check. Note that cover means covering the ]ksq,checker_sq], so it includes capturing
  * the checking piece. */
 {
-	assert(B.get_checkers());
+	assert(B.get_st().checkers);
 	const Color us = B.get_turn();
 	const Square kpos = B.get_king_pos(us);
 	const uint64_t checkers = B.get_st().checkers;
@@ -268,7 +268,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 		mlist = make_piece_move(B, kpos, tsq, mlist);
 	}
 
-	if (!several_bits(B.get_checkers())) {
+	if (!several_bits(B.get_st().checkers)) {
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
 		      ? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
@@ -276,7 +276,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
 		 * push, and we also need to consider capturing it en passant to solve the check */
-		uint64_t ep_tss = cpiece == Pawn ? B.get_epsq_bb() : 0ULL;
+		uint64_t ep_tss = cpiece == Pawn ? B.get_st().epsq_bb() : 0ULL;
 
 		mlist = gen_piece_moves(B, tss, mlist, 0);
 		mlist = gen_pawn_moves(B, tss | ep_tss, mlist, true);
@@ -289,7 +289,7 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 /* Generates all moves in the position, using all the other specific move generators. This function
  * is quite fast but not flexible, and only used for debugging (eg. computing perft values) */
 {
-	if (B.get_checkers())
+	if (B.get_st().checkers)
 		return gen_evasion(B, mlist);
 	else {
 		// legal castling moves
@@ -307,7 +307,7 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 
 bool has_piece_moves(const Board& B, uint64_t targets)
 {
-	assert(!B.get_checkers());			// do not use when in check (use gen_evasion)
+	assert(!B.get_st().checkers);			// do not use when in check (use gen_evasion)
 	const Color us = B.get_turn();
 	const Square kpos = B.get_king_pos(us);
 	assert(!(targets & B.get_pieces(us)));	// do not overwrite our pieces
@@ -359,7 +359,7 @@ bool has_moves(const Board& B)
 {
 	move_t mlist[MAX_MOVES];
 
-	if (B.get_checkers())
+	if (B.get_st().checkers)
 		return gen_evasion(B, mlist) != mlist;
 	else {
 		const uint64_t targets = ~B.get_pieces(B.get_turn());

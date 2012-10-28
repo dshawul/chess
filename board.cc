@@ -332,7 +332,7 @@ Result Board::game_over() const
 		if (st[-i].key == st->key)
 			return ResultThreefold;
 
-	if (get_checkers())
+	if (st->checkers)
 		return is_mate() ? ResultMate : ResultNone;
 	else
 		return is_stalemate() ? ResultStalemate : ResultNone;
@@ -354,18 +354,6 @@ uint64_t Board::get_BQ(Color color) const
 {
 	assert(initialized && color_ok(color));
 	return b[color][Bishop] | b[color][Queen];
-}
-
-uint64_t Board::get_epsq_bb() const
-{
-	assert(initialized);
-	return st->epsq < NoSquare ? (1ULL << st->epsq) : 0ULL;
-}
-
-uint64_t Board::get_checkers() const
-{
-	assert(initialized);
-	return st->checkers;
 }
 
 void Board::set_square(Color color, Piece piece, Square sq, bool play)
@@ -457,7 +445,7 @@ uint64_t Board::calc_key() const
 
 bool Board::is_stalemate() const
 {
-	assert(!get_checkers());
+	assert(!st->checkers);
 	move_t mlist[MAX_MOVES];
 	const uint64_t targets = ~get_pieces(get_turn());
 
@@ -467,7 +455,7 @@ bool Board::is_stalemate() const
 
 bool Board::is_mate() const
 {
-	assert(get_checkers());
+	assert(st->checkers);
 	move_t mlist[MAX_MOVES];
 	return gen_evasion(*this, mlist) == mlist;
 }

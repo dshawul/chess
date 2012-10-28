@@ -59,6 +59,8 @@ struct game_info {
 	uint64_t checkers;			// pieces checking turn's King
 	uint64_t occ;				// occupancy
 	int rule50;					// counter for the 50 move rule
+	
+	uint64_t epsq_bb() const { return epsq < NoSquare ? (1ULL << epsq) : 0; }
 };
 
 class Board
@@ -88,12 +90,10 @@ public:
 	const game_info& get_st() const;
 
 	Color get_turn() const;
+	int get_move_count() const;
 	Square get_king_pos(Color c) const;
 	Color get_color_on(Square sq) const;
 	Piece get_piece_on(Square sq) const;
-	uint64_t get_epsq_bb() const;
-	uint64_t get_checkers() const;
-	int get_move_count() const;
 
 	uint64_t get_pieces(Color color) const;
 	uint64_t get_pieces(Color color, Piece piece) const;
