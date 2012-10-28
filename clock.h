@@ -37,15 +37,4 @@ private:
 	int time, inc, movetime;
 	mutable int time_left;
 	unsigned depth, nodes;
-
-	bool has_clock() const;
 };
-
-inline Clock::Clock()
-	: time(0), inc(0), movetime(0), depth(0), nodes(0)
-{}
-
-inline bool Clock::has_clock() const
-{
-	return time || inc;
-}

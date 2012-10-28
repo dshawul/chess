@@ -12,15 +12,19 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "chessclock.h"
+#include "clock.h"
 #include <sstream>
+
+Clock::Clock()
+	: time(0), inc(0), movetime(0), depth(0), nodes(0)
+{}
 
 std::string Clock::uci_str(Color color) const
 {
 	std::ostringstream s;
 	s << "go";
 
-	if (has_clock()) {
+	if (time || inc) {
 		s << (color == White ? " wtime " : " btime ") << time_left;
 		s << (color == White ? " winc " : " binc ") << inc;
 	}
@@ -39,7 +43,7 @@ std::string Clock::pgn_str(Color color) const
 {
 	std::ostringstream s;
 
-	if (has_clock())
+	if (time || inc)
 		s << float(time)/1000 << '+' << float(inc)/1000;
 	if (movetime)
 		s << std::string(",", !s.str().empty()) << "movetime=" << movetime;
@@ -53,7 +57,7 @@ std::string Clock::pgn_str(Color color) const
 
 void Clock::consume(int elapsed) const throw (TimeOut)
 {
-	if (has_clock()) {
+	if (time || inc) {
 		time_left -= elapsed;
 		if (time_left < 0)
 			throw TimeOut();

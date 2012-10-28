@@ -14,11 +14,18 @@
 */
 #include <cstring>
 #include <fstream>
+#include <chrono>
 #include "epd.h"
 
 EPD::EPD(const std::string& epd_file, Mode _mode)
 	: mode(_mode), idx(0)
-{
+{	
+	if (mode == Random) {
+		// create a PRNG and seed it with the duration since epoch, expressed in periods
+		auto d = std::chrono::system_clock::now().time_since_epoch();
+		prng = new PRNG(d.count());
+	}
+
 	std::ifstream f(epd_file);
 
 	while (!f.eof()) {
@@ -31,15 +38,21 @@ EPD::EPD(const std::string& epd_file, Mode _mode)
 	count = fen_list.size();
 }
 
-std::string EPD::next()
-{	
+EPD::~EPD()
+{
 	if (mode == Random)
-		idx = prng.draw();
+        delete prng;
+}
+
+std::string EPD::next()
+{
+	if (mode == Random)
+		idx = prng->draw();
 
 	const size_t idx_result = idx % count;
-	
+
 	if (mode == Sequential)
 		++idx;
-	
+
 	return fen_list[idx_result];
 }

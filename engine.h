@@ -16,7 +16,7 @@
 #include <set>
 #include <string>
 #include "process.h"
-#include "chessclock.h"
+#include "clock.h"
 
 struct Option {
 	struct Err {};
