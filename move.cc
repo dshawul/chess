@@ -38,11 +38,11 @@ bool Board::is_legal(move_t m) const
 	const Square fsq = m.fsq, tsq = m.tsq;
 
 	// verify fsq and piece
-	if (color_on(fsq) != us)
+	if (get_color_on(fsq) != us)
 		return false;
 
 	// verify tsq and capture
-	if (color_on(tsq) != (capture == NoPiece ? NoColor : them))
+	if (get_color_on(tsq) != (capture == NoPiece ? NoColor : them))
 		return false;
 
 	bool pinned = test_bit(st->pinned, fsq);

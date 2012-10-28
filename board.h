@@ -89,7 +89,7 @@ public:
 
 	Color get_turn() const;
 	Square get_king_pos(Color c) const;
-	Color color_on(Square sq) const;
+	Color get_color_on(Square sq) const;
 	Piece get_piece_on(Square sq) const;
 	uint64_t get_epsq_bb() const;
 	uint64_t get_checkers() const;

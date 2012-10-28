@@ -113,7 +113,7 @@ std::string Board::get_fen() const
 					fen << empty_cnt;
 					empty_cnt = 0;
 				}
-				fen << PieceLabel[color_on(sq)][piece_on[sq]];
+				fen << PieceLabel[get_color_on(sq)][piece_on[sq]];
 			}
 		}
 		if (empty_cnt)
@@ -158,7 +158,7 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 	for (Rank r = Rank8; r >= Rank1; --r) {
 		for (File f = FileA; f <= FileH; ++f) {
 			Square sq = square(r, f);
-			Color color = B.color_on(sq);
+			Color color = B.get_color_on(sq);
 			char c = color != NoColor
 			         ? PieceLabel[color][B.get_piece_on(sq)]
 			         : (sq == B.get_st().epsq ? '*' : '.');
@@ -338,7 +338,7 @@ Result Board::game_over() const
 		return is_stalemate() ? ResultStalemate : ResultNone;
 }
 
-Color Board::color_on(Square sq) const
+Color Board::get_color_on(Square sq) const
 {
 	assert(initialized && square_ok(sq));
 	return test_bit(all[White], sq) ? White : (test_bit(all[Black], sq) ? Black : NoColor);
