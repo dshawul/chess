@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
+#include <sstream>
 #include "board.h"
 
 bool move_t::operator== (move_t m) const
@@ -162,25 +163,23 @@ move_t string_to_move(const Board& B, const std::string& s)
 
 std::string move_to_string(const Board& B, move_t m)
 {
-	std::string s;
+	std::ostringstream s;
 
-	s.push_back(file(m.fsq) + 'a');
-	s.push_back(rank(m.fsq) + '1');
-	assert(square_ok(m.fsq));
+	s << char(file(m.fsq) + 'a');
+	s << char(rank(m.fsq) + '1');
 
-	s.push_back(file(m.tsq) + 'a');
-	s.push_back(rank(m.tsq) + '1');
-	assert(square_ok(m.tsq));
+	s << char(file(m.tsq) + 'a');
+	s << char(rank(m.tsq) + '1');
 
 	if (piece_ok(m.promotion))
-		s.push_back(PieceLabel[Black][m.promotion]);
+		s << PieceLabel[Black][m.promotion];
 
-	return s;
+	return s.str();
 }
 
 std::string move_to_san(const Board& B, move_t m)
 {
-	std::string s;
+	std::ostringstream s;
 	const Color us = B.get_turn();
 	const Piece piece = B.get_piece_on(m.fsq);
 	const bool capture = m.ep || B.get_piece_on(m.tsq) != NoPiece, castling = B.is_castling(m);
@@ -188,11 +187,11 @@ std::string move_to_san(const Board& B, move_t m)
 	if (piece != Pawn) {
 		if (castling) {
 			if (file(m.tsq) == FileC)
-				s += "OOO";
+				s << "OOO";
 			else
-				s += "OO";
+				s << "OO";
 		} else {
-			s.push_back(PieceLabel[White][piece]);
+			s << PieceLabel[White][piece];
 			uint64_t b = B.get_pieces(us, piece)
 			             & piece_attack(piece, m.tsq, B.st().occ)
 			             & ~B.st().pinned;
@@ -200,29 +199,29 @@ std::string move_to_san(const Board& B, move_t m)
 				clear_bit(&b, m.fsq);
 				const Square sq = first_bit(b);
 				if (file(m.fsq) == file(sq))
-					s.push_back(rank(m.fsq) + '1');
+					s << char(rank(m.fsq) + '1');
 				else
-					s.push_back(file(m.fsq) + 'a');
+					s << char(file(m.fsq) + 'a');
 			}
 		}
 	} else if (capture)
-		s.push_back(file(m.fsq) + 'a');
+		s << char(file(m.fsq) + 'a');
 
 	if (capture)
-		s.push_back('x');
+		s << 'x';
 
 	if (!castling) {
-		s.push_back(file(m.tsq) + 'a');
-		s.push_back(rank(m.tsq) + '1');
+		s << char(file(m.tsq) + 'a');
+		s << char(rank(m.tsq) + '1');
 	}
 
 	if (m.promotion != NoPiece)
-		s.push_back(PieceLabel[White][m.promotion]);
+		s << PieceLabel[White][m.promotion];
 
 	if (B.is_check(m))
-		s.push_back('+');
+		s << '+';
 
-	return s;
+	return s.str();
 }
 
 unsigned Board::is_check(move_t m) const
