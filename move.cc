@@ -15,6 +15,16 @@
 #include <sstream>
 #include "board.h"
 
+namespace
+{
+	std::string to_string(Square sq)
+	{
+		std::ostringstream s;
+		s << char(file(sq) + 'a') << char(rank(sq) + '1');
+		return s.str();
+	}
+}
+
 bool move_t::operator== (move_t m) const
 {
 	return fsq == m.fsq && tsq == m.tsq && promotion == m.promotion && ep == m.ep;
@@ -165,11 +175,8 @@ std::string move_to_string(const Board& B, move_t m)
 {
 	std::ostringstream s;
 
-	s << char(file(m.fsq) + 'a');
-	s << char(rank(m.fsq) + '1');
-
-	s << char(file(m.tsq) + 'a');
-	s << char(rank(m.tsq) + '1');
+	s << to_string(m.fsq);
+	s << to_string(m.tsq);
 
 	if (piece_ok(m.promotion))
 		s << PieceLabel[Black][m.promotion];
@@ -210,10 +217,8 @@ std::string move_to_san(const Board& B, move_t m)
 	if (capture)
 		s << 'x';
 
-	if (!castling) {
-		s << char(file(m.tsq) + 'a');
-		s << char(rank(m.tsq) + '1');
-	}
+	if (!castling)
+		s << to_string(m.tsq);
 
 	if (m.promotion != NoPiece)
 		s << PieceLabel[White][m.promotion];
