@@ -68,7 +68,7 @@ class Board
 	uint64_t b[NB_COLOR][NB_PIECE];
 	uint64_t all[NB_COLOR];
 	Piece piece_on[NB_SQUARE];
-	game_info game_stack[MAX_PLY], *st;
+	game_info game_stack[MAX_PLY], *_st;
 	Color turn;
 	Square king_pos[NB_COLOR];
 	int move_count;				// full move count, as per FEN standard

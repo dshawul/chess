@@ -45,7 +45,7 @@ bool Board::is_legal(move_t m) const
 	if (get_color_on(tsq) != (capture == NoPiece ? NoColor : them))
 		return false;
 
-	bool pinned = test_bit(st->pinned, fsq);
+	bool pinned = test_bit(get_st().pinned, fsq);
 	uint64_t pin_ray = Direction[kpos][fsq];
 
 	// pawn moves
@@ -64,14 +64,14 @@ bool Board::is_legal(move_t m) const
 
 		if (m.ep) {
 			// must be a capture and land on the epsq
-			if (st->epsq != tsq || !is_capture)
+			if (get_st().epsq != tsq || !is_capture)
 				return false;
 
 			// self check through en passant captured pawn
 			const Square ep_cap = pawn_push(them, tsq);
 			const uint64_t ray = Direction[kpos][ep_cap];
 			if (ray) {
-				uint64_t occ = st->occ;
+				uint64_t occ = get_st().occ;
 				clear_bit(&occ, ep_cap);
 				set_bit(&occ, tsq);
 
@@ -102,26 +102,26 @@ bool Board::is_legal(move_t m) const
 	if (m.ep || m.promotion != NoPiece)
 		return false;
 
-	uint64_t tss = piece_attack(piece, fsq, st->occ);
+	uint64_t tss = piece_attack(piece, fsq, get_st().occ);
 
 	if (piece == King) {
 		// castling moves
 		if (is_castling(m)) {
 			uint64_t safe /* must not be attacked */, empty /* must be empty */;
 
-			if ((fsq+2 == tsq) && (st->crights & (OO << (2 * us)))) {
+			if ((fsq+2 == tsq) && (get_st().crights & (OO << (2 * us)))) {
 				empty = safe = 3ULL << (m.fsq + 1);
-				return !(st->attacked & safe) && !(st->occ & empty);
-			} else if ((fsq-2 == tsq) && (st->crights & (OOO << (2 * us)))) {
+				return !(get_st().attacked & safe) && !(get_st().occ & empty);
+			} else if ((fsq-2 == tsq) && (get_st().crights & (OOO << (2 * us)))) {
 				safe = 3ULL << (m.fsq - 2);
 				empty = safe | (1ULL << (m.fsq - 3));
-				return !(st->attacked & safe) && !(st->occ & empty);
+				return !(get_st().attacked & safe) && !(get_st().occ & empty);
 			} else
 				return false;
 		}
 
 		// normal king moves
-		return test_bit(tss & ~st->attacked, tsq);
+		return test_bit(tss & ~get_st().attacked, tsq);
 	}
 
 	// piece moves
@@ -129,7 +129,7 @@ bool Board::is_legal(move_t m) const
 	if (!test_bit(tss, tsq)) return false;
 
 	// check evasion: use the slow method (optimize later if needs be)
-	if (st->checkers) {
+	if (get_st().checkers) {
 		const_cast<Board*>(this)->play(m);
 		bool check = calc_checkers(us);
 		const_cast<Board*>(this)->undo();
@@ -236,20 +236,20 @@ unsigned Board::is_check(move_t m) const
 	Square kpos = king_pos[them];
 
 	// test discovered check
-	if ( (test_bit(st->dcheckers, fsq))		// discovery checker
+	if ( (test_bit(get_st().dcheckers, fsq))		// discovery checker
 	        && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (m.promotion == NoPiece) {
 		const Piece piece = piece_on[fsq];
 		uint64_t tss = piece == Pawn ? PAttacks[us][tsq]
-		               : piece_attack(piece, tsq, st->occ);
+		               : piece_attack(piece, tsq, get_st().occ);
 		if (test_bit(tss, kpos))
 			return 1;
 	}
 
 	if (m.ep) {
-		uint64_t occ = st->occ;
+		uint64_t occ = get_st().occ;
 		// play the ep capture on occ
 		clear_bit(&occ, fsq);
 		clear_bit(&occ, tsq + (us ? 8 : -8));
@@ -261,7 +261,7 @@ unsigned Board::is_check(move_t m) const
 	} else if (is_castling(m)) {
 		// position of the Rook after playing the castling move
 		Square rook_sq = Square(int(fsq + tsq) / 2);
-		uint64_t occ = st->occ;
+		uint64_t occ = get_st().occ;
 		clear_bit(&occ, fsq);
 		uint64_t RQ = get_RQ(us);
 		set_bit(&RQ, rook_sq);
@@ -269,7 +269,7 @@ unsigned Board::is_check(move_t m) const
 			return 1;	// direct check by the castled rook
 	} else if (m.promotion < NoPiece) {
 		// test check by the promoted piece
-		uint64_t occ = st->occ;
+		uint64_t occ = get_st().occ;
 		clear_bit(&occ, fsq);
 		if (test_bit(piece_attack(m.promotion, tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece
