@@ -17,7 +17,7 @@
 
 namespace
 {
-	std::string to_string(Square sq)
+	std::string square_to_string(Square sq)
 	{
 		std::ostringstream s;
 		s << char(file(sq) + 'a') << char(rank(sq) + '1');
@@ -175,8 +175,8 @@ std::string move_to_string(const Board& B, move_t m)
 {
 	std::ostringstream s;
 
-	s << to_string(m.fsq);
-	s << to_string(m.tsq);
+	s << square_to_string(m.fsq);
+	s << square_to_string(m.tsq);
 
 	if (piece_ok(m.promotion))
 		s << PieceLabel[Black][m.promotion];
@@ -218,7 +218,7 @@ std::string move_to_san(const Board& B, move_t m)
 		s << 'x';
 
 	if (!castling)
-		s << to_string(m.tsq);
+		s << square_to_string(m.tsq);
 
 	if (m.promotion != NoPiece)
 		s << PieceLabel[White][m.promotion];
