@@ -1,13 +1,13 @@
 #include "chessclock.h"
 #include <sstream>
 
-std::string ChessClock::uci_str(Color color) const
+std::string Clock::uci_str(Color color) const
 {
 	std::ostringstream s;
 	s << "go";
 
 	if (has_clock()) {
-		s << (color == White ? " wtime " : " btime ") << time;
+		s << (color == White ? " wtime " : " btime ") << time_left;
 		s << (color == White ? " winc " : " binc ") << inc;
 	}
 	if (movetime)
@@ -21,7 +21,7 @@ std::string ChessClock::uci_str(Color color) const
 	return s.str();
 }
 
-std::string ChessClock::pgn_str(Color color) const
+std::string Clock::pgn_str(Color color) const
 {
 	std::ostringstream s;
 
@@ -35,4 +35,14 @@ std::string ChessClock::pgn_str(Color color) const
 		s << std::string(",", !s.str().empty()) << "depth=" << depth;
 
 	return s.str();
+}
+
+void Clock::consume(int elapsed) const throw (TimeOut)
+{
+	if (has_clock()) {
+		time_left -= elapsed;
+		if (time_left < 0)
+			throw TimeOut();
+		time_left += inc;
+	}
 }

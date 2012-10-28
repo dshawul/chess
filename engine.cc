@@ -18,6 +18,11 @@
 #include <cstring>
 #include <chrono>
 
+bool Option::operator< (const Option& o) const
+{
+	return type < o.type && name < o.name;
+}
+
 void Engine::parse_option(std::istringstream& s) throw (Err)
 {
 	Option o;
@@ -148,7 +153,7 @@ void Engine::set_position(const std::string& fen, const std::string& moves) cons
 void Engine::parse_info(std::istringstream& s, SearchResult& result) const
 {
 	std::string token;
-	
+
 	while (s >> token) {
 		if (token == "score" && s >> token && token == "cp")
 			s >> result.score;
@@ -156,10 +161,10 @@ void Engine::parse_info(std::istringstream& s, SearchResult& result) const
 			s >> result.depth;
 		else if (token == "pv")
 			break;
-	}	
+	}
 }
 
-Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
+SearchResult Engine::search(Color color) const throw (Process::Err, Clock::Err)
 {
 	SearchResult result;
 
@@ -181,12 +186,9 @@ Engine::SearchResult Engine::search(Color color) const throw (Process::Err)
 			// stop chrono
 			auto stop = std::chrono::system_clock::now();
 
-			result.time = std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count();
-			if (clk.has_clock()) {
-				clk.time -= result.time;
-				// TODO: test for out of time here (before adding inc)
-				clk.time += clk.time;
-			}
+			result.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>
+			                 (stop - start).count();
+			clk.consume(result.elapsed);
 
 			result.bestmove = token;
 			return result;

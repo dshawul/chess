@@ -510,5 +510,6 @@ const game_info& Board::get_st() const
 
 int Board::get_move_count() const
 {
+	assert(initialized);
 	return move_count;
 }

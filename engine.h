@@ -18,38 +18,38 @@
 #include "process.h"
 #include "chessclock.h"
 
+struct Option {
+	struct Err {};
+	struct NotFound: Err {};
+	struct OutOfBounds: Err {};
+
+	enum Type { Boolean, Integer };
+	Type type;
+	std::string name;
+	int value, min, max;
+
+	bool operator< (const Option& o) const;
+};
+
+struct SearchResult {
+	SearchResult(): depth(0), score(0) {}
+	std::string bestmove;
+	int depth, score, elapsed;
+};
+
 class Engine
 {
 public:
 	struct Err {};
 	struct SyntaxErr: Err {};
 
-	struct Option {
-		struct Err {};
-		struct NotFound: Err {};
-		struct OutOfBounds: Err {};
-
-		enum Type { Boolean, Integer };
-		Type type;
-		std::string name;
-		int value, min, max;
-
-		bool operator< (const Option& o) const;
-	};
-
-	struct SearchResult {
-		SearchResult(): depth(0), score(0) {}
-		std::string bestmove;
-		int depth, score, time;
-	};
-
 	std::string engine_name;
-	ChessClock clk;
+	Clock clk;
 
 	void create(const char *cmd) throw (Process::Err, Err);
 	void set_option(const std::string& name, Option::Type type, int value) throw (Option::Err);
 	void set_position(const std::string& fen, const std::string& moves) const throw (Process::Err);
-	SearchResult search(Color color) const throw (Process::Err);
+	SearchResult search(Color color) const throw (Process::Err, Clock::Err);
 	
 private:
 	Process p;
@@ -61,8 +61,3 @@ private:
 	
 	void sync() const throw (Process::Err);
 };
-
-inline bool Engine::Option::operator< (const Option& o) const
-{
-	return type < o.type && name < o.name;
-}
