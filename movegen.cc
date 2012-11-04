@@ -25,9 +25,9 @@ namespace
 		const Color us = B.get_turn(), them = opp_color(us);
 		Square kpos = B.get_king_pos(us);
 
-		if ((test_bit(B.st().pinned, fsq))				// pinned piece
-		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
-			return mlist;	// illegal move by indirect self check
+		// filter self check through fsq
+		if (test_bit(B.st().pinned, fsq) && !test_bit(Direction[kpos][fsq], tsq))
+			return mlist;
 
 		move_t m;
 		m.fsq = fsq;
@@ -68,25 +68,27 @@ namespace
 		return mlist;
 	}
 
-	move_t *make_piece_move(const Board& B, Square fsq, Square tsq, move_t *mlist)
+	move_t *make_piece_moves(const Board& B, Square fsq, uint64_t tss, move_t *mlist)
 	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
 	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
 	 * other words, we never put our King in check before calling this function */
 	{
-		assert(square_ok(fsq) && square_ok(tsq));
+		assert(square_ok(fsq));
 		const unsigned kpos = B.get_king_pos(B.get_turn());
-
-		if ((test_bit(B.st().pinned, fsq))				// pinned piece
-		        && (!test_bit(Direction[kpos][fsq], tsq)))	// moves out of pin ray
-			return mlist;	// illegal move by indirect self check
 
 		move_t m;
 		m.fsq = fsq;
-		m.tsq = tsq;
 		m.ep = false;
 		m.promotion = NoPiece;
 
-		*mlist++ = m;
+		while (tss) {
+			m.tsq = next_bit(&tss);
+
+			// if fsq is not pinned, or tsq is on the pin-rqy then the move fsq->tsq is legal
+			if (!test_bit(B.st().pinned, fsq) || test_bit(Direction[kpos][fsq], m.tsq))
+				*mlist++ = m;
+		}
+
 		return mlist;
 	}
 }
@@ -105,10 +107,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	while (fss) {
 		Square fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
-		while (tss) {
-			Square tsq = next_bit(&tss);
-			mlist = make_piece_move(B, fsq, tsq, mlist);
-		}
+		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// Rook Queen moves
@@ -116,10 +115,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	while (fss) {
 		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
-		while (tss) {
-			Square tsq = next_bit(&tss);
-			mlist = make_piece_move(B, fsq, tsq, mlist);
-		}
+		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// Bishop Queen moves
@@ -127,10 +123,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	while (fss) {
 		Square fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
-		while (tss) {
-			Square tsq = next_bit(&tss);
-			mlist = make_piece_move(B, fsq, tsq, mlist);
-		}
+		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// King moves (king_moves == false is only used for check escapes)
@@ -138,10 +131,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 		Square fsq = B.get_king_pos(us);
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
 		uint64_t tss = KAttacks[fsq] & targets & ~B.st().attacked;
-		while (tss) {
-			Square tsq = next_bit(&tss);
-			mlist = make_piece_move(B, fsq, tsq, mlist);
-		}
+		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	return mlist;
@@ -263,10 +253,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	}
 
 	// generate King escapes
-	while (tss) {
-		Square tsq = next_bit(&tss);
-		mlist = make_piece_move(B, kpos, tsq, mlist);
-	}
+	mlist = make_piece_moves(B, kpos, tss, mlist);
 
 	if (!several_bits(B.st().checkers)) {
 		// piece moves (only if we're not in double check)
