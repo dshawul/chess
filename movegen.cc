@@ -33,7 +33,7 @@ namespace
 		move_t m;
 		m.fsq = fsq;
 		m.tsq = tsq;
-		m.ep = (tsq == B.st().epsq) && B.st().epsq;
+		m.ep = tsq == B.st().epsq;
 
 		if (m.ep) {
 			uint64_t occ = B.st().occ;
@@ -82,12 +82,12 @@ namespace
 		m.ep = false;
 		m.promotion = NO_PIECE;
 
-		while (tss) {
-			m.tsq = next_bit(&tss);
+		if (test_bit(B.st().pinned, fsq))
+			tss &= Direction[kpos][fsq];
 
-			// if fsq is not pinned, or tsq is on the pin-rqy then the move fsq->tsq is legal
-			if (!test_bit(B.st().pinned, fsq) || test_bit(Direction[kpos][fsq], m.tsq))
-				*mlist++ = m;
+		while (tss) {
+			m.tsq = pop_lsb(&tss);
+			*mlist++ = m;
 		}
 
 		return mlist;
@@ -106,7 +106,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Knight Moves
 	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -114,7 +114,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -122,7 +122,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -201,7 +201,7 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	       & ~shift_bit(B.st().occ, -dp_inc);	// can push twice
 	tss_dp = shift_bit(fssd, dp_inc);			// double push fssd
 
-	// captures (including en passant if epsq != NoSquare)
+	// captures (including en passant if epsq != NO_SQUARE)
 	tss_lc = shift_bit(fss & ~FileA_bb, lc_inc) & enemies;	// right captures
 	tss_rc = shift_bit(fss & ~FileH_bb, rc_inc) & enemies;	// right captures
 
@@ -211,7 +211,7 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	/* Then we loop on the tss and find the possible from square(s) */
 
 	while (tss) {
-		const unsigned tsq = next_bit(&tss);
+		const unsigned tsq = pop_lsb(&tss);
 
 		if (test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
@@ -237,7 +237,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	const int us = B.get_turn();
 	const unsigned kpos = B.get_king_pos(us);
 	const uint64_t checkers = B.st().checkers;
-	const unsigned csq = first_bit(checkers);	// checker square
+	const unsigned csq = lsb(checkers);	// checker square
 	const int cpiece = B.get_piece_on(csq);		// checker piece
 	uint64_t tss;
 
@@ -247,7 +247,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	// The king must also get out of all sliding checkers' firing lines
 	uint64_t _checkers = checkers;
 	while (_checkers) {
-		const unsigned _csq = next_bit(&_checkers);
+		const unsigned _csq = pop_lsb(&_checkers);
 		const int _cpiece = B.get_piece_on(_csq);
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
@@ -304,7 +304,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Knight Moves
 	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -321,7 +321,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -332,7 +332,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		unsigned fsq = next_bit(&fss);
+		unsigned fsq = pop_lsb(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray

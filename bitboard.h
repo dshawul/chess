@@ -52,26 +52,22 @@ extern uint64_t piece_attack(int piece, unsigned sq, uint64_t occ);
 /* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
 extern void print_bitboard(std::ostream& ostrm, uint64_t b);
 
-/* first_bit() and next_bit() return the LSB, next_bit also clears it (for bit loops) */
-extern unsigned first_bit(uint64_t b);
-extern unsigned next_bit(uint64_t *b);
-
 inline void set_bit(uint64_t *b, unsigned sq)
 {
 	assert(square_ok(sq));
-	*b |= 1ULL << unsigned(sq);
+	*b |= 1ULL << sq;
 }
 
 inline void clear_bit(uint64_t *b, unsigned sq)
 {
 	assert(square_ok(sq));
-	*b &= ~(1ULL << unsigned(sq));
+	*b &= ~(1ULL << sq);
 }
 
 inline bool test_bit(uint64_t b, unsigned sq)
 {
 	assert(square_ok(sq));
-	return b & (1ULL << unsigned(sq));
+	return b & (1ULL << sq);
 }
 
 inline uint64_t shift_bit(uint64_t b, int i)
@@ -85,4 +81,18 @@ inline uint64_t shift_bit(uint64_t b, int i)
 inline bool several_bits(uint64_t b)
 {
 	return b & (b - 1);
+}
+
+/* lsb: assembly for x86_64, GCC or ICC */
+
+inline unsigned lsb(Bitboard b) {
+	Bitboard index;
+	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
+	return index;
+}
+
+inline unsigned pop_lsb(Bitboard *b) {
+	const unsigned s = lsb(*b);
+	*b &= *b - 1;
+	return s;
 }

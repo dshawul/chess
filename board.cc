@@ -40,7 +40,7 @@ void Board::clear()
 
 	_st = game_stack;
 	memset(_st, 0, sizeof(game_info));
-	_st->epsq = NB_SQUARE;
+	_st->epsq = NO_SQUARE;
 	_st->last_move = {0, 0, NO_PIECE, false};
 	move_count = 1;
 
@@ -151,7 +151,7 @@ std::string Board::get_fen() const
 
 	// en passant square
 	unsigned epsq = st().epsq;
-	if (epsq) {
+	if (square_ok(epsq)) {
 		fen << char(file(epsq) + 'a');
 		fen << char(rank(epsq) + '1');
 	} else
@@ -206,12 +206,12 @@ void Board::play(move_t m)
 		_st->rule50 = 0;
 		int inc_pp = us ? -8 : 8;
 		// set the epsq if double push
-		_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : 0;
+		_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
 		if (m.ep)
 			clear_square(them, PAWN, tsq - inc_pp);
 	} else {
-		_st->epsq = 0;
+		_st->epsq = NO_SQUARE;
 
 		if (piece == ROOK) {
 			// a rook move can alter castling rights
@@ -302,17 +302,17 @@ uint64_t Board::calc_attacks(int color) const
 	uint64_t r = KAttacks[king_pos[color]];
 	uint64_t fss = b[color][KNIGHT];
 	while (fss)
-		r |= NAttacks[next_bit(&fss)];
+		r |= NAttacks[pop_lsb(&fss)];
 
 	// Lateral
 	fss = get_RQ(color);
 	while (fss)
-		r |= rook_attack(next_bit(&fss), st().occ);
+		r |= rook_attack(pop_lsb(&fss), st().occ);
 
 	// Diagonal
 	fss = get_BQ(color);
 	while (fss)
-		r |= bishop_attack(next_bit(&fss), st().occ);
+		r |= bishop_attack(pop_lsb(&fss), st().occ);
 
 	// Pawns
 	r |= shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7);
@@ -384,7 +384,7 @@ uint64_t Board::hidden_checkers(bool find_pins, int color) const
 	pinners = (get_RQ(aside) & RPseudoAttacks[ksq]) | (get_BQ(aside) & BPseudoAttacks[ksq]);
 
 	while (pinners) {
-		unsigned sq = next_bit(&pinners);
+		unsigned sq = pop_lsb(&pinners);
 		uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & st().occ;
 		// NB: if b == 0 then we're in check
 
@@ -418,7 +418,7 @@ Key Board::calc_key() const
 		for (unsigned piece = PAWN; piece <= KING; ++piece) {
 			uint64_t sqs = b[color][piece];
 			while (sqs) {
-				const unsigned sq = next_bit(&sqs);
+				const unsigned sq = pop_lsb(&sqs);
 				key ^= zob[color][piece][sq];
 			}
 		}
@@ -580,7 +580,7 @@ std::string Board::move_to_san(move_t m)
 			             & ~st().pinned;
 			if (several_bits(b)) {
 				clear_bit(&b, m.fsq);
-				const unsigned sq = first_bit(b);
+				const unsigned sq = lsb(b);
 				if (file(m.fsq) == file(sq))
 					s << char(rank(m.fsq) + '1');
 				else

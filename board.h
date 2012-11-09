@@ -27,17 +27,6 @@ enum {
     OOO = 2		// Queen side castle (OOO = chess notation)
 };
 
-/* Possible results of a game */
-enum Result {
-    ResultNone,			// game is not over
-    ResultThreefold,	// draw by 3-fold repetition
-    Result50Move,		// draw by 50 move rule
-    ResultMaterial,		// draw by insufficient material
-    ResultStalemate,	// stalemate
-    ResultMate,			// check mate
-    ResultIllegalMove
-};
-
 struct move_t {
 	uint16_t fsq:6, tsq:6;
 	uint16_t promotion:3;

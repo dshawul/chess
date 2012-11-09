@@ -71,19 +71,12 @@ namespace
 				uint64_t direction = mask;
 
 				while (mask) {
-					_sq = next_bit(&mask);
+					_sq = pop_lsb(&mask);
 					Direction[sq][_sq] = direction;
 				}
 			}
 		}
 	}
-
-	const unsigned BitTable[NB_SQUARE] = {
-		0, 1, 2, 7, 3, 13, 8, 19, 4, 25, 14, 28, 9, 34, 20, 40, 5, 17, 26, 38, 15,
-		46, 29, 48, 10, 31, 35, 54, 21, 50, 41, 57, 63, 6, 12, 18, 24, 27, 33, 39,
-		16, 37, 45, 47, 30, 53, 49, 56, 62, 11, 23, 32, 36, 44, 52, 55, 61, 22, 43,
-		51, 60, 42, 59, 58
-	};
 
 	const unsigned magic_bb_r_shift[NB_SQUARE] = {
 		52, 53, 53, 53, 53, 53, 53, 52,
@@ -459,18 +452,6 @@ void init_bitboard()
 	init_rays();
 
 	BitboardInitialized = true;
-}
-
-unsigned first_bit(uint64_t b)
-{
-	return unsigned(BitTable[((b & -b) * 0x218a392cd3d5dbfULL) >> 58]);
-}
-
-unsigned next_bit(uint64_t *b)
-{
-	uint64_t _b = *b;
-	*b &= *b - 1;
-	return unsigned(BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
 void print_bitboard(std::ostream& ostrm, uint64_t b)
