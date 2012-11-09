@@ -39,8 +39,8 @@ enum Result {
 };
 
 struct move_t {
-	uint16_t fsq:8, tsq:8;
-	uint16_t promotion:8;
+	uint16_t fsq:6, tsq:6;
+	uint16_t promotion:3;
 	uint16_t ep:1;
 
 	bool operator== (move_t m) const {
