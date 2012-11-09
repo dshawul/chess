@@ -1,29 +1,30 @@
 /*
- * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * DiscoCheck, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
  *
- * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
- * Public License as published by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * DiscoCheck is free software: you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
- * Public License for more details.
+ * DiscoCheck is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
+#include <chrono>
 #include "board.h"
 
 namespace
 {
-	move_t *make_pawn_moves(const Board& B, Square fsq, Square tsq, move_t *mlist,
+	move_t *make_pawn_moves(const Board& B, unsigned fsq, unsigned tsq, move_t *mlist,
 	                        bool sub_promotions)
 	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
 		assert(square_ok(fsq) && square_ok(tsq));
-		const Color us = B.get_turn(), them = opp_color(us);
-		Square kpos = B.get_king_pos(us);
+		const int us = B.get_turn(), them = opp_color(us);
+		unsigned kpos = B.get_king_pos(us);
 
 		// filter self check through fsq
 		if (test_bit(B.st().pinned, fsq) && !test_bit(Direction[kpos][fsq], tsq))
@@ -32,7 +33,7 @@ namespace
 		move_t m;
 		m.fsq = fsq;
 		m.tsq = tsq;
-		m.ep = tsq == B.st().epsq;
+		m.ep = (tsq == B.st().epsq) && B.st().epsq;
 
 		if (m.ep) {
 			uint64_t occ = B.st().occ;
@@ -42,33 +43,33 @@ namespace
 			set_bit(&occ, m.tsq);
 			// test for check by a sliding enemy piece
 			if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-			        || (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+			    || (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 				return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 		}
 
 		// promotions
 		if (test_bit(PPromotionRank[us], tsq)) {
-			m.promotion = Queen;
+			m.promotion = QUEEN;
 			*mlist++ = m;
 			if (sub_promotions) {
-				m.promotion = Knight;
+				m.promotion = KNIGHT;
 				*mlist++ = m;
-				m.promotion = Rook;
+				m.promotion = ROOK;
 				*mlist++ = m;
-				m.promotion = Bishop;
+				m.promotion = BISHOP;
 				*mlist++ = m;
 			}
 		}
 		// all other moves
 		else {
-			m.promotion = NoPiece;
+			m.promotion = NO_PIECE;
 			*mlist++ = m;
 		}
 
 		return mlist;
 	}
 
-	move_t *make_piece_moves(const Board& B, Square fsq, uint64_t tss, move_t *mlist)
+	move_t *make_piece_moves(const Board& B, unsigned fsq, uint64_t tss, move_t *mlist)
 	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
 	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
 	 * other words, we never put our King in check before calling this function */
@@ -79,7 +80,7 @@ namespace
 		move_t m;
 		m.fsq = fsq;
 		m.ep = false;
-		m.promotion = NoPiece;
+		m.promotion = NO_PIECE;
 
 		while (tss) {
 			m.tsq = next_bit(&tss);
@@ -98,14 +99,14 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
 	assert(!king_moves || !B.st().checkers);	// do not use when in check (use gen_evasion)
-	const Color us = B.get_turn();
+	const int us = B.get_turn();
 	assert(!(targets & B.get_pieces(us)));
 	uint64_t fss;
 
 	// Knight Moves
-	fss = B.get_pieces(us, Knight);
+	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -113,7 +114,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -121,14 +122,14 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// King moves (king_moves == false is only used for check escapes)
 	if (king_moves) {
-		Square fsq = B.get_king_pos(us);
+		unsigned fsq = B.get_king_pos(us);
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
 		uint64_t tss = KAttacks[fsq] & targets & ~B.st().attacked;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
@@ -143,11 +144,11 @@ move_t *gen_castling(const Board& B, move_t *mlist)
  * serialize_moves with this over-specific code */
 {
 	assert(!B.st().checkers);
-	const Color us = B.get_turn();
+	const int us = B.get_turn();
 
 	move_t m;
 	m.fsq = B.get_king_pos(us);
-	m.promotion = NoPiece;
+	m.promotion = NO_PIECE;
 	m.ep = 0;
 
 	if (B.st().crights & (OO << (2 * us))) {
@@ -155,7 +156,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 		uint64_t empty = safe;						// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
-			m.tsq = Square(m.fsq + 2);
+			m.tsq = m.fsq + 2;
 			*mlist++ = m;
 		}
 	}
@@ -164,7 +165,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 		uint64_t empty = safe | (1ULL << (m.fsq - 3));		// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
-			m.tsq = Square(m.fsq - 2);
+			m.tsq = m.fsq - 2;
 			*mlist++ = m;
 		}
 	}
@@ -177,14 +178,14 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
  * pushes, normal captures, en passant captures. Promotions are considered in serialize_moves (so
  * for under-promotion pruning, modify only serialize_moves) */
 {
-	const Color us = B.get_turn(), them = opp_color(us);
+	const int us = B.get_turn(), them = opp_color(us);
 	const int
 	lc_inc = us ? -9 : 7,	// left capture increment
 	rc_inc = us ? -7 : 9,	// right capture increment
 	sp_inc = us ? -8 : 8,	// single push increment
 	dp_inc = 2 * sp_inc;	// double push increment
 	const uint64_t
-	fss = B.get_pieces(us, Pawn),
+	fss = B.get_pieces(us, PAWN),
 	enemies = B.get_pieces(them) | B.st().epsq_bb();
 
 	/* First we calculate the to squares (tss) */
@@ -210,7 +211,7 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	/* Then we loop on the tss and find the possible from square(s) */
 
 	while (tss) {
-		const Square tsq = next_bit(&tss);
+		const unsigned tsq = next_bit(&tss);
 
 		if (test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
@@ -233,11 +234,11 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
  * the checking piece. */
 {
 	assert(B.st().checkers);
-	const Color us = B.get_turn();
-	const Square kpos = B.get_king_pos(us);
+	const int us = B.get_turn();
+	const unsigned kpos = B.get_king_pos(us);
 	const uint64_t checkers = B.st().checkers;
-	const Square csq = first_bit(checkers);	// checker square
-	const Piece cpiece = B.get_piece_on(csq);		// checker piece
+	const unsigned csq = first_bit(checkers);	// checker square
+	const int cpiece = B.get_piece_on(csq);		// checker piece
 	uint64_t tss;
 
 	// normal king escapes
@@ -246,8 +247,8 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	// The king must also get out of all sliding checkers' firing lines
 	uint64_t _checkers = checkers;
 	while (_checkers) {
-		const Square _csq = next_bit(&_checkers);
-		const Piece _cpiece = B.get_piece_on(_csq);
+		const unsigned _csq = next_bit(&_checkers);
+		const int _cpiece = B.get_piece_on(_csq);
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
 	}
@@ -263,7 +264,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
 		 * push, and we also need to consider capturing it en passant to solve the check */
-		uint64_t ep_tss = cpiece == Pawn ? B.st().epsq_bb() : 0ULL;
+		uint64_t ep_tss = cpiece == PAWN ? B.st().epsq_bb() : 0ULL;
 
 		mlist = gen_piece_moves(B, tss, mlist, 0);
 		mlist = gen_pawn_moves(B, tss | ep_tss, mlist, true);
@@ -295,15 +296,15 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 bool has_piece_moves(const Board& B, uint64_t targets)
 {
 	assert(!B.st().checkers);			// do not use when in check (use gen_evasion)
-	const Color us = B.get_turn();
-	const Square kpos = B.get_king_pos(us);
+	const int us = B.get_turn();
+	const unsigned kpos = B.get_king_pos(us);
 	assert(!(targets & B.get_pieces(us)));	// do not overwrite our pieces
 	uint64_t fss;
 
 	// Knight Moves
-	fss = B.get_pieces(us, Knight);
+	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -312,7 +313,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	}
 
 	// King moves
-	Square fsq = B.get_king_pos(us);
+	unsigned fsq = B.get_king_pos(us);
 	uint64_t tss = KAttacks[fsq] & targets & ~B.st().attacked;
 	if (tss)
 		return true;
@@ -320,7 +321,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -331,7 +332,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		Square fsq = next_bit(&fss);
+		unsigned fsq = next_bit(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -383,14 +384,53 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 			B.undo();
 
 			if (!ply)
-				std::cout << move_to_string(B, *m) << '\t' << count_subtree << std::endl;
+				std::cout << B.move_to_string(*m) << '\t' << count_subtree << std::endl;
 		}
 	} else {
 		count = end - begin;
 		if (!ply)
 			for (m = begin; m < end; m++)
-				std::cout << move_to_string(B, *m) << std::endl;
+				std::cout << B.move_to_string(*m) << std::endl;
 	}
 
 	return count;
+}
+
+bool test_perft()
+{
+	init_bitboard();
+	Board B;
+
+	typedef struct {
+		const char *s;
+		unsigned depth;
+		uint64_t value;
+	} TestPerft;
+
+	TestPerft Test[] = {
+		{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", 6, 119060324ULL},
+		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 5, 193690690ULL},
+		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 7, 178633661ULL},
+		{"r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ -", 6, 706045033ULL},
+		{NULL, 0, 0}
+	};
+
+	uint64_t total = 0;
+	auto start = std::chrono::high_resolution_clock::now();
+
+	for (unsigned i = 0; Test[i].s; i++) {
+		std::cout << Test[i].s << std::endl;
+		B.set_fen(Test[i].s);
+		if (perft(B, Test[i].depth, 0) != Test[i].value) {
+			std::cerr << "Incorrect perft" << std::endl;
+			return false;
+		}
+		total += Test[i].value;
+	}
+
+	auto stop = std::chrono::high_resolution_clock::now();
+	int elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+	std::cout << "speed: " << (unsigned)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
+
+	return true;
 }

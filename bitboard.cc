@@ -1,13 +1,13 @@
 /*
- * Zinc, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ * DiscoCheck, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
  *
- * Zinc is free software: you can redistribute it and/or modify it under the terms of the GNU General
- * Public License as published by the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * DiscoCheck is free software: you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
  *
- * Zinc is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the
- * implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
- * Public License for more details.
+ * DiscoCheck is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
@@ -18,7 +18,7 @@
 
 bool BitboardInitialized = false;
 
-uint64_t zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
+Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
 uint64_t KAttacks[NB_SQUARE], NAttacks[NB_SQUARE], PAttacks[NB_COLOR][NB_SQUARE];
 uint64_t BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 uint64_t Between[NB_SQUARE][NB_SQUARE], Direction[NB_SQUARE][NB_SQUARE];
@@ -29,16 +29,16 @@ namespace
 	{
 		PRNG prng;
 
-		for (unsigned c = White; c <= Black; c++)
-			for (unsigned p = Pawn; p <= King; p++)
-				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = prng.draw());
+		for (int c = WHITE; c <= BLACK; c++)
+			for (int p = PAWN; p <= KING; p++)
+				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand<Key>());
 
-		zob_turn = prng.draw();
-		for (unsigned crights = 0; crights < 16; zob_castle[crights++] = prng.draw());
-		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = prng.draw());
+		zob_turn = prng.rand<Key>();
+		for (unsigned crights = 0; crights < 16; zob_castle[crights++] = prng.rand<Key>());
+		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = prng.rand<Key>());
 	}
 
-	void safe_add_bit(uint64_t *b, Rank r, File f)
+	void safe_add_bit(uint64_t *b, int r, int f)
 	{
 		if (rank_file_ok(r, f))
 			set_bit(b, square(r, f));
@@ -50,16 +50,16 @@ namespace
 		memset(Between, 0, sizeof(Between));
 		memset(Direction, 0, sizeof(Direction));
 
-		for (Square sq = A1; sq <= H8; ++sq) {
-			Rank r = rank(sq);
-			File f = file(sq);
+		for (unsigned sq = A1; sq <= H8; ++sq) {
+			int r = rank(sq);
+			int f = file(sq);
 
 			for (unsigned i = 0; i < 8; i++) {
-				uint64_t mask = 0;
+				Bitboard mask = 0;
 				int dr = dir[i][0], df = dir[i][1];
-				Rank _r;
-				File _f;
-				Square _sq;
+				int _r;
+				int _f;
+				unsigned _sq;
 
 				for (_r = r + dr, _f = f + df;
 				        rank_file_ok(_r, _f); _r += dr,_f += df) {
@@ -426,9 +426,9 @@ namespace
 		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
 		const int Pdir[2][2] = { {1,-1}, {1,1} };
 
-		for (Square sq = A1; sq <= H8; ++sq) {
-			const Rank r = rank(sq);
-			const File f = file(sq);
+		for (unsigned sq = A1; sq <= H8; ++sq) {
+			const int r = rank(sq);
+			const int f = file(sq);
 
 			NAttacks[sq] = KAttacks[sq] = 0;
 			for (unsigned d = 0; d < 8; d++) {
@@ -436,10 +436,10 @@ namespace
 				safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 			}
 
-			PAttacks[White][sq] = PAttacks[Black][sq] = 0;
+			PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
 			for (unsigned d = 0; d < 2; d++) {
-				safe_add_bit(&PAttacks[White][sq], r + Pdir[d][0], f + Pdir[d][1]);
-				safe_add_bit(&PAttacks[Black][sq], r - Pdir[d][0], f - Pdir[d][1]);
+				safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
+				safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
 			}
 
 			BPseudoAttacks[sq] = bishop_attack(sq, 0);
@@ -461,23 +461,23 @@ void init_bitboard()
 	BitboardInitialized = true;
 }
 
-Square first_bit(uint64_t b)
+unsigned first_bit(uint64_t b)
 {
-	return Square(BitTable[((b & -b) * 0x218a392cd3d5dbfULL) >> 58]);
+	return unsigned(BitTable[((b & -b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
-Square next_bit(uint64_t *b)
+unsigned next_bit(uint64_t *b)
 {
 	uint64_t _b = *b;
 	*b &= *b - 1;
-	return Square(BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58]);
+	return unsigned(BitTable[((_b & -_b) * 0x218a392cd3d5dbfULL) >> 58]);
 }
 
 void print_bitboard(std::ostream& ostrm, uint64_t b)
 {
-	for (Rank r = Rank8; r >= Rank1; --r) {
-		for (File f = FileA; f <= FileH; ++f) {
-			Square sq = square(r, f);
+	for (int r = RANK_8; r >= RANK_1; --r) {
+		for (int f = FILE_A; f <= FILE_H; ++f) {
+			unsigned sq = square(r, f);
 			char c = test_bit(b, sq) ? 'X' : '.';
 			ostrm << ' ' << c;
 		}
@@ -485,23 +485,23 @@ void print_bitboard(std::ostream& ostrm, uint64_t b)
 	}
 }
 
-uint64_t piece_attack(Piece piece, Square sq, uint64_t occ)
+uint64_t piece_attack(int piece, unsigned sq, uint64_t occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
 	assert(BitboardInitialized);
-	assert(Knight <= piece && piece <= King && square_ok(sq));
+	assert(KNIGHT <= piece && piece <= KING && square_ok(sq));
 
 	switch (piece) {
-		case Knight:
+		case KNIGHT:
 			return NAttacks[sq];
-		case Bishop:
+		case BISHOP:
 			return bishop_attack(sq, occ);
-		case Rook:
+		case ROOK:
 			return rook_attack(sq, occ);
-		case Queen:
+		case QUEEN:
 			return bishop_attack(sq, occ) | rook_attack(sq, occ);
-		case King:
+		case KING:
 			return KAttacks[sq];
 		default:
 			assert(false);
@@ -509,14 +509,14 @@ uint64_t piece_attack(Piece piece, Square sq, uint64_t occ)
 	}
 }
 
-uint64_t bishop_attack(Square sq, uint64_t occ)
+uint64_t bishop_attack(unsigned sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_b_indices[sq]
 	         + (((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq]));
 }
 
-uint64_t rook_attack(Square sq, uint64_t occ)
+uint64_t rook_attack(unsigned sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_r_indices[sq]
