@@ -12,9 +12,13 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "uci.h"
+#pragma once
+#include "board.h"
 
-int main ()
-{
-	loop();
-}
+struct SearchLimits {
+	SearchLimits(): time(0), inc(0), movetime(0), depth(0), nodes(0) {}
+	int time, inc, movetime, depth;
+	uint64_t nodes;
+};
+
+move_t bestmove(Board& B, const SearchLimits& sl);

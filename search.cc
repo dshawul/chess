@@ -12,9 +12,15 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "uci.h"
+#include "search.h"
+#include "prng.h"
 
-int main ()
+move_t bestmove(Board& B, const SearchLimits& sl)
 {
-	loop();
+	// FIXME: play pseudo-random moves for now
+	move_t mlist[MAX_MOVES];
+	move_t *end = gen_moves(B, mlist);
+	int count = end - mlist;
+	int idx = PRNG().rand<int>() % count;
+	return mlist[idx];
 }
