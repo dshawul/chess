@@ -88,6 +88,8 @@ namespace
 				is >> sl.time;
 			else if (token == (B.get_turn() ? "binc" : "winc"))
 				is >> sl.inc;
+			else if (token == "movestogo")
+				is >> sl.movestogo;
 			else if (token == "movetime")
 				is >> sl.movetime;
 			else if (token == "depth")

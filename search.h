@@ -16,8 +16,8 @@
 #include "board.h"
 
 struct SearchLimits {
-	SearchLimits(): time(0), inc(0), movetime(0), depth(0), nodes(0) {}
-	int time, inc, movetime, depth;
+	SearchLimits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0) {}
+	int time, inc, movetime, depth, movestogo;
 	uint64_t nodes;
 };
 
