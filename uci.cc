@@ -49,6 +49,8 @@ void loop()
 			go(B, is);
 		else if (token == "isready")
 			std::cout << "readyok" << std::endl;
+		else if (token == "eval")
+			std::cout << B << std::endl;
 	}
 }
 

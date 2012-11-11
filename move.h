@@ -12,9 +12,12 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "uci.h"
+#pragma once
+#include "board.h"
 
-int main ()
-{
-	loop();
-}
+extern int move_is_check(move_t m);
+extern bool move_is_castling(move_t m);
+
+extern move_t string_to_move(const Board& B, const std::string& s);
+extern std::string move_to_san(const Board& B, move_t m);
+extern std::string move_to_string(move_t m);

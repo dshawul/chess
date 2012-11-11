@@ -12,9 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "uci.h"
+#pragma once
+#include "move.h"
 
-int main ()
-{
-	loop();
-}
+int see(const Board& B, move_t m);
+int see_sign(const Board& B, move_t m);
+
+bool test_see();

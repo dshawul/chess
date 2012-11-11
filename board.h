@@ -106,27 +106,3 @@ inline int pawn_push(int color, int sq)
 	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
 	return color ? sq - 8 : sq + 8;
 }
-
-/* move.cc */
-
-extern int move_is_check(move_t m);
-extern bool move_is_castling(move_t m);
-
-extern move_t string_to_move(const Board& B, const std::string& s);
-extern std::string move_to_san(const Board& B, move_t m);
-extern std::string move_to_string(move_t m);
-
-/* movegen.cc */
-
-extern uint64_t perft(Board& B, int depth, int ply);
-
-extern move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves);
-extern move_t *gen_castling(const Board& B, move_t *mlist);
-extern move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub_promotions);
-extern move_t *gen_evasion(const Board& B, move_t *mlist);
-extern move_t *gen_moves(const Board& B, move_t *mlist);
-
-/* see.cc */
-
-int see(const Board& B, move_t m);
-int see_sign(const Board& B, move_t m);

@@ -13,7 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "board.h"
+#include "movegen.h"
 
 struct SearchLimits {
 	SearchLimits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0) {}

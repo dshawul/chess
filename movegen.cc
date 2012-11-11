@@ -13,7 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include <chrono>
-#include "board.h"
+#include "movegen.h"
 
 namespace
 {
@@ -326,14 +326,13 @@ uint64_t perft(Board& B, int depth, int ply)
 
 bool test_perft()
 {
-	init_bitboard();
 	Board B;
 
-	typedef struct {
+	struct TestPerft {
 		const char *s;
 		int depth;
 		uint64_t value;
-	} TestPerft;
+	};
 
 	TestPerft Test[] = {
 		{"rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq -", 6, 119060324ULL},
@@ -344,7 +343,8 @@ bool test_perft()
 	};
 
 	uint64_t total = 0;
-	auto start = std::chrono::high_resolution_clock::now();
+	using namespace std::chrono;
+	auto start = high_resolution_clock::now();
 
 	for (int i = 0; Test[i].s; i++) {
 		std::cout << Test[i].s << std::endl;
@@ -356,9 +356,9 @@ bool test_perft()
 		total += Test[i].value;
 	}
 
-	auto stop = std::chrono::high_resolution_clock::now();
-	int elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-	std::cout << "speed: " << (int)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
+	auto stop = high_resolution_clock::now();
+	int elapsed = duration_cast<microseconds>(stop - start).count();
+	std::cout << "speed: " << (int)(total / (float)elapsed * 1e6) << " leaf/sec" << std::endl;
 
 	return true;
 }
