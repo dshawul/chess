@@ -57,7 +57,7 @@ int see(const Board& B, move_t m)
 	int piece = B.get_piece_on(fsq), capture;
 
 	// Determine captured piece
-	if (m.ep) {
+	if (m.flag == EN_PASSANT) {
 		clear_bit(&occ, pawn_push(opp_color(stm), tsq));
 		capture = PAWN;
 	} else
@@ -68,8 +68,8 @@ int see(const Board& B, move_t m)
 	clear_bit(&occ, fsq);
 
 	// Handle promotion
-	if (piece_ok(m.prom)) {
-		swap_list[0] += see_val[QUEEN] - see_val[PAWN];
+	if (m.flag == PROMOTION) {
+		swap_list[0] += see_val[m.get_prom()] - see_val[PAWN];
 		capture = QUEEN;
 	} else
 		capture = B.get_piece_on(fsq);

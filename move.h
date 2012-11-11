@@ -16,7 +16,6 @@
 #include "board.h"
 
 extern int move_is_check(move_t m);
-extern bool move_is_castling(move_t m);
 
 extern move_t string_to_move(const Board& B, const std::string& s);
 extern std::string move_to_san(const Board& B, move_t m);

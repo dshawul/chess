@@ -25,11 +25,6 @@ namespace
 	}
 }
 
-bool move_is_castling(const Board& B, move_t m)
-{
-	return B.get_piece_on(m.fsq) == KING && (m.tsq == m.fsq - 2 || m.tsq == m.fsq + 2);
-}
-
 int move_is_check(const Board& B, move_t m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
@@ -37,7 +32,7 @@ int move_is_check(const Board& B, move_t m)
  * returns 2 for a discovered check, 1 for any other check, 0 otherwise */
 {
 	const int us = B.get_turn(), them = opp_color(us);
-	const int fsq = m.fsq, tsq = m.tsq;
+	const int fsq = m.fsq, tsq = m.tsq, flag = m.flag;
 	int kpos = B.get_king_pos(them);
 
 	// test discovered check
@@ -45,7 +40,7 @@ int move_is_check(const Board& B, move_t m)
 	     && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
-	else if (m.prom == NO_PIECE) {
+	else if (flag != PROMOTION) {
 		const int piece = B.get_piece_on(fsq);
 		Bitboard tss = piece == PAWN ? PAttacks[us][tsq]
 		               : piece_attack(piece, tsq, B.st().occ);
@@ -53,7 +48,7 @@ int move_is_check(const Board& B, move_t m)
 			return 1;
 	}
 
-	if (m.ep) {
+	if (flag == EN_PASSANT) {
 		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
 		clear_bit(&occ, fsq);
@@ -63,7 +58,7 @@ int move_is_check(const Board& B, move_t m)
 		if ((B.get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 		    || (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
-	} else if (move_is_castling(B, m)) {
+	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
 		int rook_sq = (fsq + tsq) / 2;
 		Bitboard occ = B.st().occ;
@@ -72,11 +67,11 @@ int move_is_check(const Board& B, move_t m)
 		set_bit(&RQ, rook_sq);
 		if (RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
-	} else if (m.prom < NO_PIECE) {
+	} else if (flag == PROMOTION) {
 		// test check by the promoted piece
 		Bitboard occ = B.st().occ;
 		clear_bit(&occ, fsq);
-		if (test_bit(piece_attack(m.prom, tsq, occ), kpos))
+		if (test_bit(piece_attack(m.get_prom(), tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece
 	}
 
@@ -86,20 +81,17 @@ int move_is_check(const Board& B, move_t m)
 move_t string_to_move(const Board& B, const std::string& s)
 {
 	move_t m;
-
 	m.fsq = square(s[1]-'1', s[0]-'a');
 	m.tsq = square(s[3]-'1', s[2]-'a');
-	m.ep = B.get_piece_on(m.fsq) == PAWN && m.tsq == B.st().epsq;
+	m.flag = NORMAL;
+	
+	if (B.get_piece_on(m.fsq) == PAWN && m.tsq == B.st().epsq)
+		m.flag = EN_PASSANT;
 
-	if (s[4]) {
-		int piece;
-		for (piece = KNIGHT; piece <= QUEEN; ++piece)
-			if (PieceLabel[BLACK][piece] == s[4])
-				break;
-		assert(piece < KING);
-		m.prom = piece;
-	} else
-		m.prom = NO_PIECE;
+	if (s[4])
+		m.set_prom(PieceLabel[BLACK].find(s[4]));
+	else if (B.get_piece_on(m.fsq) == KING && (m.fsq+2 == m.tsq || m.tsq+2==m.fsq))
+		m.flag = CASTLING;
 
 	return m;
 }
@@ -111,8 +103,8 @@ std::string move_to_string(move_t m)
 	s << square_to_string(m.fsq);
 	s << square_to_string(m.tsq);
 
-	if (piece_ok(m.prom))
-		s << PieceLabel[BLACK][m.prom];
+	if (m.flag == PROMOTION)
+		s << PieceLabel[BLACK][m.get_prom()];
 
 	return s.str();
 }
@@ -122,10 +114,10 @@ std::string move_to_san(const Board& B, move_t m)
 	std::ostringstream s;
 	const int us = B.get_turn();
 	const int piece = B.get_piece_on(m.fsq);
-	const bool capture = m.ep || B.get_piece_on(m.tsq) != NO_PIECE, castling = move_is_castling(B, m);
+	const bool capture = m.flag == EN_PASSANT || B.get_piece_on(m.tsq) != NO_PIECE;
 
 	if (piece != PAWN) {
-		if (castling) {
+		if (m.flag == CASTLING) {
 			if (file(m.tsq) == FILE_C)
 				s << "OOO";
 			else
@@ -150,11 +142,11 @@ std::string move_to_san(const Board& B, move_t m)
 	if (capture)
 		s << 'x';
 
-	if (!castling)
+	if (m.flag != CASTLING)
 		s << square_to_string(m.tsq);
 
-	if (m.prom != NO_PIECE)
-		s << PieceLabel[WHITE][m.prom];
+	if (m.flag == PROMOTION)
+		s << PieceLabel[WHITE][m.get_prom()];
 
 	if (move_is_check(B, m))
 		s << '+';

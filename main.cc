@@ -12,9 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "uci.h"
+#include "movegen.h"
 
 int main ()
 {
-	loop();
+	init_bitboard();
+	test_perft();
 }

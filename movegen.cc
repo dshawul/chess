@@ -33,9 +33,9 @@ namespace
 		move_t m;
 		m.fsq = fsq;
 		m.tsq = tsq;
-		m.ep = tsq == B.st().epsq;
 
-		if (m.ep) {
+		if (tsq == B.st().epsq) {
+			m.flag = EN_PASSANT;
 			Bitboard occ = B.st().occ;
 			// play the ep capture on occ
 			clear_bit(&occ, m.fsq);
@@ -45,26 +45,22 @@ namespace
 			if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			    || (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 				return mlist;	// illegal move by indirect self check (through the ep captured pawn)
-		}
+		} else
+			m.flag = NORMAL;
 
-		// promotions
 		if (test_bit(PPromotionRank[us], tsq)) {
-			m.prom = QUEEN;
-			*mlist++ = m;
+			// promotion(s)
+			m.flag = PROMOTION;
+			m.set_prom(QUEEN); *mlist++ = m;
 			if (sub_promotions) {
-				m.prom = KNIGHT;
-				*mlist++ = m;
-				m.prom = ROOK;
-				*mlist++ = m;
-				m.prom = BISHOP;
-				*mlist++ = m;
+				m.set_prom(KNIGHT);	*mlist++ = m;
+				m.set_prom(ROOK);	*mlist++ = m;
+				m.set_prom(BISHOP);	*mlist++ = m;
 			}
 		}
-		// all other moves
-		else {
-			m.prom = NO_PIECE;
+		else
+			// non promotions: normal or en-passant
 			*mlist++ = m;
-		}
 
 		return mlist;
 	}
@@ -79,8 +75,7 @@ namespace
 
 		move_t m;
 		m.fsq = fsq;
-		m.ep = false;
-		m.prom = NO_PIECE;
+		m.flag = NORMAL;
 
 		if (test_bit(B.st().pinned, fsq))
 			tss &= Direction[kpos][fsq];
@@ -148,12 +143,11 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 
 	move_t m;
 	m.fsq = B.get_king_pos(us);
-	m.prom = NO_PIECE;
-	m.ep = 0;
+	m.flag = CASTLING;
 
 	if (B.st().crights & (OO << (2 * us))) {
 		Bitboard safe = 3ULL << (m.fsq + 1);	// must not be attacked
-		Bitboard empty = safe;						// must be empty
+		Bitboard empty = safe;					// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
 			m.tsq = m.fsq + 2;
@@ -162,7 +156,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 	}
 	if (B.st().crights & (OOO << (2 * us))) {
 		Bitboard safe = 3ULL << (m.fsq - 2);	// must not be attacked
-		Bitboard empty = safe | (1ULL << (m.fsq - 3));		// must be empty
+		Bitboard empty = safe | (1ULL << (m.fsq - 3));	// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
 			m.tsq = m.fsq - 2;

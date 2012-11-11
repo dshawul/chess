@@ -32,7 +32,7 @@ void Board::clear()
 	_st = game_stack;
 	memset(_st, 0, sizeof(game_info));
 	_st->epsq = NO_SQUARE;
-	_st->last_move = {0, 0, NO_PIECE, false};
+	_st->last_move = {0, 0, 0, NORMAL};
 	move_count = 1;
 
 	initialized = true;
@@ -191,7 +191,7 @@ void Board::play(move_t m)
 
 	// move our piece
 	clear_square(us, piece, fsq);
-	set_square(us, m.prom == NO_PIECE ? piece : m.prom, tsq);
+	set_square(us, m.flag == PROMOTION ? m.get_prom() : piece, tsq);
 
 	if (piece == PAWN) {
 		_st->rule50 = 0;
@@ -199,7 +199,7 @@ void Board::play(move_t m)
 		// set the epsq if double push
 		_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
-		if (m.ep)
+		if (m.flag == EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
 	} else {
 		_st->epsq = NO_SQUARE;
@@ -214,13 +214,16 @@ void Board::play(move_t m)
 			// update king_pos and clear crights
 			king_pos[us] = tsq;
 			_st->crights &= ~((OO | OOO) << (2 * us));
-			// move the rook (jump over the king)
-			if (tsq == fsq+2) {			// OO
-				clear_square(us, ROOK, us ? H8 : H1);
-				set_square(us, ROOK, us ? F8 : F1);
-			} else if (tsq == fsq-2) {	// OOO
-				clear_square(us, ROOK, us ? A8 : A1);
-				set_square(us, ROOK, us ? D8 : D1);
+			
+			if (m.flag == CASTLING) {
+				// rook jump
+				if (tsq == fsq+2) {			// OO
+					clear_square(us, ROOK, us ? H8 : H1);
+					set_square(us, ROOK, us ? F8 : F1);
+				} else if (tsq == fsq-2) {	// OOO
+					clear_square(us, ROOK, us ? A8 : A1);
+					set_square(us, ROOK, us ? D8 : D1);
+				}
 			}
 		}
 	}
@@ -253,11 +256,11 @@ void Board::undo()
 	const move_t m = st().last_move;
 	const int us = opp_color(turn), them = turn;
 	const int fsq = m.fsq, tsq = m.tsq;
-	const int piece = piece_ok(m.prom) ? PAWN : piece_on[tsq];
+	const int piece = m.flag == PROMOTION ? PAWN : piece_on[tsq];
 	const int capture = st().capture;
 
 	// move our piece back
-	clear_square(us, m.prom == NO_PIECE ? piece : m.prom, tsq, false);
+	clear_square(us, get_piece_on(tsq), tsq, false);	// get_piece_on() is to handle a promotion
 	set_square(us, piece, fsq, false);
 
 	// restore the captured piece (if any)
@@ -267,15 +270,18 @@ void Board::undo()
 	if (piece == KING) {
 		// update king_pos
 		king_pos[us] = fsq;
-		// undo rook jump (castling)
-		if (tsq == fsq+2) {			// OO
-			clear_square(us, ROOK, us ? F8 : F1, false);
-			set_square(us, ROOK, us ? H8 : H1, false);
-		} else if (tsq == fsq-2) {	// OOO
-			clear_square(us, ROOK, us ? D8 : D1, false);
-			set_square(us, ROOK, us ? A8 : A1, false);
+		
+		if (m.flag == CASTLING) {
+			// undo rook jump
+			if (tsq == fsq+2) {			// OO
+				clear_square(us, ROOK, us ? F8 : F1, false);
+				set_square(us, ROOK, us ? H8 : H1, false);
+			} else if (tsq == fsq-2) {	// OOO
+				clear_square(us, ROOK, us ? D8 : D1, false);
+				set_square(us, ROOK, us ? A8 : A1, false);
+			}
 		}
-	} else if (m.ep)	// restore the en passant captured pawn
+	} else if (m.flag == EN_PASSANT)	// restore the en passant captured pawn
 		set_square(them, PAWN, tsq + (us ? 8 : -8), false);
 
 	turn = us;

@@ -28,20 +28,37 @@ enum {
     OOO = 2		// Queen side castle (OOO = chess notation)
 };
 
+enum {
+	NORMAL,
+	EN_PASSANT,
+	PROMOTION,
+	CASTLING
+};
+
 struct move_t {
 	uint16_t fsq:6, tsq:6;
-	uint16_t prom:3;
-	uint16_t ep:1;
+	uint16_t prom:2;	// 0=Knight...3=Queen
+	uint16_t flag:2;	// 0=normal,1=ep,2=prom,3=castling
 
 	bool operator== (move_t m) const {
-		return fsq == m.fsq && tsq == m.tsq && prom == m.prom && ep == m.ep;
+		return fsq == m.fsq && tsq == m.tsq && flag == m.flag;
+	}
+	
+	int get_prom() const {
+		assert(flag == PROMOTION);
+		return prom + KNIGHT;
+	}
+	
+	void set_prom(int piece) {
+		assert(KNIGHT <= piece && piece <= QUEEN);
+		prom = piece - KNIGHT;
 	}
 };
 
 struct game_info {
 	int capture;				// piece just captured
-	int epsq;				// en passant square
-	int crights;			// castling rights, 4 bits in FEN order KQkq
+	int epsq;					// en passant square
+	int crights;				// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
 	Key key;					// base zobrist key
 	Bitboard pinned, dcheckers;	// pinned and discovery checkers for turn
