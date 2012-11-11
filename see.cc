@@ -20,8 +20,8 @@ namespace
 	{
 		assert(square_ok(sq));
 		
-		return (B.get_RQ() & rook_attack(sq, occ))
-		       | (B.get_BQ() & bishop_attack(sq, occ))
+		return (B.get_RQ() & RPseudoAttacks[sq] & rook_attack(sq, occ))
+		       | (B.get_BQ() & BPseudoAttacks[sq] & bishop_attack(sq, occ))
 		       | (NAttacks[sq] & B.get_N())
 		       | (KAttacks[sq] & B.get_K())
 		       | (PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
@@ -96,7 +96,8 @@ int see(const Board& B, move_t m)
 		// remove the piece (from wherever it came)
 		clear_bit(&occ, lsb(stm_attackers & B.get_pieces(stm, piece)));
 		// scan for new X-ray attacks through the vacated square
-		attackers |= (B.get_RQ() & rook_attack(tsq, occ)) | (B.get_BQ() & bishop_attack(tsq, occ));
+		attackers |= (B.get_RQ() & RPseudoAttacks[tsq] & rook_attack(tsq, occ))
+			| (B.get_BQ() & BPseudoAttacks[tsq] & bishop_attack(tsq, occ));
 		// cut out pieces we've already done
 		attackers &= occ;
 

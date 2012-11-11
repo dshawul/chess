@@ -36,7 +36,7 @@ enum {
 };
 
 struct move_t {
-	uint16_t fsq:6, tsq:6;
+	uint16_t fsq:8, tsq:8;
 	uint16_t prom:2;	// 0=Knight...3=Queen
 	uint16_t flag:2;	// 0=normal,1=ep,2=prom,3=castling
 
