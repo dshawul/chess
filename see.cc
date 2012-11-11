@@ -46,8 +46,7 @@ int see_sign(const Board& B, move_t m)
 }
 
 int see(const Board& B, move_t m)
-/* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant.
- */
+/* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant. */
 {
 	int fsq = m.fsq, tsq = m.tsq;
 	int stm = B.get_color_on(fsq);	// side to move
@@ -81,11 +80,11 @@ int see(const Board& B, move_t m)
 	if (!stm_attackers)
 		return swap_list[0];
 
-	/* The destination square is defended, which makes things rather more difficult to compute. We
-	 * proceed by building up a "swap list" containing the material gain or loss at each stop in a
-	 * sequence of captures to the destination square, where the sides alternately capture, and
-	 * always capture with the least valuable piece. After each capture, we look for new X-ray
-	 * attacks from behind the capturing piece. */
+	/* The destination square is defended, which makes things more complicated. We proceed by
+	 * building a "swap list" containing the material gain or loss at each stop in a sequence of
+	 * captures to the destination square, where the sides alternately capture, and always capture
+	 * with the least valuable piece. After each capture, we look for new X-ray attacks from behind
+	 * the capturing piece. */
 	do {
 		/* Locate the least valuable attacker for the side to move. The loop below looks like it is
 		 * potentially infinite, but it isn't. We know that the side to move still has at least one

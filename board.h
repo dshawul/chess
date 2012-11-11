@@ -20,7 +20,6 @@
 bool test_perft();
 
 #define MAX_PLY		0x400	// max number of plies for a game
-#define MAX_MOVES	0x80	// max number of legal moves
 
 /* Castling flags: those are for White, use << 2 for Black */
 enum {

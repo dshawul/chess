@@ -13,15 +13,28 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "move.h"
+#include "movegen.h"
 
-#define MAX_MOVES	0x80	// max number of legal moves
+class MoveSort
+{
+public:
+	enum GenType {
+		ALL,				// all legal moves
+		CAPTURES_CHECKS,	// captures and quiet checks
+		CAPTURES			// captures only
+	};
 
-extern uint64_t perft(Board& B, int depth, int ply);
+	struct Token {
+		move_t m;
+		int score;
+	};
 
-extern move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves);
-extern move_t *gen_castling(const Board& B, move_t *mlist);
-extern move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub_promotions);
-extern move_t *gen_evasion(const Board& B, move_t *mlist);
-extern move_t *gen_quiet_checks(const Board& B, move_t *mlist);
-extern move_t *gen_moves(const Board& B, move_t *mlist);
+	MoveSort(const Board& B, GenType type);
+	const Token& next();
+
+private:
+	Token list[MAX_MOVES];
+	int idx, count;
+	
+	move_t *generate(const Board& B, GenType type, move_t *mlist);
+};

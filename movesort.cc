@@ -12,16 +12,35 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#pragma once
-#include "move.h"
+#include "movesort.h"
 
-#define MAX_MOVES	0x80	// max number of legal moves
+MoveSort::MoveSort(const Board& B, GenType type)
+{
+	move_t mlist[MAX_MOVES];
+	move_t *end = generate(B, type, mlist);
+}
 
-extern uint64_t perft(Board& B, int depth, int ply);
+move_t *MoveSort::generate(const Board& B, GenType type, move_t *mlist)
+{
+	if (type == ALL)
+		return gen_moves(B, mlist);
+	else {
+		if (B.st().checkers)
+			return gen_evasion(B, mlist);
+		else {
+			move_t *end = mlist;
+			Bitboard targets = B.get_pieces(opp_color(B.get_turn())) | B.st().epsq_bb();
+			
+			end = gen_piece_moves(B, targets, end, true);
+			end = gen_pawn_moves(B, targets, end, false);
+			
+			if (type == CAPTURES_CHECKS)
+				end = gen_quiet_checks(B, end);
+			
+			return end;
+		}
+	}
+}
 
-extern move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves);
-extern move_t *gen_castling(const Board& B, move_t *mlist);
-extern move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub_promotions);
-extern move_t *gen_evasion(const Board& B, move_t *mlist);
-extern move_t *gen_quiet_checks(const Board& B, move_t *mlist);
-extern move_t *gen_moves(const Board& B, move_t *mlist);
+const MoveSort::Token& MoveSort::next()
+{}

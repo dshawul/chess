@@ -267,6 +267,38 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	return mlist;
 }
 
+move_t *gen_quiet_checks(const Board& B, move_t *mlist)
+/* Generates non capturing checks by pieces (not pawns nor the king) */
+{
+	assert(B.st().checkers);
+	const int us = B.get_turn(), them = opp_color(us);
+	const int kpos = B.get_king_pos(them);
+
+	// Piece quiet checks (direct + discovered)
+	for (int piece = KNIGHT; piece <= QUEEN; piece++) {
+		const Bitboard occ = B.st().occ;
+		const Bitboard check_squares = piece_attack(piece, kpos, occ);
+		Bitboard fss = B.get_pieces(us, piece);
+
+		while (fss) {
+			const int fsq = pop_lsb(&fss);
+			// possible destinations of piece on fsq
+			uint64_t attacks = piece_attack(piece, fsq, occ);
+			// direct checks
+			uint64_t tss = attacks & check_squares;
+			// revealed checks
+			if (test_bit(B.st().dcheckers, fsq))
+				tss |= attacks & ~Direction[kpos][fsq];
+			// exclude captures
+			tss &= ~occ;
+
+			mlist = make_piece_moves(B, fsq, tss, mlist);
+		}
+	}
+
+	return mlist;
+}
+
 move_t *gen_moves(const Board& B, move_t *mlist)
 /* Generates all moves in the position, using all the other specific move generators. This function
  * is quite fast but not flexible, and only used for debugging (eg. computing perft values) */
@@ -280,7 +312,7 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 		const Bitboard targets = ~B.get_pieces(B.get_turn());
 
 		// generate moves
-		mlist = gen_piece_moves(B, targets, mlist, 1);
+		mlist = gen_piece_moves(B, targets, mlist, true);
 		mlist = gen_pawn_moves(B, targets, mlist, true);
 
 		return mlist;
