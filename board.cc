@@ -318,44 +318,6 @@ Bitboard Board::calc_attacks(int color) const
 	return r;
 }
 
-int Board::get_color_on(int sq) const
-{
-	assert(initialized && square_ok(sq));
-	return test_bit(all[WHITE], sq) ? WHITE : (test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
-}
-
-Bitboard Board::get_N() const
-{
-	return get_pieces(WHITE, KNIGHT) | get_pieces(BLACK, KNIGHT);
-}
-
-Bitboard Board::get_K() const
-{
-	return get_pieces(WHITE, KING) | get_pieces(BLACK, KING);
-}
-
-Bitboard Board::get_RQ(int color) const
-{
-	assert(initialized && color_ok(color));
-	return b[color][ROOK] | b[color][QUEEN];
-}
-
-Bitboard Board::get_RQ() const
-{
-	return get_RQ(WHITE) | get_RQ(BLACK);
-}
-
-Bitboard Board::get_BQ(int color) const
-{
-	assert(initialized && color_ok(color));
-	return b[color][BISHOP] | b[color][QUEEN];
-}
-
-Bitboard Board::get_BQ() const
-{
-	return get_BQ(WHITE) | get_BQ(BLACK);
-}
-
 void Board::set_square(int color, int piece, int sq, bool play)
 {
 	assert(initialized);
@@ -441,46 +403,4 @@ Key Board::calc_key() const
 		}
 
 	return turn ? key ^ zob_turn : key;
-}
-
-int Board::get_piece_on(int sq) const
-{
-	assert(initialized && square_ok(sq));
-	return piece_on[sq];
-}
-
-Bitboard Board::get_pieces(int color) const
-{
-	assert(initialized && color_ok(color));
-	return all[color];
-}
-
-Bitboard Board::get_pieces(int color, int piece) const
-{
-	assert(initialized && color_ok(color) && piece_ok(piece));
-	return b[color][piece];
-}
-
-int Board::get_turn() const
-{
-	assert(initialized);
-	return turn;
-}
-
-int Board::get_king_pos(int c) const
-{
-	assert(initialized);
-	return king_pos[c];
-}
-
-const game_info& Board::st() const
-{
-	assert(initialized);
-	return *_st;
-}
-
-int Board::get_move_count() const
-{
-	assert(initialized);
-	return move_count;
 }

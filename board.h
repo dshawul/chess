@@ -122,3 +122,83 @@ inline int pawn_push(int color, int sq)
 	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
 	return color ? sq - 8 : sq + 8;
 }
+
+inline int Board::get_color_on(int sq) const
+{
+	assert(initialized && square_ok(sq));
+	return test_bit(all[WHITE], sq) ? WHITE : (test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
+}
+
+inline Bitboard Board::get_N() const
+{
+	return get_pieces(WHITE, KNIGHT) | get_pieces(BLACK, KNIGHT);
+}
+
+inline Bitboard Board::get_K() const
+{
+	return get_pieces(WHITE, KING) | get_pieces(BLACK, KING);
+}
+
+inline Bitboard Board::get_RQ(int color) const
+{
+	assert(initialized && color_ok(color));
+	return b[color][ROOK] | b[color][QUEEN];
+}
+
+inline Bitboard Board::get_RQ() const
+{
+	return get_RQ(WHITE) | get_RQ(BLACK);
+}
+
+inline Bitboard Board::get_BQ(int color) const
+{
+	assert(initialized && color_ok(color));
+	return b[color][BISHOP] | b[color][QUEEN];
+}
+
+inline Bitboard Board::get_BQ() const
+{
+	return get_BQ(WHITE) | get_BQ(BLACK);
+}
+
+inline int Board::get_piece_on(int sq) const
+{
+	assert(initialized && square_ok(sq));
+	return piece_on[sq];
+}
+
+inline Bitboard Board::get_pieces(int color) const
+{
+	assert(initialized && color_ok(color));
+	return all[color];
+}
+
+inline Bitboard Board::get_pieces(int color, int piece) const
+{
+	assert(initialized && color_ok(color) && piece_ok(piece));
+	return b[color][piece];
+}
+
+inline int Board::get_turn() const
+{
+	assert(initialized);
+	return turn;
+}
+
+inline int Board::get_king_pos(int c) const
+{
+	assert(initialized);
+	return king_pos[c];
+}
+
+inline const game_info& Board::st() const
+{
+	assert(initialized);
+	return *_st;
+}
+
+inline int Board::get_move_count() const
+{
+	assert(initialized);
+	return move_count;
+}

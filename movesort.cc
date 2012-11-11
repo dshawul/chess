@@ -29,10 +29,10 @@ move_t *MoveSort::generate(const Board& B, GenType type, move_t *mlist)
 			return gen_evasion(B, mlist);
 		else {
 			move_t *end = mlist;
-			Bitboard targets = B.get_pieces(opp_color(B.get_turn())) | B.st().epsq_bb();
+			Bitboard enemies = B.get_pieces(opp_color(B.get_turn()));
 			
-			end = gen_piece_moves(B, targets, end, true);
-			end = gen_pawn_moves(B, targets, end, false);
+			end = gen_piece_moves(B, enemies, end, true);
+			end = gen_pawn_moves(B, enemies | B.st().epsq_bb(), end, false);
 			
 			if (type == CAPTURES_CHECKS)
 				end = gen_quiet_checks(B, end);
