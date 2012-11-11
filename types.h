@@ -41,27 +41,27 @@ inline bool rank_file_ok(int r, int f)
 	return 0 <= r && r < NB_RANK_FILE && 0 <= f && f < NB_RANK_FILE;
 }
 
-inline bool square_ok(unsigned sq)
+inline bool square_ok(int sq)
 {
 	return A1 <= sq && sq <= H8;
 }
 
-inline int rank(unsigned sq)
+inline int rank(int sq)
 {
 	assert(square_ok(sq));
 	return int(int(sq) / 8);
 }
 
-inline int file(unsigned sq)
+inline int file(int sq)
 {
 	assert(square_ok(sq));
 	return int(int(sq) % 8);
 }
 
-inline unsigned square(int r, int f)
+inline int square(int r, int f)
 {
 	assert(rank_file_ok(r, f));
-	return unsigned(8 * int(r) + int(f));
+	return int(8 * int(r) + int(f));
 }
 
 /* Piece */

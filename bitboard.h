@@ -43,28 +43,28 @@ extern uint64_t BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 extern void init_bitboard();
 
 /* Squares attacked by a bishop/rook for a given board occupancy */
-extern uint64_t bishop_attack(unsigned sq, uint64_t occ);
-extern uint64_t rook_attack(unsigned sq, uint64_t occ);
+extern uint64_t bishop_attack(int sq, uint64_t occ);
+extern uint64_t rook_attack(int sq, uint64_t occ);
 
 /* squares attacked by piece on sq, for a given occupancy */
-extern uint64_t piece_attack(int piece, unsigned sq, uint64_t occ);
+extern uint64_t piece_attack(int piece, int sq, uint64_t occ);
 
 /* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
 extern void print_bitboard(std::ostream& ostrm, uint64_t b);
 
-inline void set_bit(uint64_t *b, unsigned sq)
+inline void set_bit(uint64_t *b, int sq)
 {
 	assert(square_ok(sq));
 	*b |= 1ULL << sq;
 }
 
-inline void clear_bit(uint64_t *b, unsigned sq)
+inline void clear_bit(uint64_t *b, int sq)
 {
 	assert(square_ok(sq));
 	*b &= ~(1ULL << sq);
 }
 
-inline bool test_bit(uint64_t b, unsigned sq)
+inline bool test_bit(uint64_t b, int sq)
 {
 	assert(square_ok(sq));
 	return b & (1ULL << sq);
@@ -85,14 +85,14 @@ inline bool several_bits(uint64_t b)
 
 /* lsb: assembly for x86_64, GCC or ICC */
 
-inline unsigned lsb(Bitboard b) {
+inline int lsb(Bitboard b) {
 	Bitboard index;
 	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
 	return index;
 }
 
-inline unsigned pop_lsb(Bitboard *b) {
-	const unsigned s = lsb(*b);
+inline int pop_lsb(Bitboard *b) {
+	const int s = lsb(*b);
 	*b &= *b - 1;
 	return s;
 }

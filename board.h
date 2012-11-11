@@ -16,6 +16,7 @@
 #include <string>
 #include "bitboard.h"
 
+/* Runs a set of perft(). This is the unit test to validate ANY modification in the board code. */
 bool test_perft();
 
 #define MAX_PLY		0x400	// max number of plies for a game
@@ -39,8 +40,8 @@ struct move_t {
 
 struct game_info {
 	int capture;				// piece just captured
-	unsigned epsq;				// en passant square
-	unsigned crights;			// castling rights, 4 bits in FEN order KQkq
+	int epsq;				// en passant square
+	int crights;			// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
 	Key key;					// base zobrist key
 	uint64_t pinned, dcheckers;	// pinned and discovery checkers for turn
@@ -59,13 +60,13 @@ class Board
 	int piece_on[NB_SQUARE];
 	game_info game_stack[MAX_PLY], *_st;
 	int turn;
-	unsigned king_pos[NB_COLOR];
+	int king_pos[NB_COLOR];
 	int move_count;				// full move count, as per FEN standard
 	bool initialized;
 
 	void clear();
-	void set_square(int color, int piece, unsigned sq, bool play = true);
-	void clear_square(int color, int piece, unsigned sq, bool play = true);
+	void set_square(int color, int piece, int sq, bool play = true);
+	void clear_square(int color, int piece, int sq, bool play = true);
 
 	Key calc_key() const;
 	uint64_t calc_attacks(int color) const;
@@ -77,9 +78,9 @@ public:
 
 	int get_turn() const;
 	int get_move_count() const;
-	unsigned get_king_pos(int c) const;
-	int get_color_on(unsigned sq) const;
-	int get_piece_on(unsigned sq) const;
+	int get_king_pos(int c) const;
+	int get_color_on(int sq) const;
+	int get_piece_on(int sq) const;
 
 	uint64_t get_pieces(int color) const;
 	uint64_t get_pieces(int color, int piece) const;
@@ -91,21 +92,29 @@ public:
 
 	void play(move_t m);
 	void undo();
-
-	bool is_castling(move_t m) const;
-	unsigned is_check(move_t m) const;
-
-	move_t string_to_move(const std::string& s);
-	std::string move_to_string(move_t m);
-	std::string move_to_san(move_t m);
 };
 
 extern const std::string PieceLabel[NB_COLOR];
-std::ostream& operator<< (std::ostream& ostrm, const Board& B);
+extern std::ostream& operator<< (std::ostream& ostrm, const Board& B);
+
+inline int pawn_push(int color, int sq)
+{
+	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
+	return color ? sq - 8 : sq + 8;
+}
+
+/* move.cc */
+
+extern int move_is_check(move_t m);
+extern bool move_is_castling(move_t m);
+
+extern move_t string_to_move(const Board& B, const std::string& s);
+extern std::string move_to_san(const Board& B, move_t m);
+extern std::string move_to_string(move_t m);
 
 /* movegen.cc */
 
-extern uint64_t perft(Board& B, unsigned depth, unsigned ply);
+extern uint64_t perft(Board& B, int depth, int ply);
 
 extern move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool king_moves);
 extern move_t *gen_castling(const Board& B, move_t *mlist);
@@ -115,9 +124,3 @@ extern move_t *gen_moves(const Board& B, move_t *mlist);
 
 extern bool has_piece_moves(const Board& B, uint64_t targets);
 extern bool has_moves(const Board& B);
-
-inline unsigned pawn_push(int color, unsigned sq)
-{
-	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
-	return color ? sq - 8 : sq + 8;
-}

@@ -31,11 +31,11 @@ namespace
 
 		for (int c = WHITE; c <= BLACK; c++)
 			for (int p = PAWN; p <= KING; p++)
-				for (unsigned sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand<Key>());
+				for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand<Key>());
 
 		zob_turn = prng.rand<Key>();
-		for (unsigned crights = 0; crights < 16; zob_castle[crights++] = prng.rand<Key>());
-		for (unsigned sq = A1; sq <= H8; zob_ep[sq++] = prng.rand<Key>());
+		for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand<Key>());
+		for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand<Key>());
 	}
 
 	void safe_add_bit(uint64_t *b, int r, int f)
@@ -50,16 +50,16 @@ namespace
 		memset(Between, 0, sizeof(Between));
 		memset(Direction, 0, sizeof(Direction));
 
-		for (unsigned sq = A1; sq <= H8; ++sq) {
+		for (int sq = A1; sq <= H8; ++sq) {
 			int r = rank(sq);
 			int f = file(sq);
 
-			for (unsigned i = 0; i < 8; i++) {
+			for (int i = 0; i < 8; i++) {
 				Bitboard mask = 0;
 				int dr = dir[i][0], df = dir[i][1];
 				int _r;
 				int _f;
-				unsigned _sq;
+				int _sq;
 
 				for (_r = r + dr, _f = f + df;
 				        rank_file_ok(_r, _f); _r += dr,_f += df) {
@@ -78,7 +78,7 @@ namespace
 		}
 	}
 
-	const unsigned magic_bb_r_shift[NB_SQUARE] = {
+	const int magic_bb_r_shift[NB_SQUARE] = {
 		52, 53, 53, 53, 53, 53, 53, 52,
 		53, 54, 54, 54, 54, 54, 54, 53,
 		53, 54, 54, 54, 54, 54, 54, 53,
@@ -127,7 +127,7 @@ namespace
 		0x6E10101010101000ull, 0x5E20202020202000ull, 0x3E40404040404000ull, 0x7E80808080808000ull
 	};
 
-	const unsigned magic_bb_b_shift[NB_SQUARE] = {
+	const int magic_bb_b_shift[NB_SQUARE] = {
 		58, 59, 59, 59, 59, 59, 59, 58,
 		59, 59, 59, 59, 59, 59, 59, 59,
 		59, 59, 57, 57, 57, 57, 59, 59,
@@ -217,7 +217,7 @@ namespace
 		magic_bb_r_db+49152, magic_bb_r_db+55296, magic_bb_r_db+79872, magic_bb_r_db+98304
 	};
 
-	uint64_t init_magic_bb_r(unsigned sq, uint64_t occ)
+	uint64_t init_magic_bb_r(int sq, uint64_t occ)
 	{
 		uint64_t ret = 0;
 		uint64_t bit;
@@ -255,7 +255,7 @@ namespace
 		return ret;
 	}
 
-	uint64_t init_magic_bb_b(unsigned sq, uint64_t occ)
+	uint64_t init_magic_bb_b(int sq, uint64_t occ)
 	{
 		uint64_t ret = 0;
 		uint64_t bit, bit2;
@@ -308,10 +308,10 @@ namespace
 		return ret;
 	}
 
-	uint64_t init_magic_bb_occ(const unsigned* sq, unsigned numSq, uint64_t linocc)
+	uint64_t init_magic_bb_occ(const int* sq, int numSq, uint64_t linocc)
 	{
 		uint64_t ret = 0;
-		for(unsigned i = 0; i < numSq; i++)
+		for(int i = 0; i < numSq; i++)
 			if (linocc & (1ULL << i))
 				ret |= 1ULL << sq[i];
 		return ret;
@@ -319,7 +319,7 @@ namespace
 
 	void init_magics()
 	{
-		const unsigned init_magic_bitpos64_db[64] = {
+		const int init_magic_bitpos64_db[64] = {
 			63,  0, 58,  1, 59, 47, 53,  2,
 			60, 39, 48, 27, 54, 33, 42,  3,
 			61, 51, 37, 40, 49, 18, 28, 20,
@@ -380,9 +380,9 @@ namespace
 			magic_bb_r_db+98304
 		};
 
-		for(unsigned i = A1; i <= H8; i++) {
-			unsigned sq[NB_SQUARE];
-			unsigned numSq = 0;
+		for(int i = A1; i <= H8; i++) {
+			int sq[NB_SQUARE];
+			int numSq = 0;
 			uint64_t temp = magic_bb_b_mask[i];
 			while(temp) {
 				uint64_t bit = temp & -temp;
@@ -396,9 +396,9 @@ namespace
 			}
 		}
 
-		for(unsigned i = A1; i <= H8; i++) {
-			unsigned sq[NB_SQUARE];
-			unsigned numSq = 0;
+		for(int i = A1; i <= H8; i++) {
+			int sq[NB_SQUARE];
+			int numSq = 0;
 			uint64_t temp = magic_bb_r_mask[i];
 			while(temp) {
 				uint64_t bit = temp & -temp;
@@ -419,18 +419,18 @@ namespace
 		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
 		const int Pdir[2][2] = { {1,-1}, {1,1} };
 
-		for (unsigned sq = A1; sq <= H8; ++sq) {
+		for (int sq = A1; sq <= H8; ++sq) {
 			const int r = rank(sq);
 			const int f = file(sq);
 
 			NAttacks[sq] = KAttacks[sq] = 0;
-			for (unsigned d = 0; d < 8; d++) {
+			for (int d = 0; d < 8; d++) {
 				safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
 				safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 			}
 
 			PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
-			for (unsigned d = 0; d < 2; d++) {
+			for (int d = 0; d < 2; d++) {
 				safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
 				safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
 			}
@@ -458,7 +458,7 @@ void print_bitboard(std::ostream& ostrm, uint64_t b)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
-			unsigned sq = square(r, f);
+			int sq = square(r, f);
 			char c = test_bit(b, sq) ? 'X' : '.';
 			ostrm << ' ' << c;
 		}
@@ -466,7 +466,7 @@ void print_bitboard(std::ostream& ostrm, uint64_t b)
 	}
 }
 
-uint64_t piece_attack(int piece, unsigned sq, uint64_t occ)
+uint64_t piece_attack(int piece, int sq, uint64_t occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
@@ -490,14 +490,14 @@ uint64_t piece_attack(int piece, unsigned sq, uint64_t occ)
 	}
 }
 
-uint64_t bishop_attack(unsigned sq, uint64_t occ)
+uint64_t bishop_attack(int sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_b_indices[sq]
 	         + (((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq]));
 }
 
-uint64_t rook_attack(unsigned sq, uint64_t occ)
+uint64_t rook_attack(int sq, uint64_t occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_r_indices[sq]

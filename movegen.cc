@@ -17,14 +17,14 @@
 
 namespace
 {
-	move_t *make_pawn_moves(const Board& B, unsigned fsq, unsigned tsq, move_t *mlist,
+	move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist,
 	                        bool sub_promotions)
 	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
 		assert(square_ok(fsq) && square_ok(tsq));
 		const int us = B.get_turn(), them = opp_color(us);
-		unsigned kpos = B.get_king_pos(us);
+		int kpos = B.get_king_pos(us);
 
 		// filter self check through fsq
 		if (test_bit(B.st().pinned, fsq) && !test_bit(Direction[kpos][fsq], tsq))
@@ -69,13 +69,13 @@ namespace
 		return mlist;
 	}
 
-	move_t *make_piece_moves(const Board& B, unsigned fsq, uint64_t tss, move_t *mlist)
+	move_t *make_piece_moves(const Board& B, int fsq, uint64_t tss, move_t *mlist)
 	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
 	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
 	 * other words, we never put our King in check before calling this function */
 	{
 		assert(square_ok(fsq));
-		const unsigned kpos = B.get_king_pos(B.get_turn());
+		const int kpos = B.get_king_pos(B.get_turn());
 
 		move_t m;
 		m.fsq = fsq;
@@ -106,7 +106,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Knight Moves
 	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -114,7 +114,7 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
@@ -122,14 +122,14 @@ move_t *gen_piece_moves(const Board& B, uint64_t targets, move_t *mlist, bool ki
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// King moves (king_moves == false is only used for check escapes)
 	if (king_moves) {
-		unsigned fsq = B.get_king_pos(us);
+		int fsq = B.get_king_pos(us);
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
 		uint64_t tss = KAttacks[fsq] & targets & ~B.st().attacked;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
@@ -211,7 +211,7 @@ move_t *gen_pawn_moves(const Board& B, uint64_t targets, move_t *mlist, bool sub
 	/* Then we loop on the tss and find the possible from square(s) */
 
 	while (tss) {
-		const unsigned tsq = pop_lsb(&tss);
+		const int tsq = pop_lsb(&tss);
 
 		if (test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
@@ -235,9 +235,9 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 {
 	assert(B.st().checkers);
 	const int us = B.get_turn();
-	const unsigned kpos = B.get_king_pos(us);
+	const int kpos = B.get_king_pos(us);
 	const uint64_t checkers = B.st().checkers;
-	const unsigned csq = lsb(checkers);	// checker square
+	const int csq = lsb(checkers);	// checker square
 	const int cpiece = B.get_piece_on(csq);		// checker piece
 	uint64_t tss;
 
@@ -247,7 +247,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	// The king must also get out of all sliding checkers' firing lines
 	uint64_t _checkers = checkers;
 	while (_checkers) {
-		const unsigned _csq = pop_lsb(&_checkers);
+		const int _csq = pop_lsb(&_checkers);
 		const int _cpiece = B.get_piece_on(_csq);
 		if (is_slider(_cpiece))
 			tss &= ~Direction[_csq][kpos];
@@ -297,14 +297,14 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 {
 	assert(!B.st().checkers);			// do not use when in check (use gen_evasion)
 	const int us = B.get_turn();
-	const unsigned kpos = B.get_king_pos(us);
+	const int kpos = B.get_king_pos(us);
 	assert(!(targets & B.get_pieces(us)));	// do not overwrite our pieces
 	uint64_t fss;
 
 	// Knight Moves
 	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = NAttacks[fsq] & targets;
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -313,7 +313,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	}
 
 	// King moves
-	unsigned fsq = B.get_king_pos(us);
+	int fsq = B.get_king_pos(us);
 	uint64_t tss = KAttacks[fsq] & targets & ~B.st().attacked;
 	if (tss)
 		return true;
@@ -321,7 +321,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = targets & rook_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -332,7 +332,7 @@ bool has_piece_moves(const Board& B, uint64_t targets)
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		unsigned fsq = pop_lsb(&fss);
+		int fsq = pop_lsb(&fss);
 		uint64_t tss = targets & bishop_attack(fsq, B.st().occ);
 		if (test_bit(B.st().pinned, fsq))	// pinned piece
 			tss &= Direction[kpos][fsq];	// can only move on the pin-ray
@@ -360,7 +360,7 @@ bool has_moves(const Board& B)
 	return false;
 }
 
-uint64_t perft(Board& B, unsigned depth, unsigned ply)
+uint64_t perft(Board& B, int depth, int ply)
 /* Calculates perft(depth), and displays all perft(depth-1) in the initial position. This
  * decomposition is useful to debug an incorrect perft recursively, against a correct perft
  * generator */
@@ -384,13 +384,13 @@ uint64_t perft(Board& B, unsigned depth, unsigned ply)
 			B.undo();
 
 			if (!ply)
-				std::cout << B.move_to_string(*m) << '\t' << count_subtree << std::endl;
+				std::cout << move_to_string(*m) << '\t' << count_subtree << std::endl;
 		}
 	} else {
 		count = end - begin;
 		if (!ply)
 			for (m = begin; m < end; m++)
-				std::cout << B.move_to_string(*m) << std::endl;
+				std::cout << move_to_string(*m) << std::endl;
 	}
 
 	return count;
@@ -403,7 +403,7 @@ bool test_perft()
 
 	typedef struct {
 		const char *s;
-		unsigned depth;
+		int depth;
 		uint64_t value;
 	} TestPerft;
 
@@ -418,7 +418,7 @@ bool test_perft()
 	uint64_t total = 0;
 	auto start = std::chrono::high_resolution_clock::now();
 
-	for (unsigned i = 0; Test[i].s; i++) {
+	for (int i = 0; Test[i].s; i++) {
 		std::cout << Test[i].s << std::endl;
 		B.set_fen(Test[i].s);
 		if (perft(B, Test[i].depth, 0) != Test[i].value) {
@@ -430,7 +430,7 @@ bool test_perft()
 
 	auto stop = std::chrono::high_resolution_clock::now();
 	int elapsed = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-	std::cout << "speed: " << (unsigned)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
+	std::cout << "speed: " << (int)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
 
 	return true;
 }

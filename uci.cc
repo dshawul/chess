@@ -73,7 +73,7 @@ namespace
 
 		// Parse move list (if any)
 		while (is >> token) {
-			m = B.string_to_move(token);
+			m = string_to_move(B, token);
 			B.play(m);
 		}
 	}
@@ -99,6 +99,6 @@ namespace
 		}
 		
 		move_t m = bestmove(B, sl);		
-		std::cout << "bestmove " << B.move_to_string(m) << std::endl;
+		std::cout << "bestmove " << move_to_string(m) << std::endl;
 	}
 }
