@@ -52,19 +52,19 @@ extern uint64_t piece_attack(int piece, int sq, uint64_t occ);
 /* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
 extern void print_bitboard(std::ostream& ostrm, uint64_t b);
 
-inline void set_bit(uint64_t *b, int sq)
+inline void set_bit(uint64_t *b, unsigned sq)
 {
 	assert(square_ok(sq));
 	*b |= 1ULL << sq;
 }
 
-inline void clear_bit(uint64_t *b, int sq)
+inline void clear_bit(uint64_t *b, unsigned sq)
 {
 	assert(square_ok(sq));
 	*b &= ~(1ULL << sq);
 }
 
-inline bool test_bit(uint64_t b, int sq)
+inline bool test_bit(uint64_t b, unsigned sq)
 {
 	assert(square_ok(sq));
 	return b & (1ULL << sq);

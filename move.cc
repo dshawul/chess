@@ -45,16 +45,16 @@ int move_is_check(const Board& B, move_t m)
 	     && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
-	else if (m.promotion == NO_PIECE) {
+	else if (m.prom == NO_PIECE) {
 		const int piece = B.get_piece_on(fsq);
-		uint64_t tss = piece == PAWN ? PAttacks[us][tsq]
+		Bitboard tss = piece == PAWN ? PAttacks[us][tsq]
 		               : piece_attack(piece, tsq, B.st().occ);
 		if (test_bit(tss, kpos))
 			return 1;
 	}
 
 	if (m.ep) {
-		uint64_t occ = B.st().occ;
+		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
 		clear_bit(&occ, fsq);
 		clear_bit(&occ, tsq + (us ? 8 : -8));
@@ -66,17 +66,17 @@ int move_is_check(const Board& B, move_t m)
 	} else if (move_is_castling(B, m)) {
 		// position of the Rook after playing the castling move
 		int rook_sq = (fsq + tsq) / 2;
-		uint64_t occ = B.st().occ;
+		Bitboard occ = B.st().occ;
 		clear_bit(&occ, fsq);
-		uint64_t RQ = B.get_RQ(us);
+		Bitboard RQ = B.get_RQ(us);
 		set_bit(&RQ, rook_sq);
 		if (RQ & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
-	} else if (m.promotion < NO_PIECE) {
+	} else if (m.prom < NO_PIECE) {
 		// test check by the promoted piece
-		uint64_t occ = B.st().occ;
+		Bitboard occ = B.st().occ;
 		clear_bit(&occ, fsq);
-		if (test_bit(piece_attack(m.promotion, tsq, occ), kpos))
+		if (test_bit(piece_attack(m.prom, tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece
 	}
 
@@ -97,9 +97,9 @@ move_t string_to_move(const Board& B, const std::string& s)
 			if (PieceLabel[BLACK][piece] == s[4])
 				break;
 		assert(piece < KING);
-		m.promotion = piece;
+		m.prom = piece;
 	} else
-		m.promotion = NO_PIECE;
+		m.prom = NO_PIECE;
 
 	return m;
 }
@@ -111,8 +111,8 @@ std::string move_to_string(move_t m)
 	s << square_to_string(m.fsq);
 	s << square_to_string(m.tsq);
 
-	if (piece_ok(m.promotion))
-		s << PieceLabel[BLACK][m.promotion];
+	if (piece_ok(m.prom))
+		s << PieceLabel[BLACK][m.prom];
 
 	return s.str();
 }
@@ -132,7 +132,7 @@ std::string move_to_san(const Board& B, move_t m)
 				s << "OO";
 		} else {
 			s << PieceLabel[WHITE][piece];
-			uint64_t b = B.get_pieces(us, piece)
+			Bitboard b = B.get_pieces(us, piece)
 			             & piece_attack(piece, m.tsq, B.st().occ)
 			             & ~B.st().pinned;
 			if (several_bits(b)) {
@@ -153,8 +153,8 @@ std::string move_to_san(const Board& B, move_t m)
 	if (!castling)
 		s << square_to_string(m.tsq);
 
-	if (m.promotion != NO_PIECE)
-		s << PieceLabel[WHITE][m.promotion];
+	if (m.prom != NO_PIECE)
+		s << PieceLabel[WHITE][m.prom];
 
 	if (move_is_check(B, m))
 		s << '+';

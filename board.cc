@@ -191,7 +191,7 @@ void Board::play(move_t m)
 
 	// move our piece
 	clear_square(us, piece, fsq);
-	set_square(us, m.promotion == NO_PIECE ? piece : m.promotion, tsq);
+	set_square(us, m.prom == NO_PIECE ? piece : m.prom, tsq);
 
 	if (piece == PAWN) {
 		_st->rule50 = 0;
@@ -253,11 +253,11 @@ void Board::undo()
 	const move_t m = st().last_move;
 	const int us = opp_color(turn), them = turn;
 	const int fsq = m.fsq, tsq = m.tsq;
-	const int piece = piece_ok(m.promotion) ? PAWN : piece_on[tsq];
+	const int piece = piece_ok(m.prom) ? PAWN : piece_on[tsq];
 	const int capture = st().capture;
 
 	// move our piece back
-	clear_square(us, m.promotion == NO_PIECE ? piece : m.promotion, tsq, false);
+	clear_square(us, m.prom == NO_PIECE ? piece : m.prom, tsq, false);
 	set_square(us, piece, fsq, false);
 
 	// restore the captured piece (if any)
@@ -285,13 +285,13 @@ void Board::undo()
 	--_st;
 }
 
-uint64_t Board::calc_attacks(int color) const
+Bitboard Board::calc_attacks(int color) const
 {
 	assert(initialized);
 
 	// King, Knights
-	uint64_t r = KAttacks[king_pos[color]];
-	uint64_t fss = b[color][KNIGHT];
+	Bitboard r = KAttacks[king_pos[color]];
+	Bitboard fss = b[color][KNIGHT];
 	while (fss)
 		r |= NAttacks[pop_lsb(&fss)];
 
@@ -318,16 +318,36 @@ int Board::get_color_on(int sq) const
 	return test_bit(all[WHITE], sq) ? WHITE : (test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
 }
 
-uint64_t Board::get_RQ(int color) const
+Bitboard Board::get_N() const
+{
+	return get_pieces(WHITE, KNIGHT) | get_pieces(BLACK, KNIGHT);
+}
+
+Bitboard Board::get_K() const
+{
+	return get_pieces(WHITE, KING) | get_pieces(BLACK, KING);
+}
+
+Bitboard Board::get_RQ(int color) const
 {
 	assert(initialized && color_ok(color));
 	return b[color][ROOK] | b[color][QUEEN];
 }
 
-uint64_t Board::get_BQ(int color) const
+Bitboard Board::get_RQ() const
+{
+	return get_RQ(WHITE) | get_RQ(BLACK);
+}
+
+Bitboard Board::get_BQ(int color) const
 {
 	assert(initialized && color_ok(color));
 	return b[color][BISHOP] | b[color][QUEEN];
+}
+
+Bitboard Board::get_BQ() const
+{
+	return get_BQ(WHITE) | get_BQ(BLACK);
 }
 
 void Board::set_square(int color, int piece, int sq, bool play)
@@ -362,11 +382,11 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 	}
 }
 
-uint64_t Board::hidden_checkers(bool find_pins, int color) const
+Bitboard Board::hidden_checkers(bool find_pins, int color) const
 {
 	assert(initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
 	const int aside = color ^ find_pins, kside = opp_color(aside);
-	uint64_t result = 0ULL, pinners;
+	Bitboard result = 0ULL, pinners;
 
 	// Pinned pieces protect our king, dicovery checks attack the enemy king.
 	const int ksq = king_pos[kside];
@@ -376,7 +396,7 @@ uint64_t Board::hidden_checkers(bool find_pins, int color) const
 
 	while (pinners) {
 		int sq = pop_lsb(&pinners);
-		uint64_t b = Between[ksq][sq] & ~(1ULL << sq) & st().occ;
+		Bitboard b = Between[ksq][sq] & ~(1ULL << sq) & st().occ;
 		// NB: if b == 0 then we're in check
 
 		if (!several_bits(b) && (b & all[color]))
@@ -385,14 +405,14 @@ uint64_t Board::hidden_checkers(bool find_pins, int color) const
 	return result;
 }
 
-uint64_t Board::calc_checkers(int kcolor) const
+Bitboard Board::calc_checkers(int kcolor) const
 {
 	assert(initialized && color_ok(kcolor));
 	const int kpos = king_pos[kcolor];
 	const int them = opp_color(kcolor);
 
-	const uint64_t RQ = get_RQ(them) & RPseudoAttacks[kpos];
-	const uint64_t BQ = get_BQ(them) & BPseudoAttacks[kpos];
+	const Bitboard RQ = get_RQ(them) & RPseudoAttacks[kpos];
+	const Bitboard BQ = get_BQ(them) & BPseudoAttacks[kpos];
 
 	return (RQ & rook_attack(kpos, st().occ))
 	       | (BQ & bishop_attack(kpos, st().occ))
@@ -407,7 +427,7 @@ Key Board::calc_key() const
 
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
-			uint64_t sqs = b[color][piece];
+			Bitboard sqs = b[color][piece];
 			while (sqs) {
 				const int sq = pop_lsb(&sqs);
 				key ^= zob[color][piece][sq];
@@ -423,13 +443,13 @@ int Board::get_piece_on(int sq) const
 	return piece_on[sq];
 }
 
-uint64_t Board::get_pieces(int color) const
+Bitboard Board::get_pieces(int color) const
 {
 	assert(initialized && color_ok(color));
 	return all[color];
 }
 
-uint64_t Board::get_pieces(int color, int piece) const
+Bitboard Board::get_pieces(int color, int piece) const
 {
 	assert(initialized && color_ok(color) && piece_ok(piece));
 	return b[color][piece];
