@@ -67,7 +67,6 @@ move_t *MoveSort::next()
 {
 	if (idx < count) {
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
-std::cout << list[idx].score << '\t';
 		return &list[idx++].m;
 	} else
 		return NULL;

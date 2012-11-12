@@ -1,0 +1,6 @@
+- PSQ tables: material value + PSQ bonus
+- see_val[] should use the material values, update test_see() accordingly
+- basic eval: PSQ with phase interpolation
+- qsearch
+- search
+

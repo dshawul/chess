@@ -29,7 +29,7 @@ public:
 	struct Token {
 		move_t m;
 		int score;
-		bool operator< (Token t) const {return score < t.score; }
+		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
 	MoveSort(const Board* _B, GenType _type);
