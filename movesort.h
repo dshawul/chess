@@ -15,6 +15,8 @@
 #pragma once
 #include "movegen.h"
 
+#define INF		32767
+
 class MoveSort
 {
 public:
@@ -27,14 +29,20 @@ public:
 	struct Token {
 		move_t m;
 		int score;
+		bool operator< (Token t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board& B, GenType type);
-	const Token& next();
+	MoveSort(const Board* _B, GenType _type);
+	move_t *next();
 
 private:
+	const Board *B;
+	GenType type;
+	
 	Token list[MAX_MOVES];
 	int idx, count;
 	
-	move_t *generate(const Board& B, GenType type, move_t *mlist);
+	move_t *generate(GenType type, move_t *mlist);
+	void annotate(const move_t *mlist);
+	int score(move_t m);
 };

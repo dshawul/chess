@@ -12,10 +12,18 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "movegen.h"
+#include "movesort.h"
 
 int main ()
 {
 	init_bitboard();
-	test_perft();
+	
+	Board B;
+	B.set_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+	std::cout << B;
+
+	MoveSort MS(&B, MoveSort::CAPTURES_CHECKS);
+	move_t *m;
+	while ((m = MS.next()))
+		std::cout << move_to_san(B, *m) << std::endl;
 }

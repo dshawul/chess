@@ -15,8 +15,15 @@
 #pragma once
 #include "board.h"
 
-extern int move_is_check(move_t m);
+extern int move_is_check(const Board& B, move_t m);
+extern int move_is_cop(const Board& B, move_t m);	// capture or promotion
 
 extern move_t string_to_move(const Board& B, const std::string& s);
-extern std::string move_to_san(const Board& B, move_t m);
 extern std::string move_to_string(move_t m);
+extern std::string move_to_san(const Board& B, move_t m);
+
+extern int see(const Board& B, move_t m);
+extern int see_sign(const Board& B, move_t m);
+extern bool test_see();
+
+extern int mvv_lva(const Board& B, move_t m);
