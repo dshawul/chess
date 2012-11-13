@@ -47,20 +47,31 @@ public:
 	move_t(): mask(0) {}	// silence compiler warnings
 	bool operator== (move_t m) const { return mask == m.mask; }
 	
-	int get_fsq() const { return mask & 0x3f; }
-	int get_tsq() const { return (mask >> 6) & 0x3f; }
-	int get_flag() const { return (mask >> 14) & 3; }
+	int fsq() const { return mask & 0x3f; }
+	int tsq() const { return (mask >> 6) & 0x3f; }
+	int flag() const { return (mask >> 14) & 3; }
 
-	void set_fsq(unsigned fsq)	 { mask &= 0xffc0; mask ^= fsq; }
-	void set_tsq(unsigned tsq)	 { mask &= 0xf03f; mask ^= (tsq << 6); }
-	void set_flag(unsigned flag) { mask &= 0x3fff; mask ^= (flag << 14); }
+	void fsq(unsigned fsq) {
+		assert(square_ok(fsq));
+		mask &= 0xffc0; mask ^= fsq;
+	}
 	
-	int get_prom() const {
-		assert(get_flag() == PROMOTION);
+	void tsq(unsigned tsq) {
+		assert(square_ok(tsq));
+		mask &= 0xf03f; mask ^= (tsq << 6);
+	}
+	
+	void flag(unsigned flag) {
+		assert(flag < 4);
+		mask &= 0x3fff; mask ^= (flag << 14);
+	}
+	
+	int prom() const {
+		assert(flag() == PROMOTION);
 		return ((mask >> 12) & 3) + KNIGHT;
 	}
 	
-	void set_prom(int piece) {
+	void prom(int piece) {
 		assert(KNIGHT <= piece && piece <= QUEEN);
 		mask &= 0xcfff;
 		mask ^= (piece - KNIGHT) << 12;
