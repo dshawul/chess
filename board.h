@@ -28,54 +28,37 @@ enum {
 };
 
 enum {
-	NORMAL,
-	EN_PASSANT,
-	PROMOTION,
-	CASTLING
+    NORMAL,
+    EN_PASSANT,
+    PROMOTION,
+    CASTLING
 };
 
-class move_t {
+class move_t
+{
 	/* 16 bit field:
 	 * fsq = 0..5
 	 * tsq = 6..11
 	 * prom = 12,13 (0=Knight..3=Queen)
 	 * flag = 14,15 (0=NORMAL...3=CASTLING)
 	 * */
-	uint16_t mask;
+	uint16_t b;
 
 public:
-	move_t(): mask(0) {}	// silence compiler warnings
-	bool operator== (move_t m) const { return mask == m.mask; }
-	
-	int fsq() const { return mask & 0x3f; }
-	int tsq() const { return (mask >> 6) & 0x3f; }
-	int flag() const { return (mask >> 14) & 3; }
+	move_t(): b(0) {}	// silence compiler warnings
+	bool operator== (move_t m) const { return b == m.b; }
 
-	void fsq(unsigned fsq) {
-		assert(square_ok(fsq));
-		mask &= 0xffc0; mask ^= fsq;
-	}
-	
-	void tsq(unsigned tsq) {
-		assert(square_ok(tsq));
-		mask &= 0xf03f; mask ^= (tsq << 6);
-	}
-	
-	void flag(unsigned flag) {
-		assert(flag < 4);
-		mask &= 0x3fff; mask ^= (flag << 14);
-	}
-	
-	int prom() const {
-		assert(flag() == PROMOTION);
-		return ((mask >> 12) & 3) + KNIGHT;
-	}
-	
-	void prom(int piece) {
-		assert(KNIGHT <= piece && piece <= QUEEN);
-		mask &= 0xcfff;
-		mask ^= (piece - KNIGHT) << 12;
-	}
+	// getters
+	int fsq() const { return b & 0x3f; }
+	int tsq() const { return (b >> 6) & 0x3f; }
+	int flag() const { return (b >> 14) & 3; }
+	int prom() const { assert(flag() == PROMOTION); return ((b >> 12) & 3) + KNIGHT; }
+
+	// setters
+	void fsq(int fsq) { assert(square_ok(fsq)); b &= 0xffc0; b ^= fsq; }
+	void tsq(int tsq) { assert(square_ok(tsq)); b &= 0xf03f; b ^= (tsq << 6); }
+	void flag(int flag) { assert(flag < 4); b &= 0x3fff; b ^= (flag << 14); }
+	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
 };
 
 struct game_info {
@@ -128,7 +111,7 @@ public:
 	Bitboard get_K() const;
 	Bitboard get_RQ() const;
 	Bitboard get_BQ() const;
-	Bitboard get_RQ(int color) const;	
+	Bitboard get_RQ(int color) const;
 	Bitboard get_BQ(int color) const;
 
 	void set_fen(const std::string& fen);
