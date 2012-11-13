@@ -49,8 +49,11 @@ void loop()
 			go(B, is);
 		else if (token == "isready")
 			std::cout << "readyok" << std::endl;
-		else if (token == "eval")
+		else if (token == "eval") {
 			std::cout << B << std::endl;
+			// TODO: eval debug pring, by (component,color,phase)
+		}
+
 	}
 }
 
@@ -99,8 +102,8 @@ namespace
 			else if (token == "nodes")
 				is >> sl.nodes;
 		}
-		
-		move_t m = bestmove(B, sl);		
+
+		move_t m = bestmove(B, sl);
 		std::cout << "bestmove " << move_to_string(m) << std::endl;
 	}
 }

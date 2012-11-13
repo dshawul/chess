@@ -21,9 +21,9 @@ class MoveSort
 {
 public:
 	enum GenType {
-		ALL,				// all legal moves
-		CAPTURES_CHECKS,	// captures and quiet checks
-		CAPTURES			// captures only
+	    ALL,				// all legal moves
+	    CAPTURES_CHECKS,	// captures and quiet checks
+	    CAPTURES			// captures only
 	};
 
 	struct Token {
@@ -38,10 +38,10 @@ public:
 private:
 	const Board *B;
 	GenType type;
-	
+
 	Token list[MAX_MOVES];
 	int idx, count;
-	
+
 	move_t *generate(GenType type, move_t *mlist);
 	void annotate(const move_t *mlist);
 	int score(move_t m);

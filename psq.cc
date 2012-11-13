@@ -20,10 +20,70 @@ Eval Psq[NB_PIECE][NB_SQUARE];
 
 namespace
 {
+	/* Shape */
+	const int Center[8]	= {-3, -1, +0, +1, +1, +0, -1, -3};
+	const int NRank[8]	= {-2, -1, +0, +1, +2, +3, +2, +1};
+	const int KFile[8]	= {+3, +4, +2, +0, +0, +2, +4, +3};
+	const int KRank[8]	= {+1, +0, -2, -3, -4, -5, -6, -7};
+
+	/* Weight */
+	const int PFileOpening = 5;
+	const int NCentreOpening = 5;
+	const int NCentreEndgame = 5;
+	const int NRankOpening = 5;
+	const int BCentreOpening = 2;
+	const int BCentreEndgame = 3;
+	const int RFileOpening = 3;
+	const int QCentreEndgame = 4;
+	const int KCentreEndgame = 12;
+	const int KFileOpening = 10;
+	const int KRankOpening = 10;
+
+	/* Adjustments */
+	const int PCenterOpening = 20;
+	const int BDiagonalOpening = 4;
+	const int BBackRankOpening = 10;
+	const int QBackRankOpening = 5;
+
 	Eval psq_bonus(int piece, int sq)
 	{
-		// TODO
-		return {0, 0};
+		Eval e;
+		e.clear();
+		const int r = rank(sq), f = file(sq);
+
+		switch (piece) {
+		case PAWN:
+			e.op += Center[f] * PFileOpening;
+			if (sq == D5 || sq == E5 || sq == D3 || sq == E3)
+				e.op += PCenterOpening / 2;
+			else if (sq == D4 || sq == E4)
+				e.op += PCenterOpening;
+			break;
+		case KNIGHT:
+			e.op += (Center[r] + Center[f]) * NCentreOpening;
+			e.eg += (Center[r] + Center[f]) * NCentreEndgame;
+			e.op += NRank[r] * NRankOpening;
+			break;
+		case BISHOP:
+			e.op += (Center[r] + Center[f]) * BCentreOpening;
+			e.eg += (Center[r] + Center[f]) * BCentreEndgame;
+			e.op -= BBackRankOpening * (r == RANK_1);
+			e.op += BDiagonalOpening * (7 == r + f || r == f);
+			break;
+		case ROOK:
+			e.op += Center[f] * RFileOpening;
+			break;
+		case QUEEN:
+			e.eg += (Center[r] + Center[f]) * QCentreEndgame;
+			e.op -= QBackRankOpening * (r == RANK_1);
+			break;
+		case KING:
+			e.eg += (Center[r] + Center[f]) * KCentreEndgame;
+			e.op += KFile[f] * KFileOpening + KRank[r] * KRankOpening;
+			break;
+		}
+
+		return e;
 	}
 }
 

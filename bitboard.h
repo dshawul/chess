@@ -85,13 +85,15 @@ inline bool several_bits(uint64_t b)
 
 /* lsb: assembly for x86_64, GCC or ICC */
 
-inline int lsb(Bitboard b) {
+inline int lsb(Bitboard b)
+{
 	Bitboard index;
 	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
 	return index;
 }
 
-inline int pop_lsb(Bitboard *b) {
+inline int pop_lsb(Bitboard *b)
+{
 	const int s = lsb(*b);
 	*b &= *b - 1;
 	return s;

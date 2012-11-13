@@ -51,3 +51,8 @@ extern const Eval Material[NB_PIECE];
 extern Eval Psq[NB_PIECE][NB_SQUARE];
 
 extern void init_psq();
+
+inline const Eval& get_psq(int piece, int sq)
+{
+	return Psq[piece][sq];
+}

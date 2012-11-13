@@ -474,19 +474,19 @@ uint64_t piece_attack(int piece, int sq, uint64_t occ)
 	assert(KNIGHT <= piece && piece <= KING && square_ok(sq));
 
 	switch (piece) {
-		case KNIGHT:
-			return NAttacks[sq];
-		case BISHOP:
-			return bishop_attack(sq, occ);
-		case ROOK:
-			return rook_attack(sq, occ);
-		case QUEEN:
-			return bishop_attack(sq, occ) | rook_attack(sq, occ);
-		case KING:
-			return KAttacks[sq];
-		default:
-			assert(false);
-			return 0;	// silence compiler warning
+	case KNIGHT:
+		return NAttacks[sq];
+	case BISHOP:
+		return bishop_attack(sq, occ);
+	case ROOK:
+		return rook_attack(sq, occ);
+	case QUEEN:
+		return bishop_attack(sq, occ) | rook_attack(sq, occ);
+	case KING:
+		return KAttacks[sq];
+	default:
+		assert(false);
+		return 0;	// silence compiler warning
 	}
 }
 

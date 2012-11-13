@@ -81,7 +81,7 @@ void Board::set_fen(const std::string& _fen)
 	}
 
 	if ( (fen >> f) && ('a' <= f && f <= 'h')
-	     && (fen >> r) && ('1' <= r && r <= '8') )
+	        && (fen >> r) && ('1' <= r && r <= '8') )
 		_st->epsq = square(r - '1', f - 'a');
 
 	fen >> std::skipws >> _st->rule50 >> move_count;
@@ -213,7 +213,7 @@ void Board::play(move_t m)
 			// update king_pos and clear crights
 			king_pos[us] = tsq;
 			_st->crights &= ~((OO | OOO) << (2 * us));
-			
+
 			if (m.flag() == CASTLING) {
 				// rook jump
 				if (tsq == fsq+2) {			// OO
@@ -269,7 +269,7 @@ void Board::undo()
 	if (piece == KING) {
 		// update king_pos
 		king_pos[us] = fsq;
-		
+
 		if (m.flag() == CASTLING) {
 			// undo rook jump
 			if (tsq == fsq+2) {			// OO
