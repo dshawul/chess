@@ -35,31 +35,35 @@ enum {
 };
 
 class move_t {
-	uint16_t fsq:6, tsq:6;
-	uint16_t prom:2;	// 0=Knight...3=Queen
-	uint16_t flag:2;	// 0=normal,1=ep,2=prom,3=castling
+	/* 16 bit field:
+	 * fsq = 0..5
+	 * tsq = 6..11
+	 * prom = 12,13 (0=Knight..3=Queen)
+	 * flag = 14,15 (0=NORMAL...3=CASTLING)
+	 * */
+	uint16_t mask;
 
 public:
-	bool operator== (move_t m) const {
-		return fsq == m.get_fsq() && tsq == m.get_tsq() && flag == m.get_flag();
-	}
+	move_t(): mask(0) {}	// silence compiler warnings
+	bool operator== (move_t m) const { return mask == m.mask; }
 	
-	int get_fsq() const { return fsq; }
-	int get_tsq() const { return tsq; }
-	int get_flag() const { return flag; }
+	int get_fsq() const { return mask & 0x3f; }
+	int get_tsq() const { return (mask >> 6) & 0x3f; }
+	int get_flag() const { return (mask >> 14) & 3; }
 
-	void set_fsq(unsigned _fsq) { fsq = _fsq; }
-	void set_tsq(unsigned _tsq) { tsq = _tsq; }
-	void set_flag(unsigned _flag) { flag = _flag; }
+	void set_fsq(unsigned fsq)	 { mask &= 0xffc0; mask ^= fsq; }
+	void set_tsq(unsigned tsq)	 { mask &= 0xf03f; mask ^= (tsq << 6); }
+	void set_flag(unsigned flag) { mask &= 0x3fff; mask ^= (flag << 14); }
 	
 	int get_prom() const {
-		assert(flag == PROMOTION);
-		return prom + KNIGHT;
+		assert(get_flag() == PROMOTION);
+		return ((mask >> 12) & 3) + KNIGHT;
 	}
 	
 	void set_prom(int piece) {
 		assert(KNIGHT <= piece && piece <= QUEEN);
-		prom = piece - KNIGHT;
+		mask &= 0xcfff;
+		mask ^= (piece - KNIGHT) << 12;
 	}
 };
 
