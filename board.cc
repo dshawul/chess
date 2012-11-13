@@ -32,7 +32,6 @@ void Board::clear()
 	_st = game_stack;
 	memset(_st, 0, sizeof(game_info));
 	_st->epsq = NO_SQUARE;
-	_st->last_move = {0, 0, 0, NORMAL};
 	move_count = 1;
 
 	initialized = true;
@@ -180,7 +179,7 @@ void Board::play(move_t m)
 	_st->rule50++;
 
 	const int us = turn, them = opp_color(us);
-	const int fsq = m.fsq, tsq = m.tsq;
+	const int fsq = m.get_fsq(), tsq = m.get_tsq();
 	const int piece = piece_on[fsq], capture = piece_on[tsq];
 
 	// normal capture: remove captured piece
@@ -191,7 +190,7 @@ void Board::play(move_t m)
 
 	// move our piece
 	clear_square(us, piece, fsq);
-	set_square(us, m.flag == PROMOTION ? m.get_prom() : piece, tsq);
+	set_square(us, m.get_flag() == PROMOTION ? m.get_prom() : piece, tsq);
 
 	if (piece == PAWN) {
 		_st->rule50 = 0;
@@ -199,7 +198,7 @@ void Board::play(move_t m)
 		// set the epsq if double push
 		_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
-		if (m.flag == EN_PASSANT)
+		if (m.get_flag() == EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
 	} else {
 		_st->epsq = NO_SQUARE;
@@ -215,7 +214,7 @@ void Board::play(move_t m)
 			king_pos[us] = tsq;
 			_st->crights &= ~((OO | OOO) << (2 * us));
 			
-			if (m.flag == CASTLING) {
+			if (m.get_flag() == CASTLING) {
 				// rook jump
 				if (tsq == fsq+2) {			// OO
 					clear_square(us, ROOK, us ? H8 : H1);
@@ -255,8 +254,8 @@ void Board::undo()
 	assert(initialized);
 	const move_t m = st().last_move;
 	const int us = opp_color(turn), them = turn;
-	const int fsq = m.fsq, tsq = m.tsq;
-	const int piece = m.flag == PROMOTION ? PAWN : piece_on[tsq];
+	const int fsq = m.get_fsq(), tsq = m.get_tsq();
+	const int piece = m.get_flag() == PROMOTION ? PAWN : piece_on[tsq];
 	const int capture = st().capture;
 
 	// move our piece back
@@ -271,7 +270,7 @@ void Board::undo()
 		// update king_pos
 		king_pos[us] = fsq;
 		
-		if (m.flag == CASTLING) {
+		if (m.get_flag() == CASTLING) {
 			// undo rook jump
 			if (tsq == fsq+2) {			// OO
 				clear_square(us, ROOK, us ? F8 : F1, false);
@@ -281,7 +280,7 @@ void Board::undo()
 				set_square(us, ROOK, us ? A8 : A1, false);
 			}
 		}
-	} else if (m.flag == EN_PASSANT)	// restore the en passant captured pawn
+	} else if (m.get_flag() == EN_PASSANT)	// restore the en passant captured pawn
 		set_square(them, PAWN, tsq + (us ? 8 : -8), false);
 
 	turn = us;

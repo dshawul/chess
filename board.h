@@ -34,14 +34,23 @@ enum {
 	CASTLING
 };
 
-struct move_t {
-	uint16_t fsq:8, tsq:8;
+class move_t {
+	uint16_t fsq:6, tsq:6;
 	uint16_t prom:2;	// 0=Knight...3=Queen
 	uint16_t flag:2;	// 0=normal,1=ep,2=prom,3=castling
 
+public:
 	bool operator== (move_t m) const {
-		return fsq == m.fsq && tsq == m.tsq && flag == m.flag;
+		return fsq == m.get_fsq() && tsq == m.get_tsq() && flag == m.get_flag();
 	}
+	
+	int get_fsq() const { return fsq; }
+	int get_tsq() const { return tsq; }
+	int get_flag() const { return flag; }
+
+	void set_fsq(unsigned _fsq) { fsq = _fsq; }
+	void set_tsq(unsigned _tsq) { tsq = _tsq; }
+	void set_flag(unsigned _flag) { flag = _flag; }
 	
 	int get_prom() const {
 		assert(flag == PROMOTION);

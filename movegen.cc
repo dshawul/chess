@@ -31,26 +31,26 @@ namespace
 			return mlist;
 
 		move_t m;
-		m.fsq = fsq;
-		m.tsq = tsq;
+		m.set_fsq(fsq);
+		m.set_tsq(tsq);
 
 		if (tsq == B.st().epsq) {
-			m.flag = EN_PASSANT;
+			m.set_flag(EN_PASSANT);
 			Bitboard occ = B.st().occ;
 			// play the ep capture on occ
-			clear_bit(&occ, m.fsq);
-			clear_bit(&occ, pawn_push(them, m.tsq));	// remove the ep captured enemy pawn
-			set_bit(&occ, m.tsq);
+			clear_bit(&occ, m.get_fsq());
+			clear_bit(&occ, pawn_push(them, m.get_tsq()));	// remove the ep captured enemy pawn
+			set_bit(&occ, m.get_tsq());
 			// test for check by a sliding enemy piece
 			if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
 			    || (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 				return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 		} else
-			m.flag = NORMAL;
+			m.set_flag(NORMAL);
 
 		if (test_bit(PPromotionRank[us], tsq)) {
 			// promotion(s)
-			m.flag = PROMOTION;
+			m.set_flag(PROMOTION);
 			m.set_prom(QUEEN); *mlist++ = m;
 			if (sub_promotions) {
 				m.set_prom(KNIGHT);	*mlist++ = m;
@@ -74,14 +74,14 @@ namespace
 		const int kpos = B.get_king_pos(B.get_turn());
 
 		move_t m;
-		m.fsq = fsq;
-		m.flag = NORMAL;
+		m.set_fsq(fsq);
+		m.set_flag(NORMAL);
 
 		if (test_bit(B.st().pinned, fsq))
 			tss &= Direction[kpos][fsq];
 
 		while (tss) {
-			m.tsq = pop_lsb(&tss);
+			m.set_tsq(pop_lsb(&tss));
 			*mlist++ = m;
 		}
 
@@ -142,24 +142,24 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 	const int us = B.get_turn();
 
 	move_t m;
-	m.fsq = B.get_king_pos(us);
-	m.flag = CASTLING;
+	m.set_fsq(B.get_king_pos(us));
+	m.set_flag(CASTLING);
 
 	if (B.st().crights & (OO << (2 * us))) {
-		Bitboard safe = 3ULL << (m.fsq + 1);	// must not be attacked
+		Bitboard safe = 3ULL << (m.get_fsq() + 1);	// must not be attacked
 		Bitboard empty = safe;					// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
-			m.tsq = m.fsq + 2;
+			m.set_tsq(m.get_fsq() + 2);
 			*mlist++ = m;
 		}
 	}
 	if (B.st().crights & (OOO << (2 * us))) {
-		Bitboard safe = 3ULL << (m.fsq - 2);	// must not be attacked
-		Bitboard empty = safe | (1ULL << (m.fsq - 3));	// must be empty
+		Bitboard safe = 3ULL << (m.get_fsq() - 2);	// must not be attacked
+		Bitboard empty = safe | (1ULL << (m.get_fsq() - 3));	// must be empty
 
 		if (!(B.st().attacked & safe) && !(B.st().occ & empty)) {
-			m.tsq = m.fsq - 2;
+			m.set_tsq(m.get_fsq() - 2);
 			*mlist++ = m;
 		}
 	}

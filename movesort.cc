@@ -57,7 +57,7 @@ int MoveSort::score(move_t m)
 {
 	switch (type) {
 		case ALL:	// search
-			return (move_is_cop(*B, m) || test_bit(B->st().attacked, m.tsq)) ? see(*B, m) : 0;
+			return (move_is_cop(*B, m) || test_bit(B->st().attacked, m.get_tsq())) ? see(*B, m) : 0;
 		default:	// qsearch
 			return move_is_cop(*B, m) ? mvv_lva(*B, m) : 0;
 	}

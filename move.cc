@@ -33,7 +33,7 @@ int move_is_check(const Board& B, move_t m)
  * returns 2 for a discovered check, 1 for any other check, 0 otherwise */
 {
 	const int us = B.get_turn(), them = opp_color(us);
-	const int fsq = m.fsq, tsq = m.tsq, flag = m.flag;
+	const int fsq = m.get_fsq(), tsq = m.get_tsq(), flag = m.get_flag();
 	int kpos = B.get_king_pos(them);
 
 	// test discovered check
@@ -81,25 +81,25 @@ int move_is_check(const Board& B, move_t m)
 
 int move_is_cop(const Board& B, move_t m)
 {
-	return piece_ok(B.get_piece_on(m.tsq))
-		|| m.flag == EN_PASSANT
-		|| m.flag == PROMOTION;
+	return piece_ok(B.get_piece_on(m.get_tsq()))
+		|| m.get_flag() == EN_PASSANT
+		|| m.get_flag() == PROMOTION;
 }
 
 move_t string_to_move(const Board& B, const std::string& s)
 {
 	move_t m;
-	m.fsq = square(s[1]-'1', s[0]-'a');
-	m.tsq = square(s[3]-'1', s[2]-'a');
-	m.flag = NORMAL;
+	m.set_fsq(square(s[1]-'1', s[0]-'a'));
+	m.set_tsq(square(s[3]-'1', s[2]-'a'));
+	m.set_flag(NORMAL);
 	
-	if (B.get_piece_on(m.fsq) == PAWN && m.tsq == B.st().epsq)
-		m.flag = EN_PASSANT;
+	if (B.get_piece_on(m.get_fsq()) == PAWN && m.get_tsq() == B.st().epsq)
+		m.set_flag(EN_PASSANT);
 
 	if (s[4])
 		m.set_prom(PieceLabel[BLACK].find(s[4]));
-	else if (B.get_piece_on(m.fsq) == KING && (m.fsq+2 == m.tsq || m.tsq+2==m.fsq))
-		m.flag = CASTLING;
+	else if (B.get_piece_on(m.get_fsq()) == KING && (m.get_fsq()+2 == m.get_tsq() || m.get_tsq()+2==m.get_fsq()))
+		m.set_flag(CASTLING);
 
 	return m;
 }
@@ -108,10 +108,10 @@ std::string move_to_string(move_t m)
 {
 	std::ostringstream s;
 
-	s << square_to_string(m.fsq);
-	s << square_to_string(m.tsq);
+	s << square_to_string(m.get_fsq());
+	s << square_to_string(m.get_tsq());
 
-	if (m.flag == PROMOTION)
+	if (m.get_flag() == PROMOTION)
 		s << PieceLabel[BLACK][m.get_prom()];
 
 	return s.str();
@@ -121,39 +121,39 @@ std::string move_to_san(const Board& B, move_t m)
 {
 	std::ostringstream s;
 	const int us = B.get_turn();
-	const int piece = B.get_piece_on(m.fsq);
-	const bool capture = m.flag == EN_PASSANT || B.get_piece_on(m.tsq) != NO_PIECE;
+	const int piece = B.get_piece_on(m.get_fsq());
+	const bool capture = m.get_flag() == EN_PASSANT || B.get_piece_on(m.get_tsq()) != NO_PIECE;
 
 	if (piece != PAWN) {
-		if (m.flag == CASTLING) {
-			if (file(m.tsq) == FILE_C)
+		if (m.get_flag() == CASTLING) {
+			if (file(m.get_tsq()) == FILE_C)
 				s << "OOO";
 			else
 				s << "OO";
 		} else {
 			s << PieceLabel[WHITE][piece];
 			Bitboard b = B.get_pieces(us, piece)
-			             & piece_attack(piece, m.tsq, B.st().occ)
+			             & piece_attack(piece, m.get_tsq(), B.st().occ)
 			             & ~B.st().pinned;
 			if (several_bits(b)) {
-				clear_bit(&b, m.fsq);
+				clear_bit(&b, m.get_fsq());
 				const int sq = lsb(b);
-				if (file(m.fsq) == file(sq))
-					s << char(rank(m.fsq) + '1');
+				if (file(m.get_fsq()) == file(sq))
+					s << char(rank(m.get_fsq()) + '1');
 				else
-					s << char(file(m.fsq) + 'a');
+					s << char(file(m.get_fsq()) + 'a');
 			}
 		}
 	} else if (capture)
-		s << char(file(m.fsq) + 'a');
+		s << char(file(m.get_fsq()) + 'a');
 
 	if (capture)
 		s << 'x';
 
-	if (m.flag != CASTLING)
-		s << square_to_string(m.tsq);
+	if (m.get_flag() != CASTLING)
+		s << square_to_string(m.get_tsq());
 
-	if (m.flag == PROMOTION)
+	if (m.get_flag() == PROMOTION)
 		s << PieceLabel[WHITE][m.get_prom()];
 
 	if (move_is_check(B, m))
@@ -181,8 +181,8 @@ const int see_val[NB_PIECE+1] = {100, 300, 300, 500, 1000, 20000, 0};
 
 int see_sign(const Board& B, move_t m)
 {
-	int from_value = see_val[B.get_piece_on(m.fsq)];
-	int to_value = see_val[B.get_piece_on(m.tsq)];
+	int from_value = see_val[B.get_piece_on(m.get_fsq())];
+	int to_value = see_val[B.get_piece_on(m.get_tsq())];
 
 	/* Note that we do not adjust to_value for en-passant and promotions. The only case where we can
 	 * directly conclude on the (strict) signum of the SEE, is when the promotion is also a capture,
@@ -196,7 +196,7 @@ int see_sign(const Board& B, move_t m)
 int see(const Board& B, move_t m)
 /* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant. */
 {
-	int fsq = m.fsq, tsq = m.tsq;
+	int fsq = m.get_fsq(), tsq = m.get_tsq();
 	int stm = B.get_color_on(fsq);	// side to move
 	uint64_t attackers, stm_attackers;
 	int swap_list[32], sl_idx = 1;
@@ -204,7 +204,7 @@ int see(const Board& B, move_t m)
 	int piece = B.get_piece_on(fsq), capture;
 
 	// Determine captured piece
-	if (m.flag == EN_PASSANT) {
+	if (m.get_flag() == EN_PASSANT) {
 		clear_bit(&occ, pawn_push(opp_color(stm), tsq));
 		capture = PAWN;
 	} else
@@ -215,7 +215,7 @@ int see(const Board& B, move_t m)
 	clear_bit(&occ, fsq);
 
 	// Handle promotion
-	if (m.flag == PROMOTION) {
+	if (m.get_flag() == PROMOTION) {
 		swap_list[0] += see_val[m.get_prom()] - see_val[PAWN];
 		capture = QUEEN;
 	} else
@@ -323,9 +323,9 @@ int mvv_lva(const Board& B, move_t m)
 	// King is the best attacker (since move is legal) followed by Pawn etc.
 	static const int attacker_value[NB_PIECE] = {4, 3, 3, 2, 1, 5};
 
-	const int piece_value = attacker_value[B.get_piece_on(m.fsq)];
-	const int capture_value = victim_value[m.flag == EN_PASSANT ? PAWN : B.get_piece_on(m.tsq)];
-	const int promotion_value = m.flag == PROMOTION ? victim_value[m.get_prom()] : 0;
+	const int piece_value = attacker_value[B.get_piece_on(m.get_fsq())];
+	const int capture_value = victim_value[m.get_flag() == EN_PASSANT ? PAWN : B.get_piece_on(m.get_tsq())];
+	const int promotion_value = m.get_flag() == PROMOTION ? victim_value[m.get_prom()] : 0;
 	
 	return (capture_value + promotion_value) * 8 + piece_value;	
 }
