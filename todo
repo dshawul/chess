@@ -1,5 +1,4 @@
 - basic eval: PSQ with phase interpolation
-- see_val[] should use the material values, update test_see() accordingly
 - qsearch
 - search
 

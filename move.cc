@@ -96,9 +96,10 @@ move_t string_to_move(const Board& B, const std::string& s)
 	if (B.get_piece_on(m.fsq()) == PAWN && m.tsq() == B.st().epsq)
 		m.flag(EN_PASSANT);
 
-	if (s[4])
+	if (s[4]) {
+		m.flag(PROMOTION);
 		m.prom(PieceLabel[BLACK].find(s[4]));
-	else if (B.get_piece_on(m.fsq()) == KING && (m.fsq()+2 == m.tsq() || m.tsq()+2==m.fsq()))
+	} else if (B.get_piece_on(m.fsq()) == KING && (m.fsq()+2 == m.tsq() || m.tsq()+2==m.fsq()))
 		m.flag(CASTLING);
 
 	return m;
@@ -164,6 +165,8 @@ std::string move_to_san(const Board& B, move_t m)
 
 namespace
 {
+	const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
+
 	Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 	{
 		assert(square_ok(sq));
@@ -176,8 +179,6 @@ namespace
 		       | (PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 	}
 }
-
-const int see_val[NB_PIECE+1] = {100, 300, 300, 500, 1000, 20000, 0};
 
 int see_sign(const Board& B, move_t m)
 {
@@ -285,15 +286,15 @@ bool test_see()
 	};
 
 	TestSEE test[] = {
-		{"k6K/8/4b3/8/3N4/8/8/8 w - -", "d4e6", 300},
+		{"k6K/8/4b3/8/3N4/8/8/8 w - -", "d4e6", vB},
 		{"k6K/3p4/4b3/8/3N4/8/8/8 w - -", "d4e6", 0},
-		{"k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "d4e6", 100},
-		{"k3r2K/3p4/4b3/8/3N4/8/4R3/4R3 w - -", "d4e6", 100},
-		{"k6K/3P4/8/8/8/8/8/8 w - -", "d7d8q", 900},
-		{"k6K/3P4/2n5/8/8/8/8/8 w - -", "d7d8q", -100},
-		{"k6K/3P4/2n1N3/8/8/8/8/8 w - -", "d7d8q", 200},
-		{"k6K/3PP3/2n5/b7/7B/8/8/3R4 w - -", "d7d8q", 400},
-		{"3R3K/k3P3/8/b7/8/8/8/8 b - -", "a5d8", -700},
+		{"k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "d4e6", vB-vN+vOP},
+		{"k3r2K/3p4/4b3/8/3N4/8/4R3/4R3 w - -", "d4e6", vB-vN+vOP},
+		{"k6K/3P4/8/8/8/8/8/8 w - -", "d7d8q", vQ-vOP},
+		{"k6K/3P4/2n5/8/8/8/8/8 w - -", "d7d8q", -vOP},
+		{"k6K/3P4/2n1N3/8/8/8/8/8 w - -", "d7d8q", -vOP+vN},
+		{"k6K/3PP3/2n5/b7/7B/8/8/3R4 w - -", "d7d8q", vN+vB-2*vOP},
+		{"3R3K/k3P3/8/b7/8/8/8/8 b - -", "a5d8", vR-vB+vOP-vQ},
 		{NULL, NULL, 0}
 	};
 
