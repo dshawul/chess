@@ -22,6 +22,12 @@ int main ()
 	B.set_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
 	std::cout << B;
 	
-	std::cout << qsearch(B, -INF, +INF, 0, 0) << std::endl;
-	std::cout << node_count << std::endl;
+	for (int d = 0; d < 10; d++) {
+		node_count = 0;
+		int score = search(B, -INF, +INF, d, 0);
+		
+		std::cout << "depth=" << d
+			<< "\tscore=" << score
+			<< "\tnodes=" << node_count << std::endl;
+	}
 }

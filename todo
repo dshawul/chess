@@ -1,4 +1,2 @@
-- basic eval: PSQ with phase interpolation
-- qsearch
-- search
-
+- eval: phase interpolation
+- history move ordering

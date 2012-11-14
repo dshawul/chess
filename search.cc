@@ -17,6 +17,11 @@
 #include "movesort.h"
 #include "prng.h"
 
+namespace {
+	int mated_in(int ply)	{ return ply-MATE; }
+	int mate_in(int ply)	{ return MATE-ply; }
+}
+
 move_t bestmove(Board& B, const SearchLimits& sl)
 {
 	// FIXME: play pseudo-random moves for now
@@ -27,28 +32,68 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	return mlist[idx];
 }
 
-uint64_t node_count = 0;
+uint64_t node_count;
+
+int search(Board& B, int alpha, int beta, int depth, int ply)
+{
+	assert(alpha < beta);
+	
+	if (depth <= 0)
+		return qsearch(B, alpha, beta, depth, ply);
+
+	assert(depth > 0);
+	node_count++;
+	int best_score = -INF;
+	
+	// mate distance pruning
+	alpha = std::max(alpha, mated_in(ply));	// at worst we're mated on this node
+	beta = std::min(beta, mate_in(ply+1));	// at best, we mate at the next ply
+	if (alpha >= beta)
+		return alpha;
+	
+	MoveSort MS(&B, MoveSort::ALL);
+	move_t *m;
+	int cnt = 0;
+	
+	while ( alpha < beta && (m = MS.next()) ) {
+		cnt++;
+		
+		B.play(*m);
+		int score = -search(B, -beta, -alpha, depth-1, ply+1);
+		B.undo();
+		
+		best_score = std::max(best_score, score);
+		alpha = std::max(alpha, score);
+	}
+	
+	// mated or stalemated
+	if (!cnt)
+		return B.is_check() ? ply-MATE : 0;
+	
+	return best_score;
+}
 
 int qsearch(Board& B, int alpha, int beta, int depth, int ply)
 {
-	node_count++;		
+	assert(depth <= 0);
+	assert(alpha < beta);
+	
+	node_count++;
 	int best_score = -INF;
 
 	// stand pat
 	if (!B.is_check()) {
 		best_score = eval(B);
-		if (best_score > alpha) {
-			alpha = best_score;
-			if (alpha >= beta)
-				return alpha;
-		}
+		alpha = std::max(alpha, best_score);
+		if (alpha >= beta)
+			return alpha;
 	}
 	
 	MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS);
 	move_t *m;
 	int cnt = 0;
 	
-	while ( (m = MS.next()) && alpha < beta) {
+	while ( alpha < beta && (m = MS.next()) ) {
 		cnt++;
 		
 		if (!B.is_check() && !move_is_check(B, *m) && see(B, *m) < 0) {
@@ -61,11 +106,8 @@ int qsearch(Board& B, int alpha, int beta, int depth, int ply)
 		int score = -qsearch(B, -beta, -alpha, depth-1, ply+1);
 		B.undo();
 		
-		if (score > best_score) {
-			best_score = score;
-			if (score > alpha)
-				alpha = score;
-		}
+		best_score = std::max(best_score, score);
+		alpha = std::max(alpha, score);
 	}
 	
 	if (B.is_check() && !cnt)
