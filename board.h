@@ -15,6 +15,7 @@
 #pragma once
 #include <string>
 #include "bitboard.h"
+#include "psq.h"
 
 /* Runs a set of perft(). This is the unit test to validate ANY modification in the board code. */
 bool test_perft();
@@ -72,6 +73,7 @@ struct game_info {
 	Bitboard checkers;			// pieces checking turn's King
 	Bitboard occ;				// occupancy
 	int rule50;					// counter for the 50 move rule
+	Eval psq[NB_COLOR];			// PSQ by color
 
 	Bitboard epsq_bb() const { return epsq ? (1ULL << epsq) : 0; }
 };
@@ -95,6 +97,8 @@ class Board
 	Bitboard calc_attacks(int color) const;
 	Bitboard calc_checkers(int kcolor) const;
 	Bitboard hidden_checkers(bool find_pins, int color) const;
+	
+	bool verify_psq() const;
 
 public:
 	const game_info& st() const;

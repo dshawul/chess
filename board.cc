@@ -93,6 +93,7 @@ void Board::set_fen(const std::string& _fen)
 	_st->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(calc_key() == st().key);
+	assert(verify_psq());
 }
 
 std::string Board::get_fen() const
@@ -247,6 +248,7 @@ void Board::play(move_t m)
 	_st->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
 	assert(calc_key() == st().key);
+	assert(verify_psq());
 }
 
 void Board::undo()
@@ -321,7 +323,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
-	assert(piece_on[sq] == NO_PIECE);
+	assert(get_piece_on(sq) == NO_PIECE);
 
 	set_bit(&b[color][piece], sq);
 	set_bit(&all[color], sq);
@@ -329,6 +331,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 
 	if (play) {
 		set_bit(&_st->occ, sq);
+		_st->psq[color] += get_psq(color, piece, sq);
 		_st->key ^= zob[color][piece][sq];
 	}
 }
@@ -337,7 +340,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
-	assert(piece_on[sq] == piece);
+	assert(get_piece_on(sq) == piece);
 
 	clear_bit(&b[color][piece], sq);
 	clear_bit(&all[color], sq);
@@ -345,6 +348,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 
 	if (play) {
 		clear_bit(&_st->occ, sq);
+		_st->psq[color] -= get_psq(color, piece, sq);
 		_st->key ^= zob[color][piece][sq];
 	}
 }
@@ -402,4 +406,24 @@ Key Board::calc_key() const
 		}
 
 	return turn ? key ^ zob_turn : key;
+}
+
+bool Board::verify_psq() const
+{
+	Eval psq[NB_COLOR];
+
+	for (int color = WHITE; color <= BLACK; ++color) {
+		psq[color].clear();
+		
+		for (int piece = PAWN; piece <= KING; ++piece) {
+			Bitboard sqs = get_pieces(color, piece);
+			while (sqs)
+				psq[color] += get_psq(color, piece, pop_lsb(&sqs));
+		}
+		
+		if (psq[color] != st().psq[color])
+			return false;
+	}
+	
+	return true;
 }
