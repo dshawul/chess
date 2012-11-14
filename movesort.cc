@@ -19,6 +19,12 @@ MoveSort::MoveSort(const Board *_B, GenType _type)
 	: B(_B), type(_type), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
+
+	/* If we're in check set type = ALL. This affects the sort() and uses SEE instead of MVV/LVA for
+	 * example. It improves the quality of sorting for check evasions in the qsearch. */
+	if (B->is_check())
+		type = ALL;
+
 	move_t mlist[MAX_MOVES];
 	count = generate(type, mlist) - mlist;
 	annotate(mlist);
@@ -29,20 +35,19 @@ move_t *MoveSort::generate(GenType type, move_t *mlist)
 	if (type == ALL)
 		return gen_moves(*B, mlist);
 	else {
-		if (B->st().checkers)
-			return gen_evasion(*B, mlist);
-		else {
-			move_t *end = mlist;
-			Bitboard enemies = B->get_pieces(opp_color(B->get_turn()));
+		// If we are in check, then type must be ALL (see constructor)
+		assert(!B->is_check());
 
-			end = gen_piece_moves(*B, enemies, end, true);
-			end = gen_pawn_moves(*B, enemies | B->st().epsq_bb(), end, false);
+		move_t *end = mlist;
+		Bitboard enemies = B->get_pieces(opp_color(B->get_turn()));
 
-			if (type == CAPTURES_CHECKS)
-				end = gen_quiet_checks(*B, end);
+		end = gen_piece_moves(*B, enemies, end, true);
+		end = gen_pawn_moves(*B, enemies | B->st().epsq_bb(), end, false);
 
-			return end;
-		}
+		if (type == CAPTURES_CHECKS)
+			end = gen_quiet_checks(*B, end);
+
+		return end;
 	}
 }
 

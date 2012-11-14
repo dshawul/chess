@@ -122,37 +122,38 @@ std::string move_to_san(const Board& B, move_t m)
 {
 	std::ostringstream s;
 	const int us = B.get_turn();
-	const int piece = B.get_piece_on(m.fsq());
-	const bool capture = m.flag() == EN_PASSANT || B.get_piece_on(m.tsq()) != NO_PIECE;
+	const int fsq = m.fsq(), tsq = m.tsq();
+	const int piece = B.get_piece_on(fsq);
+	const bool capture = m.flag() == EN_PASSANT || B.get_piece_on(tsq) != NO_PIECE;
 
 	if (piece != PAWN) {
 		if (m.flag() == CASTLING) {
-			if (file(m.tsq()) == FILE_C)
+			if (file(tsq) == FILE_C)
 				s << "OOO";
 			else
 				s << "OO";
 		} else {
 			s << PieceLabel[WHITE][piece];
 			Bitboard b = B.get_pieces(us, piece)
-			             & piece_attack(piece, m.tsq(), B.st().occ)
+			             & piece_attack(piece, tsq, B.st().occ)
 			             & ~B.st().pinned;
 			if (several_bits(b)) {
-				clear_bit(&b, m.fsq());
+				clear_bit(&b, fsq);
 				const int sq = lsb(b);
-				if (file(m.fsq()) == file(sq))
-					s << char(rank(m.fsq()) + '1');
+				if (file(fsq) == file(sq))
+					s << char(rank(fsq) + '1');
 				else
-					s << char(file(m.fsq()) + 'a');
+					s << char(file(fsq) + 'a');
 			}
 		}
 	} else if (capture)
-		s << char(file(m.fsq()) + 'a');
+		s << char(file(fsq) + 'a');
 
 	if (capture)
 		s << 'x';
 
 	if (m.flag() != CASTLING)
-		s << square_to_string(m.tsq());
+		s << square_to_string(tsq);
 
 	if (m.flag() == PROMOTION)
 		s << PieceLabel[WHITE][m.prom()];

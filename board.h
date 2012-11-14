@@ -75,7 +75,7 @@ struct game_info {
 	int rule50;					// counter for the 50 move rule
 	Eval psq[NB_COLOR];			// PSQ by color
 
-	Bitboard epsq_bb() const { return epsq ? (1ULL << epsq) : 0; }
+	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };
 
 class Board
@@ -123,6 +123,8 @@ public:
 
 	void play(move_t m);
 	void undo();
+	
+	bool is_check() const { return st().checkers; }
 };
 
 extern const std::string PieceLabel[NB_COLOR];

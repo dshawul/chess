@@ -92,7 +92,7 @@ move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool ki
 /* Generates piece moves, when the board is not in check. Uses targets to filter the tss, eg.
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
-	assert(!king_moves || !B.st().checkers);	// do not use when in check (use gen_evasion)
+	assert(!king_moves || !B.is_check());	// do not use when in check (use gen_evasion)
 	const int us = B.get_turn();
 	assert(!(targets & B.get_pieces(us)));
 	Bitboard fss;
@@ -137,7 +137,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
  * through serialize_moves, as castling moves are very peculiar, and we don't want to pollute
  * serialize_moves with this over-specific code */
 {
-	assert(!B.st().checkers);
+	assert(!B.is_check());
 	const int us = B.get_turn();
 
 	move_t m;
@@ -226,7 +226,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
  * covers the check. Note that cover means covering the ]ksq,checker_sq], so it includes capturing
  * the checking piece. */
 {
-	assert(B.st().checkers);
+	assert(B.is_check());
 	const int us = B.get_turn();
 	const int kpos = B.get_king_pos(us);
 	const Bitboard checkers = B.st().checkers;
@@ -269,7 +269,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 move_t *gen_quiet_checks(const Board& B, move_t *mlist)
 /* Generates non capturing checks by pieces (not pawns nor the king) */
 {
-	assert(B.st().checkers);
+	assert(!B.is_check());
 	const int us = B.get_turn(), them = opp_color(us);
 	const int kpos = B.get_king_pos(them);
 
@@ -302,7 +302,7 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 /* Generates all moves in the position, using all the other specific move generators. This function
  * is quite fast but not flexible, and only used for debugging (eg. computing perft values) */
 {
-	if (B.st().checkers)
+	if (B.is_check())
 		return gen_evasion(B, mlist);
 	else {
 		// legal castling moves

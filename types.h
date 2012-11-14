@@ -98,3 +98,5 @@ inline int opp_color(int color)
 
 typedef uint32_t Key;
 typedef uint64_t Bitboard;
+
+#define INF		32767

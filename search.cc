@@ -13,6 +13,8 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include "search.h"
+#include "eval.h"
+#include "movesort.h"
 #include "prng.h"
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -23,4 +25,51 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	int count = end - mlist;
 	int idx = PRNG().rand<int>() % count;
 	return mlist[idx];
+}
+
+uint64_t node_count = 0;
+
+int qsearch(Board& B, int alpha, int beta, int depth, int ply)
+{
+	node_count++;		
+	int best_score = -INF;
+
+	// stand pat
+	if (!B.is_check()) {
+		best_score = eval(B);
+		if (best_score > alpha) {
+			alpha = best_score;
+			if (alpha >= beta)
+				return alpha;
+		}
+	}
+	
+	MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS);
+	move_t *m;
+	int cnt = 0;
+	
+	while ( (m = MS.next()) && alpha < beta) {
+		cnt++;
+		
+		if (!B.is_check() && !move_is_check(B, *m) && see(B, *m) < 0) {
+			assert(move_is_cop(B, *m));
+			continue;
+			
+		}
+		
+		B.play(*m);
+		int score = -qsearch(B, -beta, -alpha, depth-1, ply+1);
+		B.undo();
+		
+		if (score > best_score) {
+			best_score = score;
+			if (score > alpha)
+				alpha = score;
+		}
+	}
+	
+	if (B.is_check() && !cnt)
+		return ply-MATE;
+	
+	return best_score;
 }

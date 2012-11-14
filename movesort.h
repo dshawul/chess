@@ -15,8 +15,6 @@
 #pragma once
 #include "movegen.h"
 
-#define INF		32767
-
 class MoveSort
 {
 public:

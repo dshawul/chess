@@ -173,7 +173,6 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 void Board::play(move_t m)
 {
 	assert(initialized);
-
 	++_st;
 	memcpy(_st, _st-1, sizeof(game_info));
 	_st->last_move = m;
@@ -399,10 +398,8 @@ Key Board::calc_key() const
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = b[color][piece];
-			while (sqs) {
-				const int sq = pop_lsb(&sqs);
-				key ^= zob[color][piece][sq];
-			}
+			while (sqs)
+				key ^= zob[color][piece][pop_lsb(&sqs)];
 		}
 
 	return turn ? key ^ zob_turn : key;
