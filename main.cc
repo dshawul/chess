@@ -12,22 +12,14 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "search.h"
+#include "board.h"
+#include "psq.h"
+#include "uci.h"
 
 int main ()
 {
 	init_bitboard();
 	init_psq();
-	Board B;
-	B.set_fen("6Bk/PPPPPp1P/8/7R/7K/8/ppppppQ1/6B1 w - - 0 1 ");
-	std::cout << B;
 	
-	for (int d = 0; d < 10; d++) {
-		node_count = 0;
-		int score = search(B, -INF, +INF, d, 0);
-		
-		std::cout << "depth=" << d
-			<< "\tscore=" << score
-			<< "\tnodes=" << node_count << std::endl;
-	}
+	loop();
 }

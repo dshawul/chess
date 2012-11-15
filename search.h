@@ -26,6 +26,3 @@ move_t bestmove(Board& B, const SearchLimits& sl);
 #define MATE	32000
 
 extern uint64_t node_count;
-
-extern int search(Board& B, int alpha, int beta, int depth, int ply);
-extern int qsearch(Board& B, int alpha, int beta, int depth, int ply);

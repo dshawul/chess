@@ -32,6 +32,8 @@ public:
 
 	MoveSort(const Board* _B, GenType _type);
 	move_t *next();
+	
+	int get_count() const { return count; }
 
 private:
 	const Board *B;

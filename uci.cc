@@ -27,7 +27,6 @@ namespace
 
 void loop()
 {
-	init_bitboard();
 	Board B;
 
 	std::string cmd, token;

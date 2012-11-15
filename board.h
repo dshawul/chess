@@ -20,7 +20,7 @@
 /* Runs a set of perft(). This is the unit test to validate ANY modification in the board code. */
 bool test_perft();
 
-#define MAX_PLY		0x400	// max number of plies for a game
+#define MAX_GAME_PLY		0x400	// max number of plies for a game
 
 /* Castling flags: those are for White, use << 2 for Black */
 enum {
@@ -62,7 +62,9 @@ public:
 	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
 };
 
-struct game_info {
+static const move_t NO_MOVE = {move_t()};
+
+struct GameInfo {
 	int capture;				// piece just captured
 	int epsq;					// en passant square
 	int crights;				// castling rights, 4 bits in FEN order KQkq
@@ -83,7 +85,7 @@ class Board
 	Bitboard b[NB_COLOR][NB_PIECE];
 	Bitboard all[NB_COLOR];
 	int piece_on[NB_SQUARE];
-	game_info game_stack[MAX_PLY], *_st;
+	GameInfo game_stack[MAX_GAME_PLY], *_st;
 	int turn;
 	int king_pos[NB_COLOR];
 	int move_count;				// full move count, as per FEN standard
@@ -101,7 +103,7 @@ class Board
 	bool verify_psq() const;
 
 public:
-	const game_info& st() const;
+	const GameInfo& st() const;
 
 	int get_turn() const;
 	int get_move_count() const;
@@ -204,7 +206,7 @@ inline int Board::get_king_pos(int c) const
 	return king_pos[c];
 }
 
-inline const game_info& Board::st() const
+inline const GameInfo& Board::st() const
 {
 	assert(initialized);
 	return *_st;

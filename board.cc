@@ -30,7 +30,7 @@ void Board::clear()
 	memset(b, 0, sizeof(b));
 
 	_st = game_stack;
-	memset(_st, 0, sizeof(game_info));
+	memset(_st, 0, sizeof(GameInfo));
 	_st->epsq = NO_SQUARE;
 	move_count = 1;
 
@@ -174,7 +174,7 @@ void Board::play(move_t m)
 {
 	assert(initialized);
 	++_st;
-	memcpy(_st, _st-1, sizeof(game_info));
+	memcpy(_st, _st-1, sizeof(GameInfo));
 	_st->last_move = m;
 	_st->rule50++;
 
