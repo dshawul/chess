@@ -24,12 +24,15 @@ namespace
 		int ply;
 	};
 	const int MAX_PLY = 0x80;
+	const int MATE = 32000;
+
+	bool abort_search;
+	uint64_t node_count, node_limit;
+	bool node_poll();
 
 	int search(Board& B, int alpha, int beta, int depth, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, SearchInfo *ss);
 }
-
-uint64_t node_count;
 
 move_t bestmove(Board& B, const SearchLimits& sl)
 {
@@ -37,13 +40,23 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	for (int ply = 0; ply < MAX_PLY; ++ply)
 		ss[ply].ply = ply;
 
-	for (int depth = 1; !sl.depth || depth <= sl.depth; depth++) {
+	node_count = 0;
+	node_limit = sl.nodes;
+	abort_search = false;
+	move_t best_move;
+	
+	for (int depth = 1; !abort_search && (!sl.depth || depth <= sl.depth); depth++) {
 		int score = search(B, -INF, +INF, depth, ss);
-		std::cout << "info score cp " << score
-		          << " depth " << depth
-		          << " nodes " << node_count
-		          << " pv " << move_to_string(ss->best_move)
-		          << std::endl;
+
+		if (!abort_search) {
+			best_move = ss->best_move;
+			
+			std::cout << "info score cp " << score
+			          << " depth " << depth
+			          << " nodes " << node_count
+			          << " pv " << move_to_string(ss->best_move)
+			          << std::endl;
+		}
 	}
 
 	return ss->best_move;
@@ -64,7 +77,10 @@ namespace
 			return qsearch(B, alpha, beta, depth, ss);
 
 		assert(depth > 0);
-		node_count++;
+
+		if ( (abort_search = node_poll()) )
+			return 0;
+
 		int best_score = -INF;
 
 		// mate distance pruning
@@ -78,7 +94,7 @@ namespace
 		MoveSort MS(&B, MoveSort::ALL);
 		move_t *m;
 
-		while ( alpha < beta && (m = MS.next()) ) {
+		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
 			bool check = move_is_check(B, *m);
 
 			// check extension
@@ -114,7 +130,9 @@ namespace
 		assert(depth <= 0);
 		assert(alpha < beta);
 
-		node_count++;
+		if ( (abort_search = node_poll()) )
+			return 0;
+
 		bool in_check = B.is_check();
 		int best_score = -INF, static_eval = -INF;
 
@@ -131,7 +149,7 @@ namespace
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS);
 		move_t *m;
 
-		while ( alpha < beta && (m = MS.next()) ) {
+		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
 			int check = move_is_check(B, *m);
 
 			// SEE pruning
@@ -159,5 +177,11 @@ namespace
 			return mated_in(ss->ply);
 
 		return best_score;
+	}
+
+	bool node_poll()
+	{
+		++node_count;
+		return node_limit && node_count >= node_limit;
 	}
 }

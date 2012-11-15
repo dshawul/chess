@@ -22,7 +22,3 @@ struct SearchLimits {
 };
 
 move_t bestmove(Board& B, const SearchLimits& sl);
-
-#define MATE	32000
-
-extern uint64_t node_count;
