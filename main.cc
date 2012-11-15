@@ -19,7 +19,7 @@ int main ()
 	init_bitboard();
 	init_psq();
 	Board B;
-	B.set_fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -");
+	B.set_fen("6Bk/PPPPPp1P/8/7R/7K/8/ppppppQ1/6B1 w - - 0 1 ");
 	std::cout << B;
 	
 	for (int d = 0; d < 10; d++) {

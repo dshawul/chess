@@ -15,6 +15,8 @@
 #pragma once
 #include "board.h"
 
+enum { NO_CHECK, NORMAL_CHECK, DISCO_CHECK };
+
 extern int move_is_check(const Board& B, move_t m);
 extern int move_is_cop(const Board& B, move_t m);	// capture or promotion
 

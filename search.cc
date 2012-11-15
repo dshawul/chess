@@ -57,9 +57,16 @@ int search(Board& B, int alpha, int beta, int depth, int ply)
 	
 	while ( alpha < beta && (m = MS.next()) ) {
 		cnt++;
+		bool check = move_is_check(B, *m);
+		
+		int new_depth;
+		if (check && (check == DISCO_CHECK || see(B, *m) >= 0) )
+			new_depth = depth;
+		else
+			new_depth = depth-1;
 		
 		B.play(*m);
-		int score = -search(B, -beta, -alpha, depth-1, ply+1);
+		int score = -search(B, -beta, -alpha, new_depth, ply+1);
 		B.undo();
 		
 		best_score = std::max(best_score, score);
@@ -73,17 +80,20 @@ int search(Board& B, int alpha, int beta, int depth, int ply)
 	return best_score;
 }
 
+#define QS_LIMIT	-6
+
 int qsearch(Board& B, int alpha, int beta, int depth, int ply)
 {
 	assert(depth <= 0);
 	assert(alpha < beta);
 	
 	node_count++;
-	int best_score = -INF;
+	bool in_check = B.is_check();
+	int best_score = -INF, static_eval = -INF;
 
 	// stand pat
-	if (!B.is_check()) {
-		best_score = eval(B);
+	if (!in_check) {
+		best_score = static_eval = eval(B);
 		alpha = std::max(alpha, best_score);
 		if (alpha >= beta)
 			return alpha;
@@ -95,16 +105,20 @@ int qsearch(Board& B, int alpha, int beta, int depth, int ply)
 	
 	while ( alpha < beta && (m = MS.next()) ) {
 		cnt++;
+		int check = move_is_check(B, *m);
 		
-		if (!B.is_check() && !move_is_check(B, *m) && see(B, *m) < 0) {
-			assert(move_is_cop(B, *m));
+		if (!in_check && check != DISCO_CHECK && see(B, *m) < 0)
 			continue;
-			
-		}
 		
-		B.play(*m);
-		int score = -qsearch(B, -beta, -alpha, depth-1, ply+1);
-		B.undo();
+		int score;
+		
+		if (depth <= QS_LIMIT && !in_check)
+			score = static_eval + see(B,*m);	// prevent qsearch explosion
+		else {
+			B.play(*m);
+			score = -qsearch(B, -beta, -alpha, depth-1, ply+1);
+			B.undo();
+		}
 		
 		best_score = std::max(best_score, score);
 		alpha = std::max(alpha, score);
