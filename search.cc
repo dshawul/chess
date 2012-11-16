@@ -59,7 +59,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 		}
 	}
 
-	return ss->best_move;
+	return best_move;
 }
 
 namespace
