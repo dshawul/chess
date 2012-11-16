@@ -73,6 +73,9 @@ namespace
 	{
 		assert(alpha < beta);
 
+		if ((ss->ply > 0 && B.is_draw()) || ss->ply >= MAX_PLY-2)
+			return 0;
+		
 		if (depth <= 0)
 			return qsearch(B, alpha, beta, depth, ss);
 
@@ -219,7 +222,7 @@ void bench()
 	
 	for (int i = 0; test[i].fen; ++i) {
 		B.set_fen(test[i].fen);
-		std::cout << B;
+		std::cout << B.get_fen() << std::endl;
 		sl.depth = test[i].depth;
 		bestmove(B, sl);
 		std::cout << std::endl;

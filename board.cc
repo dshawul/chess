@@ -424,3 +424,17 @@ bool Board::verify_psq() const
 	
 	return true;
 }
+
+bool Board::is_draw() const
+{
+	// 3 move rule
+	for (int i = 4; i <= st().rule50; i += 2)
+		if (_st[-i].key == st().key)
+			return true;
+	
+	// 50 move
+	if (st().rule50 >= 100)
+		return true;
+	
+	return false;
+}

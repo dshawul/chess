@@ -127,6 +127,7 @@ public:
 	void undo();
 	
 	bool is_check() const { return st().checkers; }
+	bool is_draw() const;
 };
 
 extern const std::string PieceLabel[NB_COLOR];
