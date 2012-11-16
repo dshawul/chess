@@ -53,13 +53,19 @@ public:
 	int fsq() const { return b & 0x3f; }
 	int tsq() const { return (b >> 6) & 0x3f; }
 	int flag() const { return (b >> 14) & 3; }
-	int prom() const { assert(flag() == PROMOTION); return ((b >> 12) & 3) + KNIGHT; }
+	int prom() const {
+		assert(flag() == PROMOTION);
+		return ((b >> 12) & 3) + KNIGHT;
+	}
 
 	// setters
 	void fsq(int fsq) { assert(square_ok(fsq)); b &= 0xffc0; b ^= fsq; }
 	void tsq(int tsq) { assert(square_ok(tsq)); b &= 0xf03f; b ^= (tsq << 6); }
 	void flag(int flag) { assert(flag < 4); b &= 0x3fff; b ^= (flag << 14); }
-	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
+	void prom(int piece) {
+		assert(KNIGHT <= piece && piece <= QUEEN);
+		b &= 0xcfff; b ^= (piece - KNIGHT) << 12;
+	}
 };
 
 static const move_t NO_MOVE = {move_t()};
@@ -75,7 +81,8 @@ struct GameInfo {
 	Bitboard checkers;			// pieces checking turn's King
 	Bitboard occ;				// occupancy
 	int rule50;					// counter for the 50 move rule
-	Eval psq[NB_COLOR];			// PSQ by color
+	Eval psq[NB_COLOR];			// PSQ Evel by color
+	int piece_psq[NB_COLOR];	// PSQ Eval.op by color
 
 	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };
@@ -113,12 +120,17 @@ public:
 
 	Bitboard get_pieces(int color) const;
 	Bitboard get_pieces(int color, int piece) const;
-	Bitboard get_N() const;
-	Bitboard get_K() const;
-	Bitboard get_RQ() const;
-	Bitboard get_BQ() const;
-	Bitboard get_RQ(int color) const;
-	Bitboard get_BQ(int color) const;
+	
+	Bitboard get_P() const { return get_pieces(WHITE, PAWN) | get_pieces(BLACK, PAWN); }
+	Bitboard get_N() const { return get_pieces(WHITE, KNIGHT) | get_pieces(BLACK, KNIGHT); }
+	Bitboard get_K() const { return get_pieces(WHITE, KING) | get_pieces(BLACK, KING); }
+	
+	Bitboard get_RQ(int color) const { return get_pieces(color, ROOK) | get_pieces(color, QUEEN); }
+	Bitboard get_BQ(int color) const { return get_pieces(color, BISHOP) | get_pieces(color, QUEEN); }
+	Bitboard get_NB(int color) const { return get_pieces(color, KNIGHT) | get_pieces(color, BISHOP); }
+
+	Bitboard get_RQ() const { return get_RQ(WHITE) | get_RQ(BLACK); }
+	Bitboard get_BQ() const { return get_BQ(WHITE) | get_BQ(BLACK); }
 
 	void set_fen(const std::string& fen);
 	std::string get_fen() const;
@@ -126,6 +138,7 @@ public:
 	void play(move_t m);
 	void undo();
 	
+	bool is_draw() const;
 	bool is_check() const { return st().checkers; }
 };
 
@@ -142,38 +155,6 @@ inline int Board::get_color_on(int sq) const
 {
 	assert(initialized && square_ok(sq));
 	return test_bit(all[WHITE], sq) ? WHITE : (test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
-}
-
-inline Bitboard Board::get_N() const
-{
-	return get_pieces(WHITE, KNIGHT) | get_pieces(BLACK, KNIGHT);
-}
-
-inline Bitboard Board::get_K() const
-{
-	return get_pieces(WHITE, KING) | get_pieces(BLACK, KING);
-}
-
-inline Bitboard Board::get_RQ(int color) const
-{
-	assert(initialized && color_ok(color));
-	return b[color][ROOK] | b[color][QUEEN];
-}
-
-inline Bitboard Board::get_RQ() const
-{
-	return get_RQ(WHITE) | get_RQ(BLACK);
-}
-
-inline Bitboard Board::get_BQ(int color) const
-{
-	assert(initialized && color_ok(color));
-	return b[color][BISHOP] | b[color][QUEEN];
-}
-
-inline Bitboard Board::get_BQ() const
-{
-	return get_BQ(WHITE) | get_BQ(BLACK);
 }
 
 inline int Board::get_piece_on(int sq) const
