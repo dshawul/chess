@@ -12,14 +12,16 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "board.h"
-#include "psq.h"
+#include "search.h"
 #include "uci.h"
 
-int main ()
+int main (int argc, char **argv)
 {
 	init_bitboard();
 	init_psq();
 	
-	loop();
+	if (argc == 2 && std::string(argv[1]) == "bench")
+		bench();
+	else
+		loop();
 }

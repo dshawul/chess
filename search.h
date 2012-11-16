@@ -22,3 +22,4 @@ struct SearchLimits {
 };
 
 move_t bestmove(Board& B, const SearchLimits& sl);
+void bench();
