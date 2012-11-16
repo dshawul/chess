@@ -73,10 +73,6 @@ namespace
 	{
 		assert(alpha < beta);
 
-		// draw by repetition, 50 move, or material
-		if ((ss->ply > 0 && B.is_draw()) || ss->ply+1 >= MAX_PLY)
-			return 0;
-		
 		if (depth <= 0)
 			return qsearch(B, alpha, beta, depth, ss);
 
