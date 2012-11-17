@@ -30,7 +30,7 @@ namespace
 void loop()
 {
 	Board B;
-	TT.alloc(32);
+	TT.alloc(32 << 20);
 
 	std::string cmd, token;
 
@@ -121,7 +121,7 @@ namespace
 		if (name == "Hash") {
 			uint64_t size_mb;
 			is >> size_mb;
-			TT.alloc(0x100000 * size_mb);
+			TT.alloc(size_mb << 20);
 		} else if (name == "ClearHash")
 			TT.clear();
 	}

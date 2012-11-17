@@ -111,7 +111,7 @@ namespace
 		int current_eval;
 		move_t tt_move;
 		Key key = B.get_key();
-		TTable::Entry *tte = TT.find(key);
+		const TTable::Entry *tte = TT.find(key);
 		if (tte) {
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
 				return adjust_tt_score(tte->score, ss->ply);
@@ -220,7 +220,7 @@ namespace
 		int current_eval;
 		move_t tt_move;
 		Key key = B.get_key();
-		TTable::Entry *tte = TT.find(key);
+		const TTable::Entry *tte = TT.find(key);
 		if (tte) {
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
 				return adjust_tt_score(tte->score, ss->ply);
@@ -358,7 +358,7 @@ void bench()
 	SearchLimits sl;
 	uint64_t signature = 0;
 
-	TT.alloc(32);
+	TT.alloc(32 << 20);
 
 	using namespace std::chrono;
 	time_point<high_resolution_clock> start, end;
