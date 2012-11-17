@@ -330,8 +330,12 @@ void Board::set_square(int color, int piece, int sq, bool play)
 
 	if (play) {
 		set_bit(&_st->occ, sq);
-		_st->psq[color] += get_psq(color, piece, sq);
 		_st->key ^= zob[color][piece][sq];
+
+		const Eval& e = get_psq(color, piece, sq);
+		_st->psq[color] += e;
+		if (KNIGHT <= piece && piece <= QUEEN)
+			_st->piece_psq[color] += e.op;
 	}
 }
 
@@ -347,8 +351,12 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 
 	if (play) {
 		clear_bit(&_st->occ, sq);
-		_st->psq[color] -= get_psq(color, piece, sq);
 		_st->key ^= zob[color][piece][sq];
+
+		const Eval& e = get_psq(color, piece, sq);
+		_st->psq[color] -= e;
+		if (KNIGHT <= piece && piece <= QUEEN)
+			_st->piece_psq[color] -= e.op;
 	}
 }
 
@@ -408,20 +416,26 @@ Key Board::calc_key() const
 bool Board::verify_psq() const
 {
 	Eval psq[NB_COLOR];
+	int piece_psq[NB_COLOR];
 
 	for (int color = WHITE; color <= BLACK; ++color) {
 		psq[color].clear();
-		
+		piece_psq[color] = 0;
+
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
-			while (sqs)
-				psq[color] += get_psq(color, piece, pop_lsb(&sqs));
+			while (sqs) {
+				const Eval& e = get_psq(color, piece, pop_lsb(&sqs));
+				psq[color] += e;
+				if (KNIGHT <= piece && piece <= QUEEN)
+					piece_psq[color] += e.op;
+			}
 		}
-		
-		if (psq[color] != st().psq[color])
+
+		if (psq[color] != st().psq[color] || piece_psq[color] != st().piece_psq[color])
 			return false;
 	}
-	
+
 	return true;
 }
 
@@ -431,10 +445,10 @@ bool Board::is_draw() const
 	for (int i = 4; i <= st().rule50; i += 2)
 		if (_st[-i].key == st().key)
 			return true;
-	
+
 	// 50 move
 	if (st().rule50 >= 100)
 		return true;
-	
+
 	return false;
 }

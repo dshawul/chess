@@ -25,7 +25,8 @@ namespace
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
-
+	const int QS_LIMIT = -6;
+	
 	bool abort_search;
 	uint64_t node_count, node_limit;
 	bool node_poll();
@@ -45,7 +46,10 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	abort_search = false;
 	move_t best;
 
-	for (int depth = 1; !abort_search && (!sl.depth || depth <= sl.depth); depth++) {
+	for (int depth = 1; !abort_search; depth++) {
+		if ( (sl.depth && depth > sl.depth) || depth >= MAX_PLY )
+			break;
+		
 		int score = search(B, -INF, +INF, depth, ss);
 
 		if (!abort_search) {
@@ -64,8 +68,6 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 namespace
 {
-	const int QS_LIMIT = -6;
-
 	int mated_in(int ply)	{ return ply-MATE; }
 	int mate_in(int ply)	{ return MATE-ply; }
 

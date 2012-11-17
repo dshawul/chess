@@ -76,7 +76,8 @@ struct GameInfo {
 	Bitboard checkers;			// pieces checking turn's King
 	Bitboard occ;				// occupancy
 	int rule50;					// counter for the 50 move rule
-	Eval psq[NB_COLOR];			// PSQ by color
+	Eval psq[NB_COLOR];			// PSQ Eval by color
+	int piece_psq[NB_COLOR];	// PSQ Eval.op for pieces only
 
 	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };
