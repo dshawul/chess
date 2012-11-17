@@ -29,13 +29,16 @@ namespace
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
 	const int QS_LIMIT = -6;
-	
+
 	bool abort_search;
 	uint64_t node_count, node_limit;
 	bool node_poll();
 
-	int search(Board& B, int alpha, int beta, int depth, SearchInfo *ss);
-	int qsearch(Board& B, int alpha, int beta, int depth, SearchInfo *ss);
+	int adjust_tt_score(int score, int ply);
+	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
+
+	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
+	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -52,8 +55,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	for (int depth = 1; !abort_search; depth++) {
 		if ( (sl.depth && depth > sl.depth) || depth >= MAX_PLY )
 			break;
-		
-		int score = search(B, -INF, +INF, depth, ss);
+
+		int score = search(B, -INF, +INF, depth, true, ss);
 
 		if (!abort_search) {
 			best = ss->best;
@@ -74,22 +77,23 @@ namespace
 	int mated_in(int ply)	{ return ply-MATE; }
 	int mate_in(int ply)	{ return MATE-ply; }
 
-	int search(Board& B, int alpha, int beta, int depth, SearchInfo *ss)
+	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
 		assert(alpha < beta);
 
 		if ((ss->ply > 0 && B.is_draw()) || ss->ply >= MAX_PLY-2)
 			return 0;
-		
+
 		if (depth <= 0)
-			return qsearch(B, alpha, beta, depth, ss);
+			return qsearch(B, alpha, beta, depth, is_pv, ss);
 
 		assert(depth > 0);
 
 		if ( (abort_search = node_poll()) )
 			return 0;
 
-		int best_score = -INF;
+		int best_score = -INF, old_alpha = alpha;
+		const bool in_check = B.is_check();
 
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
@@ -99,10 +103,26 @@ namespace
 			return alpha;
 		}
 
-		MoveSort MS(&B, MoveSort::ALL, ss->killer);
+		// TT lookup
+		int current_eval;
+		move_t tt_move;
+		Key key = B.get_key();
+		TTable::Entry *tte = TT.find(key);
+		if (tte) {
+			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
+				return adjust_tt_score(tte->score, ss->ply);
+			if (tte->depth > 0)		// do not use qsearch results
+				tt_move = tte->move;
+			current_eval = tte->eval;
+		} else
+			current_eval = in_check ? -INF : eval(B);
+
+		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move);
 		move_t *m;
+		int cnt = 0;
 
 		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
+			++cnt;
 			bool check = move_is_check(B, *m);
 
 			// check extension
@@ -114,7 +134,20 @@ namespace
 
 			// recursion
 			B.play(*m);
-			int score = -search(B, -beta, -alpha, new_depth, ss+1);
+			
+			int score;
+			if (is_pv && cnt == 1)
+				// search full window
+				score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
+			else {
+				// try zero window (which *is* the full window for non PV nodes)
+				score = -search(B, -alpha-1, -alpha, new_depth, false, ss+1);
+				
+				// doesn't fail low at PV node: research full window
+				if (is_pv && score > alpha)
+					score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
+			}
+			
 			B.undo();
 
 			if (score > best_score) {
@@ -127,21 +160,32 @@ namespace
 		// mated or stalemated
 		if (!MS.get_count()) {
 			assert(ss->ply > 0);
-			return B.is_check() ? mated_in(ss->ply) : 0;
+			return in_check ? mated_in(ss->ply) : 0;
 		}
-		
+
+		// update TT
+		TTable::Entry e;
+		e.depth = depth;
+		e.eval = current_eval;
+		e.key = key;
+		e.move = ss->best;
+		e.score = best_score;
+		e.type = best_score <= old_alpha ? SCORE_UBOUND
+		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		TT.write(&e);
+
 		// update killers
 		if (!move_is_cop(B, ss->best)) {
 			if (ss->killer[0] != ss->best) {
 				ss->killer[1] = ss->killer[0];
 				ss->killer[0] = ss->best;
-			}			
+			}
 		}
 
 		return best_score;
 	}
 
-	int qsearch(Board& B, int alpha, int beta, int depth, SearchInfo *ss)
+	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
 		assert(depth <= 0);
 		assert(alpha < beta);
@@ -150,11 +194,24 @@ namespace
 			return 0;
 
 		bool in_check = B.is_check();
-		int best_score = -INF, static_eval = -INF;
+		int best_score = -INF, old_alpha = alpha;
+
+		// TT lookup
+		int current_eval;
+		move_t tt_move;
+		Key key = B.get_key();
+		TTable::Entry *tte = TT.find(key);
+		if (tte) {
+			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
+				return adjust_tt_score(tte->score, ss->ply);
+			tt_move = tte->move;
+			current_eval = tte->eval;
+		} else
+			current_eval = in_check ? -INF : eval(B);
 
 		// stand pat
 		if (!in_check) {
-			best_score = static_eval = eval(B);
+			best_score = current_eval = eval(B);
 			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta) {
@@ -162,7 +219,7 @@ namespace
 			}
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL);
+		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move);
 		move_t *m;
 
 		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
@@ -174,11 +231,11 @@ namespace
 
 			// recursion
 			int score;
-			if (depth <= QS_LIMIT && !in_check)
-				score = static_eval + see(B,*m);	// prevent qsearch explosion
+			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
+				score = current_eval + see(B,*m);
 			else {
 				B.play(*m);
-				score = -qsearch(B, -beta, -alpha, depth-1, ss+1);
+				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
 
@@ -192,6 +249,17 @@ namespace
 		if (B.is_check() && !MS.get_count())
 			return mated_in(ss->ply);
 
+		// update TT
+		TTable::Entry e;
+		e.depth = depth;
+		e.eval = current_eval;
+		e.key = key;
+		e.move = ss->best;
+		e.score = best_score;
+		e.type = best_score <= old_alpha ? SCORE_UBOUND
+		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		TT.write(&e);
+
 		return best_score;
 	}
 
@@ -199,6 +267,37 @@ namespace
 	{
 		++node_count;
 		return node_limit && node_count >= node_limit;
+	}
+
+	int adjust_tt_score(int score, int ply)
+	/* mate scores from the hash_table_t need to be adjusted. For example, if we find a mate in 10 from the
+	 * hash_table_t at ply 5, then we effectively have a mate in 15 plies. */
+	{
+		if (score >= mate_in(MAX_PLY))
+			return score - ply;
+		else if (score <= mated_in(MAX_PLY))
+			return score + ply;
+		else
+			return score;
+	}
+
+	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply)
+	/* PV nodes: return only exact scores
+	 * non PV nodes: return fail high/low scores. Mate scores are also trusted, regardless of the
+	 * depth. This idea is from StockFish, and although it's not totally sound, it seems to work. */
+	{
+		const bool depth_ok = tte->depth >= depth;
+
+		if (is_pv)
+			return depth_ok && tte->type == SCORE_EXACT;
+		else {
+			const int tt_score = adjust_tt_score(tte->score, ply);
+			return (depth_ok
+			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
+			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
+			       &&	((tte->type == SCORE_LBOUND && tt_score >= beta)
+			            ||(tte->type == SCORE_UBOUND && tt_score < beta));
+		}
 	}
 }
 
@@ -208,7 +307,7 @@ void bench()
 		const char *fen;
 		int depth;
 	};
-	
+
 	static const TestPosition test[] = {
 		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 6},
 		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 6},
@@ -228,15 +327,17 @@ void bench()
 		{"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26", 6},
 		{NULL, 0}
 	};
-	
+
 	Board B;
 	SearchLimits sl;
 	uint64_t signature = 0;
-	
+
+	TT.alloc(32);
+
 	using namespace std::chrono;
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
-	
+
 	for (int i = 0; test[i].fen; ++i) {
 		B.set_fen(test[i].fen);
 		std::cout << B.get_fen() << std::endl;
@@ -245,10 +346,10 @@ void bench()
 		std::cout << std::endl;
 		signature += node_count;
 	}
-	
+
 	end = high_resolution_clock::now();
 	int64_t elapsed_usec = duration_cast<microseconds>(end-start).count();
-	
+
 	std::cout << "signature = " << signature << std::endl;
 	std::cout << "time = " << (float)elapsed_usec / 1e6 << std::endl;
 }

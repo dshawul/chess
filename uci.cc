@@ -30,6 +30,7 @@ namespace
 void loop()
 {
 	Board B;
+	TT.alloc(32);
 
 	std::string cmd, token;
 
@@ -43,6 +44,7 @@ void loop()
 		if (token == "uci")
 			std::cout << "id name DiscoCheck\n"
 			          << "id author Lucas Braesch\n"
+					  << "option name Hash type spin default 32 min 1 max 8192\n"
 			          << "uciok" << std::endl;
 		else if (token == "position")
 			position(B, is);
