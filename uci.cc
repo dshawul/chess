@@ -24,6 +24,7 @@ namespace
 
 	void position(Board& B, std::istringstream& is);
 	void go(Board& B, std::istringstream& is);
+	void setoption(std::istringstream& is);
 }
 
 void loop()
@@ -49,11 +50,10 @@ void loop()
 			go(B, is);
 		else if (token == "isready")
 			std::cout << "readyok" << std::endl;
-		else if (token == "eval") {
-			std::cout << B;
-			std::cout << "eval = " << eval(B) << std::endl;
-		}
-
+		else if (token == "setoption")
+			setoption(is);
+		else if (token == "eval")
+			std::cout << B << "eval = " << eval(B) << std::endl;
 	}
 }
 
@@ -105,5 +105,22 @@ namespace
 
 		move_t m = bestmove(B, sl);
 		std::cout << "bestmove " << move_to_string(m) << std::endl;
+	}
+	
+	void setoption(std::istringstream& is)
+	{
+		std::string token, name;
+		if (!(is >> token) || token != "name")
+			return;
+		
+		while (is >> token && token != "value")
+			name += token;
+		
+		if (name == "Hash") {
+			uint64_t size_mb;
+			is >> size_mb;
+			TT.alloc(0x100000 * size_mb);
+		} else if (name == "ClearHash")
+			TT.clear();
 	}
 }

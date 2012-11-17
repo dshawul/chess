@@ -18,6 +18,8 @@
 #include "movesort.h"
 #include "prng.h"
 
+TTable TT;
+
 namespace
 {
 	struct SearchInfo {

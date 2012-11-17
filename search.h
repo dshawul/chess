@@ -14,12 +14,16 @@
 */
 #pragma once
 #include "movegen.h"
+#include "tt.h"
 
 struct SearchLimits {
 	SearchLimits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0) {}
 	int time, inc, movetime, depth, movestogo;
 	uint64_t nodes;
 };
+
+// Transposition Table
+extern TTable TT;
 
 move_t bestmove(Board& B, const SearchLimits& sl);
 void bench();

@@ -3,7 +3,7 @@
 
 enum { SCORE_EXACT, SCORE_UBOUND, SCORE_LBOUND };
 
-class TT
+class TTable
 {
 public:
 	struct Entry {
@@ -13,10 +13,12 @@ public:
 		move_t move;
 	};
 
-	TT(): count(0), buf(NULL) {}
-	~TT();
+	TTable(): count(0), buf(NULL) {}
+	~TTable();
 	
 	void alloc(uint64_t size);
+	void clear();
+	
 	void write(const Entry *e);
 	Entry *find(Key key) const;
 	
