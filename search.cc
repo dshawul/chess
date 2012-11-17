@@ -12,6 +12,7 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
+#include <chrono>
 #include "search.h"
 #include "eval.h"
 #include "movesort.h"
@@ -230,6 +231,10 @@ void bench()
 	SearchLimits sl;
 	uint64_t signature = 0;
 	
+	using namespace std::chrono;
+	time_point<high_resolution_clock> start, end;
+	start = high_resolution_clock::now();
+	
 	for (int i = 0; test[i].fen; ++i) {
 		B.set_fen(test[i].fen);
 		std::cout << B.get_fen() << std::endl;
@@ -239,5 +244,9 @@ void bench()
 		signature += node_count;
 	}
 	
+	end = high_resolution_clock::now();
+	int64_t elapsed_usec = duration_cast<microseconds>(end-start).count();
+	
 	std::cout << "signature = " << signature << std::endl;
+	std::cout << "time = " << (float)elapsed_usec / 1e6 << std::endl;
 }
