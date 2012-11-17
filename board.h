@@ -133,6 +133,8 @@ public:
 	
 	bool is_check() const { return st().checkers; }
 	bool is_draw() const;
+	
+	Key get_key() const;
 };
 
 extern const std::string PieceLabel[NB_COLOR];

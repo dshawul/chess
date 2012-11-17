@@ -452,3 +452,11 @@ bool Board::is_draw() const
 
 	return false;
 }
+
+Key Board::get_key() const
+{
+	assert(initialized);
+	return st().key
+		^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
+		^ zob_castle[st().crights];
+}
