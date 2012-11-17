@@ -181,58 +181,60 @@ void Board::play(move_t m)
 	const int us = turn, them = opp_color(us);
 	const int fsq = m.fsq(), tsq = m.tsq();
 	const int piece = piece_on[fsq], capture = piece_on[tsq];
+	
+	if (m) {
+		// normal capture: remove captured piece
+		if (piece_ok(capture)) {
+			_st->rule50 = 0;
+			clear_square(them, capture, tsq);
+		}
 
-	// normal capture: remove captured piece
-	if (piece_ok(capture)) {
-		_st->rule50 = 0;
-		clear_square(them, capture, tsq);
-	}
+		// move our piece
+		clear_square(us, piece, fsq);
+		set_square(us, m.flag() == PROMOTION ? m.prom() : piece, tsq);
 
-	// move our piece
-	clear_square(us, piece, fsq);
-	set_square(us, m.flag() == PROMOTION ? m.prom() : piece, tsq);
+		if (piece == PAWN) {
+			_st->rule50 = 0;
+			int inc_pp = us ? -8 : 8;
+			// set the epsq if double push
+			_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
+			// capture en passant
+			if (m.flag() == EN_PASSANT)
+				clear_square(them, PAWN, tsq - inc_pp);
+		} else {
+			_st->epsq = NO_SQUARE;
 
-	if (piece == PAWN) {
-		_st->rule50 = 0;
-		int inc_pp = us ? -8 : 8;
-		// set the epsq if double push
-		_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
-		// capture en passant
-		if (m.flag() == EN_PASSANT)
-			clear_square(them, PAWN, tsq - inc_pp);
-	} else {
-		_st->epsq = NO_SQUARE;
+			if (piece == ROOK) {
+				// a rook move can alter castling rights
+				if (fsq == (us ? H8 : H1))
+					_st->crights &= ~(OO << (2 * us));
+				else if (fsq == (us ? A8 : A1))
+					_st->crights &= ~(OOO << (2 * us));
+			} else if (piece == KING) {
+				// update king_pos and clear crights
+				king_pos[us] = tsq;
+				_st->crights &= ~((OO | OOO) << (2 * us));
 
-		if (piece == ROOK) {
-			// a rook move can alter castling rights
-			if (fsq == (us ? H8 : H1))
-				_st->crights &= ~(OO << (2 * us));
-			else if (fsq == (us ? A8 : A1))
-				_st->crights &= ~(OOO << (2 * us));
-		} else if (piece == KING) {
-			// update king_pos and clear crights
-			king_pos[us] = tsq;
-			_st->crights &= ~((OO | OOO) << (2 * us));
-
-			if (m.flag() == CASTLING) {
-				// rook jump
-				if (tsq == fsq+2) {			// OO
-					clear_square(us, ROOK, us ? H8 : H1);
-					set_square(us, ROOK, us ? F8 : F1);
-				} else if (tsq == fsq-2) {	// OOO
-					clear_square(us, ROOK, us ? A8 : A1);
-					set_square(us, ROOK, us ? D8 : D1);
+				if (m.flag() == CASTLING) {
+					// rook jump
+					if (tsq == fsq+2) {			// OO
+						clear_square(us, ROOK, us ? H8 : H1);
+						set_square(us, ROOK, us ? F8 : F1);
+					} else if (tsq == fsq-2) {	// OOO
+						clear_square(us, ROOK, us ? A8 : A1);
+						set_square(us, ROOK, us ? D8 : D1);
+					}
 				}
 			}
 		}
-	}
 
-	if (capture == ROOK) {
-		// Rook captures can alter opponent's castling rights
-		if (tsq == (us ? H1 : H8))
-			_st->crights &= ~(OO << (2 * them));
-		else if (tsq == (us ? A1 : A8))
-			_st->crights &= ~(OOO << (2 * them));
+		if (capture == ROOK) {
+			// Rook captures can alter opponent's castling rights
+			if (tsq == (us ? H1 : H8))
+				_st->crights &= ~(OO << (2 * them));
+			else if (tsq == (us ? A1 : A8))
+				_st->crights &= ~(OOO << (2 * them));
+		}
 	}
 
 	turn = them;
@@ -255,34 +257,37 @@ void Board::undo()
 	assert(initialized);
 	const move_t m = st().last_move;
 	const int us = opp_color(turn), them = turn;
-	const int fsq = m.fsq(), tsq = m.tsq();
-	const int piece = m.flag() == PROMOTION ? PAWN : piece_on[tsq];
-	const int capture = st().capture;
 
-	// move our piece back
-	clear_square(us, get_piece_on(tsq), tsq, false);	// get_piece_on() is to handle a promotion
-	set_square(us, piece, fsq, false);
+	if (m) {	// skip for null move
+		const int fsq = m.fsq(), tsq = m.tsq();
+		const int piece = m.flag() == PROMOTION ? PAWN : piece_on[tsq];
+		const int capture = st().capture;
 
-	// restore the captured piece (if any)
-	if (piece_ok(capture))
-		set_square(them, capture, tsq, false);
+		// move our piece back
+		clear_square(us, get_piece_on(tsq), tsq, false);	// get_piece_on() is to handle a promotion
+		set_square(us, piece, fsq, false);
 
-	if (piece == KING) {
-		// update king_pos
-		king_pos[us] = fsq;
+		// restore the captured piece (if any)
+		if (piece_ok(capture))
+			set_square(them, capture, tsq, false);
 
-		if (m.flag() == CASTLING) {
-			// undo rook jump
-			if (tsq == fsq+2) {			// OO
-				clear_square(us, ROOK, us ? F8 : F1, false);
-				set_square(us, ROOK, us ? H8 : H1, false);
-			} else if (tsq == fsq-2) {	// OOO
-				clear_square(us, ROOK, us ? D8 : D1, false);
-				set_square(us, ROOK, us ? A8 : A1, false);
+		if (piece == KING) {
+			// update king_pos
+			king_pos[us] = fsq;
+
+			if (m.flag() == CASTLING) {
+				// undo rook jump
+				if (tsq == fsq+2) {			// OO
+					clear_square(us, ROOK, us ? F8 : F1, false);
+					set_square(us, ROOK, us ? H8 : H1, false);
+				} else if (tsq == fsq-2) {	// OOO
+					clear_square(us, ROOK, us ? D8 : D1, false);
+					set_square(us, ROOK, us ? A8 : A1, false);
+				}
 			}
-		}
-	} else if (m.flag() == EN_PASSANT)	// restore the en passant captured pawn
-		set_square(them, PAWN, tsq + (us ? 8 : -8), false);
+		} else if (m.flag() == EN_PASSANT)	// restore the en passant captured pawn
+			set_square(them, PAWN, tsq + (us ? 8 : -8), false);
+	}
 
 	turn = us;
 	if (turn == BLACK)
@@ -457,6 +462,6 @@ Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
-		^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
-		^ zob_castle[st().crights];
+	       ^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
+	       ^ zob_castle[st().crights];
 }

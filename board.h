@@ -47,6 +47,8 @@ class move_t
 
 public:
 	move_t(): b(0) {}	// silence compiler warnings
+	operator bool() const { return b; }
+	
 	bool operator== (move_t m) const { return b == m.b; }
 	bool operator!= (move_t m) const { return b != m.b; }
 
