@@ -25,7 +25,6 @@ extern std::string move_to_string(move_t m);
 extern std::string move_to_san(const Board& B, move_t m);
 
 extern int see(const Board& B, move_t m);
-extern int see_sign(const Board& B, move_t m);
 extern bool test_see();
 
 extern int mvv_lva(const Board& B, move_t m);

@@ -181,20 +181,6 @@ namespace
 	}
 }
 
-int see_sign(const Board& B, move_t m)
-{
-	int from_value = see_val[B.get_piece_on(m.fsq())];
-	int to_value = see_val[B.get_piece_on(m.tsq())];
-
-	/* Note that we do not adjust to_value for en-passant and promotions. The only case where we can
-	 * directly conclude on the (strict) signum of the SEE, is when the promotion is also a capture,
-	 * as the capture victim is necessarly a piece, worth more than a pawn.
-	 * For en-passant, to_value = 0, and for a promotion to_value is generally zero, except when the
-	 * promotion is a capture, in which case to_value is the value of the victim. */
-
-	return (to_value > from_value) ? 1 : see(B, m);
-}
-
 int see(const Board& B, move_t m)
 /* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant. */
 {
