@@ -16,6 +16,7 @@
 #include <sstream>
 #include "uci.h"
 #include "search.h"
+#include "eval.h"
 
 namespace
 {
@@ -49,8 +50,8 @@ void loop()
 		else if (token == "isready")
 			std::cout << "readyok" << std::endl;
 		else if (token == "eval") {
-			std::cout << B << std::endl;
-			// TODO: eval debug pring, by (component,color,phase)
+			std::cout << B;
+			std::cout << "eval = " << eval(B) << std::endl;
 		}
 
 	}
