@@ -15,8 +15,8 @@
 #include <algorithm>
 #include "movesort.h"
 
-MoveSort::MoveSort(const Board *_B, GenType _type)
-	: B(_B), type(_type), idx(0)
+MoveSort::MoveSort(const Board *_B, GenType _type, const move_t *_killer)
+	: B(_B), type(_type), killer(_killer), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
 
@@ -63,7 +63,17 @@ int MoveSort::score(move_t m)
 {
 	switch (type) {
 	case ALL:	// search
-		return (move_is_cop(*B, m) || test_bit(B->st().attacked, m.tsq())) ? see(*B, m) : 0;
+		if (move_is_cop(*B, m))
+			return see(*B, m);
+		else if (killer != NULL) {
+			if (m == killer[0])
+				return 2;
+			else if (m == killer[1])
+				return 1;
+			else
+				return 0;
+		} else
+			return 0;
 	default:	// qsearch
 		return move_is_cop(*B, m) ? mvv_lva(*B, m) : 0;
 	}

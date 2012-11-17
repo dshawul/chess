@@ -20,7 +20,7 @@
 namespace
 {
 	struct SearchInfo {
-		move_t best_move;
+		move_t best, killer[2];
 		int ply;
 	};
 	const int MAX_PLY = 0x80;
@@ -43,23 +43,23 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_count = 0;
 	node_limit = sl.nodes;
 	abort_search = false;
-	move_t best_move;
+	move_t best;
 
 	for (int depth = 1; !abort_search && (!sl.depth || depth <= sl.depth); depth++) {
 		int score = search(B, -INF, +INF, depth, ss);
 
 		if (!abort_search) {
-			best_move = ss->best_move;
+			best = ss->best;
 
 			std::cout << "info score cp " << score
 			          << " depth " << depth
 			          << " nodes " << node_count
-			          << " pv " << move_to_string(ss->best_move)
+			          << " pv " << move_to_string(ss->best)
 			          << std::endl;
 		}
 	}
 
-	return best_move;
+	return best;
 }
 
 namespace
@@ -94,7 +94,7 @@ namespace
 			return alpha;
 		}
 
-		MoveSort MS(&B, MoveSort::ALL);
+		MoveSort MS(&B, MoveSort::ALL, ss->killer);
 		move_t *m;
 
 		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
@@ -115,7 +115,7 @@ namespace
 			if (score > best_score) {
 				best_score = score;
 				alpha = std::max(alpha, score);
-				ss->best_move = *m;
+				ss->best = *m;
 			}
 		}
 
@@ -123,6 +123,14 @@ namespace
 		if (!MS.get_count()) {
 			assert(ss->ply > 0);
 			return B.is_check() ? mated_in(ss->ply) : 0;
+		}
+		
+		// update killers
+		if (!move_is_cop(B, ss->best)) {
+			if (ss->killer[0] != ss->best) {
+				ss->killer[1] = ss->killer[0];
+				ss->killer[0] = ss->best;
+			}			
 		}
 
 		return best_score;
@@ -142,14 +150,14 @@ namespace
 		// stand pat
 		if (!in_check) {
 			best_score = static_eval = eval(B);
-			ss->best_move = NO_MOVE;
+			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta) {
 				return alpha;
 			}
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS);
+		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL);
 		move_t *m;
 
 		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
@@ -172,7 +180,7 @@ namespace
 			if (score > best_score) {
 				best_score = score;
 				alpha = std::max(alpha, score);
-				ss->best_move = *m;
+				ss->best = *m;
 			}
 		}
 
