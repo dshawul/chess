@@ -235,6 +235,10 @@ void Board::play(move_t m)
 			else if (tsq == (us ? A1 : A8))
 				_st->crights &= ~(OOO << (2 * them));
 		}
+	} else {
+		// Null move
+		assert(!is_check());
+		_st->epsq = NO_SQUARE;
 	}
 
 	turn = them;
@@ -287,7 +291,8 @@ void Board::undo()
 			}
 		} else if (m.flag() == EN_PASSANT)	// restore the en passant captured pawn
 			set_square(them, PAWN, tsq + (us ? 8 : -8), false);
-	}
+	} else
+		assert(!is_check());
 
 	turn = us;
 	if (turn == BLACK)

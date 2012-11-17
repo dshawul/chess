@@ -37,6 +37,10 @@ namespace
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
+	bool is_mate_score(int score);
+
+	int null_reduction(int depth) { return 3 + depth/4; }
+
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 }
@@ -117,6 +121,22 @@ namespace
 		} else
 			current_eval = in_check ? -INF : eval(B);
 
+		// Null move pruning
+		if (!is_pv && !in_check && !is_mate_score(beta)
+		        && (current_eval >= beta || depth <= null_reduction(depth))
+		        && B.st().piece_psq[B.get_turn()]) {
+			int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
+
+			B.play(0);
+			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
+			B.undo();
+
+			if (score >= beta)		// null search fails high
+				return score < mate_in(MAX_PLY)
+				       ? score		// fail soft
+				       : beta;		// *but* do not return an unproven mate
+		}
+
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move);
 		move_t *m;
 		int cnt = 0;
@@ -134,7 +154,7 @@ namespace
 
 			// recursion
 			B.play(*m);
-			
+
 			int score;
 			if (is_pv && cnt == 1)
 				// search full window
@@ -142,12 +162,12 @@ namespace
 			else {
 				// try zero window (which *is* the full window for non PV nodes)
 				score = -search(B, -alpha-1, -alpha, new_depth, false, ss+1);
-				
+
 				// doesn't fail low at PV node: research full window
 				if (is_pv && score > alpha)
 					score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
 			}
-			
+
 			B.undo();
 
 			if (score > best_score) {
@@ -298,6 +318,12 @@ namespace
 			       &&	((tte->type == SCORE_LBOUND && tt_score >= beta)
 			            ||(tte->type == SCORE_UBOUND && tt_score < beta));
 		}
+	}
+
+	bool is_mate_score(int score)
+	{
+		assert(std::abs(score) <= INF);
+		return score <= mated_in(MAX_PLY) || score >= mate_in(MAX_PLY);
 	}
 }
 

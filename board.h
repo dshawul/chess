@@ -47,6 +47,7 @@ class move_t
 
 public:
 	move_t(): b(0) {}	// silence compiler warnings
+	move_t(short _b): b(_b) {}
 	operator bool() const { return b; }
 	
 	bool operator== (move_t m) const { return b == m.b; }
