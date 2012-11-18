@@ -13,7 +13,20 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include <algorithm>
+#include <cstring>
 #include "movesort.h"
+
+void History::clear()
+{
+	memset(h, 0, sizeof(h));
+}
+
+void History::add(int piece, int tsq, int bonus)
+{
+	if (std::abs(h[piece][tsq] += bonus) >= HistoryMax)
+		for (int p = PAWN; p <= KING; ++p)
+			for (int s = A1; s <= H8; h[p][s++] /= 2);
+}
 
 MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move)
 	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), idx(0)

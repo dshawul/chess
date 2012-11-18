@@ -15,6 +15,16 @@
 #pragma once
 #include "movegen.h"
 
+class History {
+	int h[NB_PIECE][NB_SQUARE];
+public:
+	static const int HistoryMax = 2000;
+	
+	void clear();
+	void add(int piece, int tsq, int bonus);
+	int get(int piece, int tsq) const { return h[piece][tsq]; }
+};
+
 class MoveSort
 {
 public:
