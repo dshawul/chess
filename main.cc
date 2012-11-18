@@ -19,9 +19,12 @@ int main (int argc, char **argv)
 {
 	init_bitboard();
 	init_psq();
-	
-	if (argc == 2 && std::string(argv[1]) == "bench")
-		bench();
-	else
+
+	if (argc == 2) {
+		if (std::string(argv[1]) == "bench")
+			bench();
+		else if (std::string(argv[1]) == "perft")
+			test_perft();
+	} else
 		loop();
 }

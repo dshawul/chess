@@ -4,8 +4,8 @@ void eval_material(const Board& B, Eval e[NB_COLOR])
 {
 	for (int color = WHITE; color <= BLACK; ++color) {
 		// material (PSQ)
-		e[color] += B.st().psq[color];		
-		
+		e[color] += B.st().psq[color];
+
 		// bishop pair
 		if (several_bits(B.get_pieces(color, BISHOP))) {
 			e[color].op += 30;
@@ -34,7 +34,7 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR])
 		int fsq, piece, count;
 
 		/* Generic linear mobility */
-#define MOBILITY(p0, p)									\
+		#define MOBILITY(p0, p)									\
 			count		= count_bit_max15(tss) - mob_zero[p0];	\
 			e[us].op	+= count * mob_unit[OPENING][p];		\
 			e[them].eg	+= count * mob_unit[ENDGAME][p]
