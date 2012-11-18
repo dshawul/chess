@@ -104,5 +104,18 @@ void init_psq()
 			if (piece < KING)
 				e += Material[piece];
 		}
+
+		/*for (int phase = OPENING; phase <= ENDGAME; ++phase) {
+			for (int r = RANK_8; r >= RANK_1; --r)
+				for (int f = FILE_A; f <= FILE_H; ++f) {
+					int sq = square(r, f);
+					Eval e = PsqTable[piece][sq];
+					if (piece < KING)
+						e -= Material[piece];
+					std::cout << (phase == OPENING ? e.op : e.eg)
+					          << (file(sq) == FILE_H ? '\n' : ',');
+				}
+			std::cout << std::endl;
+		}*/
 	}
 }
