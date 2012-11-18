@@ -8,7 +8,7 @@ void eval_material(const Board& B, Eval e[NB_COLOR])
 
 		// bishop pair
 		if (several_bits(B.get_pieces(color, BISHOP))) {
-			e[color].op += 30;
+			e[color].op += 40;
 			e[color].eg += 50;
 		}
 	}
