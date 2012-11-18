@@ -28,7 +28,7 @@ namespace
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
-	const int QS_LIMIT = -6;
+	const int QS_LIMIT = -8;
 
 	bool abort_search;
 	uint64_t node_count, node_limit;
