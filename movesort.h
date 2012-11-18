@@ -21,7 +21,7 @@ public:
 	static const int HistoryMax = 2000;
 	
 	void clear();
-	void add(int piece, int tsq, int bonus);
+	void add(const Board& B, move_t m, int bonus);
 	int get(int piece, int tsq) const { return h[piece][tsq]; }
 };
 

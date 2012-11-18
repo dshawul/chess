@@ -21,9 +21,12 @@ void History::clear()
 	memset(h, 0, sizeof(h));
 }
 
-void History::add(int piece, int tsq, int bonus)
+void History::add(const Board& B, move_t m, int bonus)
 {
-	if (std::abs(h[piece][tsq] += bonus) >= HistoryMax)
+	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	h[piece][tsq] += bonus;
+	
+	if (std::abs(h[piece][tsq]) >= HistoryMax)
 		for (int p = PAWN; p <= KING; ++p)
 			for (int s = A1; s <= H8; h[p][s++] /= 2);
 }

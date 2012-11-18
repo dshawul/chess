@@ -34,6 +34,8 @@ namespace
 	uint64_t node_count, node_limit;
 	bool node_poll();
 
+	History H;
+
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
@@ -55,6 +57,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_limit = sl.nodes;
 	abort_search = false;
 	move_t best;
+	H.clear();
 
 	for (int depth = 1; !abort_search; depth++) {
 		if ( (sl.depth && depth > sl.depth) || depth >= MAX_PLY )
@@ -96,8 +99,9 @@ namespace
 		if ( (abort_search = node_poll()) )
 			return 0;
 
-		int best_score = -INF, old_alpha = alpha;
 		const bool in_check = B.is_check();
+		int best_score = -INF, old_alpha = alpha;
+		ss->best = 0;
 
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
@@ -190,16 +194,18 @@ namespace
 		e.key = key;
 		e.move = ss->best;
 		e.score = best_score;
-		e.type = best_score <= old_alpha ? SCORE_UBOUND
-		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		e.type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
 		TT.write(&e);
 
-		// update killers
-		if (!move_is_cop(B, ss->best)) {
+		// best move is quiet: update killers and history
+		if (ss->best && !move_is_cop(B, ss->best)) {
+			// update killers on a LIFO basis
 			if (ss->killer[0] != ss->best) {
 				ss->killer[1] = ss->killer[0];
 				ss->killer[0] = ss->best;
 			}
+			
+			H.add(B, ss->best, depth * depth);
 		}
 
 		return best_score;
