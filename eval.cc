@@ -34,10 +34,10 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR])
 		int fsq, piece, count;
 
 		/* Generic linear mobility */
-		#define MOBILITY(p0, p)									\
-			count		= count_bit_max15(tss) - mob_zero[p0];	\
-			e[us].op	+= count * mob_unit[OPENING][p];		\
-			e[them].eg	+= count * mob_unit[ENDGAME][p]
+		#define MOBILITY(p0, p)								\
+			count = count_bit_max15(tss) - mob_zero[p0];	\
+			e[us].op += count * mob_unit[OPENING][p];		\
+			e[us].eg += count * mob_unit[ENDGAME][p]
 
 		/* Knight mobility */
 		fss = B.get_pieces(us, KNIGHT);
@@ -82,8 +82,8 @@ int eval(const Board& B)
 	Eval e[NB_COLOR];
 	e[WHITE].clear(); e[BLACK].clear();
 
-	eval_material(B, e);
 	eval_mobility(B, e);
+	eval_material(B, e);
 
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
