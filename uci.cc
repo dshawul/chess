@@ -45,6 +45,7 @@ void loop()
 			std::cout << "id name DiscoCheck\n"
 			          << "id author Lucas Braesch\n"
 					  << "option name Hash type spin default 32 min 1 max 8192\n"
+					  << "option name Clear Hash type button\n"
 			          << "uciok" << std::endl;
 		else if (token == "position")
 			position(B, is);
