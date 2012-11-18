@@ -141,7 +141,7 @@ namespace
 				       : beta;		// *but* do not return an unproven mate
 		}
 
-		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move);
+		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
 		move_t *m;
 		int cnt = 0;
 
@@ -245,7 +245,7 @@ namespace
 			}
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move);
+		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
 		move_t *m;
 
 		while ( alpha < beta && (m = MS.next()) && !abort_search ) {

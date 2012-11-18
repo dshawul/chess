@@ -18,11 +18,11 @@
 class History {
 	int h[NB_PIECE][NB_SQUARE];
 public:
-	static const int HistoryMax = 2000;
+	static const int Max = 2000;
 	
 	void clear();
 	void add(const Board& B, move_t m, int bonus);
-	int get(int piece, int tsq) const { return h[piece][tsq]; }
+	int get(const Board& B, move_t m) const;
 };
 
 class MoveSort
@@ -40,7 +40,7 @@ public:
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move);
+	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H);
 	move_t *next();
 	
 	int get_count() const { return count; }
@@ -50,6 +50,7 @@ private:
 	GenType type;
 	const move_t *killer;
 	move_t tt_move;
+	const History *H;
 
 	Token list[MAX_MOVES];
 	int idx, count;

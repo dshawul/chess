@@ -21,18 +21,26 @@ void History::clear()
 	memset(h, 0, sizeof(h));
 }
 
+int History::get(const Board& B, move_t m) const
+{
+	assert(!move_is_cop(B, m));
+	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	return h[piece][tsq];
+}
+
 void History::add(const Board& B, move_t m, int bonus)
 {
+	assert(!move_is_cop(B, m));
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	h[piece][tsq] += bonus;
 	
-	if (std::abs(h[piece][tsq]) >= HistoryMax)
+	if (std::abs(h[piece][tsq]) >= History::Max)
 		for (int p = PAWN; p <= KING; ++p)
 			for (int s = A1; s <= H8; h[p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move)
-	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), idx(0)
+MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H)
+	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), H(_H), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
 
@@ -80,14 +88,21 @@ int MoveSort::score(move_t m)
 	if (m == tt_move)
 		return INF;
 	else if (move_is_cop(*B, m))
-		// capture by SEE (search or QS check escape) or MVV/LVA (qsearch capture/prom)
-		return (type == ALL) ? see(*B, m) : mvv_lva(*B, m);
+		if (type == ALL) {
+			/* equal and winning captures, by SEE, in front of quiet moves
+			 * losing captures, after all quiet moves */
+			int s = see(*B, m);			
+			return s >= 0 ? s + History::Max : s;
+		} else
+			return mvv_lva(*B, m);
 	else {
-		// quiet move
-		if (killer != NULL)
-			return (m == killer[0]) ? 2 : ( (m == killer[1]) ? 1 : 0 );
+		/* killers first, then the rest by history */
+		if (killer && m == killer[0])
+			return History::Max-1;
+		else if (killer && m == killer[1])
+			return History::Max-2;
 		else
-			return 0;
+			return H->get(*B, m);
 	}
 }
 
