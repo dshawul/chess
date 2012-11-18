@@ -204,8 +204,13 @@ namespace
 				ss->killer[1] = ss->killer[0];
 				ss->killer[0] = ss->best;
 			}
-			
-			H.add(B, ss->best, depth * depth);
+
+			// mark ss->best as good, and all other moves searched as bad
+			while ( (m = MS.previous()) )
+				if (!move_is_cop(B, *m)) {
+					int bonus = *m == ss->best ? depth*depth : -depth*depth;
+					H.add(B, *m, bonus);
+				}
 		}
 
 		return best_score;

@@ -24,7 +24,8 @@ void History::clear()
 int History::get(const Board& B, move_t m) const
 {
 	assert(!move_is_cop(B, m));
-	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();	
+	assert(std::abs(h[piece][tsq]) < History::Max);
 	return h[piece][tsq];
 }
 
@@ -92,7 +93,7 @@ int MoveSort::score(move_t m)
 			/* equal and winning captures, by SEE, in front of quiet moves
 			 * losing captures, after all quiet moves */
 			int s = see(*B, m);			
-			return s >= 0 ? s + History::Max : s;
+			return s >= 0 ? s + History::Max : s - History::Max;
 		} else
 			return mvv_lva(*B, m);
 	else {
@@ -112,5 +113,13 @@ move_t *MoveSort::next()
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
 		return &list[idx++].m;
 	} else
+		return NULL;
+}
+
+move_t *MoveSort::previous()
+{
+	if (idx >= 0)
+		return &list[--idx].m;
+	else
 		return NULL;
 }

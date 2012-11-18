@@ -1,1 +1,3 @@
-- history move ordering
+- handle movetime
+- handle time+inc+movecount
+

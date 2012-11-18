@@ -41,7 +41,9 @@ public:
 	};
 
 	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H);
+	
 	move_t *next();
+	move_t *previous();
 	
 	int get_count() const { return count; }
 
