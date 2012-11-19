@@ -242,7 +242,7 @@ namespace
 
 		// stand pat
 		if (!in_check) {
-			best_score = current_eval = eval(B);
+			best_score = current_eval;
 			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta) {
