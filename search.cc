@@ -20,6 +20,8 @@
 
 TTable TT;
 
+using namespace std::chrono;
+
 namespace
 {
 	struct SearchInfo {
@@ -32,6 +34,8 @@ namespace
 
 	bool abort_search;
 	uint64_t node_count, node_limit;
+	int time_limit;
+	time_point<high_resolution_clock> start;
 	bool node_poll();
 
 	History H;
@@ -39,8 +43,10 @@ namespace
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
-	bool is_mate_score(int score);
-
+	bool is_mate_score(int score) { return std::abs(score) >= MATE-MAX_PLY; }
+	int mated_in(int ply)	{ return ply-MATE; }
+	int mate_in(int ply)	{ return MATE-ply; }
+	
 	int null_reduction(int depth) { return 3 + depth/4; }
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
@@ -55,6 +61,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	node_count = 0;
 	node_limit = sl.nodes;
+	start = high_resolution_clock::now();
+	time_limit = sl.movetime;	// TODO: handle tine+inc(+movestogo) via a separate time alloc function
 	abort_search = false;
 	move_t best;
 	H.clear();
@@ -81,9 +89,6 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 namespace
 {
-	int mated_in(int ply)	{ return ply-MATE; }
-	int mate_in(int ply)	{ return MATE-ply; }
-
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
 		assert(alpha < beta);
@@ -297,7 +302,13 @@ namespace
 	bool node_poll()
 	{
 		++node_count;
-		return node_limit && node_count >= node_limit;
+		if (0 == (node_count % 1024)) {
+			if (node_limit && node_count >= node_limit)
+				return true;
+			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
+				return true;
+		}
+		return false;
 	}
 
 	int adjust_tt_score(int score, int ply)
@@ -329,12 +340,6 @@ namespace
 			       &&	((tte->type == SCORE_LBOUND && tt_score >= beta)
 			            ||(tte->type == SCORE_UBOUND && tt_score < beta));
 		}
-	}
-
-	bool is_mate_score(int score)
-	{
-		assert(std::abs(score) <= INF);
-		return score <= mated_in(MAX_PLY) || score >= mate_in(MAX_PLY);
 	}
 }
 
@@ -371,7 +376,6 @@ void bench()
 
 	TT.alloc(32 << 20);
 
-	using namespace std::chrono;
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
 
