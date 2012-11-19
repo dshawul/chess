@@ -23,16 +23,17 @@ void History::clear()
 
 int History::get(const Board& B, move_t m) const
 {
-	assert(!move_is_cop(B, m));
-	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();	
+	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	assert(!move_is_cop(B, m) && piece_ok(piece));	
 	assert(std::abs(h[piece][tsq]) < History::Max);
+	
 	return h[piece][tsq];
 }
 
 void History::add(const Board& B, move_t m, int bonus)
 {
-	assert(!move_is_cop(B, m));
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	assert(!move_is_cop(B, m) && piece_ok(piece));
 	h[piece][tsq] += bonus;
 	
 	if (std::abs(h[piece][tsq]) >= History::Max)
@@ -118,7 +119,7 @@ move_t *MoveSort::next()
 
 move_t *MoveSort::previous()
 {
-	if (idx >= 0)
+	if (idx > 0)
 		return &list[--idx].m;
 	else
 		return NULL;
