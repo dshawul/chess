@@ -14,7 +14,7 @@ void eval_material(const Board& B, Eval e[NB_COLOR])
 	}
 }
 
-void eval_mobility(const Board& B, Eval e[NB_COLOR])
+void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][ROOK+1])
 {
 	static const int mob_zero[NB_PIECE] = {0, 3, 4, 5, 0, 0};
 	static const unsigned mob_unit[NB_PHASE][NB_PIECE] = {
@@ -26,42 +26,46 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR])
 		const int us = color, them = opp_color(us);
 
 		const Bitboard their_pawns = B.get_pieces(them, PAWN);
-		const Bitboard defended = shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
-		                          | shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
+		const Bitboard defended = attacks[them][PAWN] =
+			shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
+			| shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
 		const Bitboard mob_targets = ~(B.get_pieces(us, PAWN) | B.get_pieces(us, KING) | defended);
 
 		Bitboard fss, tss, occ;
 		int fsq, piece, count;
 
 		/* Generic linear mobility */
-		#define MOBILITY(p0, p)								\
-			count = count_bit_max15(tss) - mob_zero[p0];	\
-			e[us].op += count * mob_unit[OPENING][p];		\
+		#define MOBILITY(p0, p)											\
+			attacks[us][p0] |= tss;										\
+			count = count_bit_max15(tss & mob_targets) - mob_zero[p0];	\
+			e[us].op += count * mob_unit[OPENING][p];					\
 			e[us].eg += count * mob_unit[ENDGAME][p]
 
 		/* Knight mobility */
+		attacks[us][KNIGHT] = 0;
 		fss = B.get_pieces(us, KNIGHT);
 		while (fss) {
-			fsq = pop_lsb(&fss);
-			tss = NAttacks[fsq] & mob_targets;
+			tss = NAttacks[pop_lsb(&fss)];
 			MOBILITY(KNIGHT, KNIGHT);
 		}
 
 		/* Lateral mobility */
+		attacks[us][ROOK] = 0;
 		fss = B.get_RQ(us);
 		occ = B.st().occ & ~B.get_pieces(us, ROOK);		// see through rooks
 		while (fss) {
 			fsq = pop_lsb(&fss); piece = B.get_piece_on(fsq);
-			tss = rook_attack(fsq, occ) & mob_targets;
+			tss = rook_attack(fsq, occ);
 			MOBILITY(ROOK, piece);
 		}
 
 		/* Diagonal mobility */
+		attacks[us][BISHOP] = 0;
 		fss = B.get_BQ(us);
 		occ = B.st().occ & ~B.get_pieces(us, BISHOP);		// see through rooks
 		while (fss) {
 			fsq = pop_lsb(&fss); piece = B.get_piece_on(fsq);
-			tss = bishop_attack(fsq, occ) & mob_targets;
+			tss = bishop_attack(fsq, occ);
 			MOBILITY(BISHOP, piece);
 		}
 	}
@@ -80,9 +84,10 @@ int eval(const Board& B)
 	const int phase = calc_phase(B);
 
 	Eval e[NB_COLOR];
+	Bitboard attacks[NB_COLOR][ROOK+1];
 	e[WHITE].clear(); e[BLACK].clear();
 
-	eval_mobility(B, e);
+	eval_mobility(B, e, attacks);
 	eval_material(B, e);
 
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
