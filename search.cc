@@ -158,6 +158,10 @@ namespace
 			// check extension
 			int new_depth;
 			if (check && (check == DISCO_CHECK || see(B, *m) >= 0) )
+				// extend relevant checks
+				new_depth = depth;
+			else if (MS.get_count() == 1)
+				// extend forced replies
 				new_depth = depth;
 			else
 				new_depth = depth-1;
