@@ -38,6 +38,8 @@ namespace
 	int time_limit;
 	time_point<high_resolution_clock> start;
 	void node_poll();
+	
+	int time_alloc(const SearchLimits& sl);
 
 	History H;
 
@@ -56,14 +58,15 @@ namespace
 
 move_t bestmove(Board& B, const SearchLimits& sl)
 {
+	start = high_resolution_clock::now();
+	
 	SearchInfo ss[MAX_PLY];
 	for (int ply = 0; ply < MAX_PLY; ++ply)
 		ss[ply].ply = ply;
 
 	node_count = 0;
 	node_limit = sl.nodes;
-	start = high_resolution_clock::now();
-	time_limit = sl.movetime;	// TODO: handle tine+inc(+movestogo) via a separate time alloc function
+	time_limit = time_alloc(sl);
 	move_t best;
 	H.clear();
 
@@ -333,6 +336,18 @@ namespace
 			       &&	((tte->type == SCORE_LBOUND && tt_score >= beta)
 			            ||(tte->type == SCORE_UBOUND && tt_score < beta));
 		}
+	}
+
+	int time_alloc(const SearchLimits& sl)
+	{
+		if (sl.movetime > 0)
+			return sl.movetime;
+		else if (sl.time > 0 && sl.inc > 0) {
+			static const int time_buffer = 100;
+			int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
+			return std::max(std::min(sl.time / movestogo + sl.inc, sl.time-time_buffer), 1);
+		} else
+			return 0;
 	}
 }
 
