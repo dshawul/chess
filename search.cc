@@ -81,7 +81,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			          << " nodes " << node_count
 			          << " pv " << move_to_string(ss->best)
 			          << std::endl;
-		}
+		} else
+			std::cout << "info nodes " << node_count << std::endl;
 	}
 
 	return best;
@@ -139,6 +140,9 @@ namespace
 			B.play(0);
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
 			B.undo();
+			
+			if (abort_search)
+				return 0;
 
 			if (score >= beta)		// null search fails high
 				return score < mate_in(MAX_PLY)
@@ -150,7 +154,7 @@ namespace
 		move_t *m;
 		int cnt = 0;
 
-		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
+		while ( alpha < beta && (m = MS.next()) ) {
 			++cnt;
 			bool check = move_is_check(B, *m);
 
@@ -163,7 +167,6 @@ namespace
 
 			// recursion
 			B.play(*m);
-
 			int score;
 			if (is_pv && cnt == 1)
 				// search full window
@@ -176,8 +179,10 @@ namespace
 				if (is_pv && score > alpha)
 					score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
 			}
-
 			B.undo();
+			
+			if (abort_search)
+				return 0;
 
 			if (score > best_score) {
 				best_score = score;
@@ -258,7 +263,7 @@ namespace
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
 		move_t *m;
 
-		while ( alpha < beta && (m = MS.next()) && !abort_search ) {
+		while ( alpha < beta && (m = MS.next()) ) {
 			int check = move_is_check(B, *m);
 
 			// SEE pruning
@@ -274,6 +279,9 @@ namespace
 				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
+			
+			if (abort_search)
+				return 0;
 
 			if (score > best_score) {
 				best_score = score;
@@ -281,7 +289,7 @@ namespace
 				ss->best = *m;
 			}
 		}
-
+		
 		if (B.is_check() && !MS.get_count())
 			return mated_in(ss->ply);
 
@@ -302,9 +310,9 @@ namespace
 	bool node_poll()
 	{
 		++node_count;
+		if (node_limit && node_count >= node_limit)
+			return true;
 		if (0 == (node_count % 1024)) {
-			if (node_limit && node_count >= node_limit)
-				return true;
 			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
 				return true;
 		}
