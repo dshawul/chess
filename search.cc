@@ -32,11 +32,12 @@ namespace
 	const int MATE = 32000;
 	const int QS_LIMIT = -8;
 
-	bool abort_search;
+	struct AbortSearch {};
+	
 	uint64_t node_count, node_limit;
 	int time_limit;
 	time_point<high_resolution_clock> start;
-	bool node_poll();
+	void node_poll();
 
 	History H;
 
@@ -63,26 +64,24 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_limit = sl.nodes;
 	start = high_resolution_clock::now();
 	time_limit = sl.movetime;	// TODO: handle tine+inc(+movestogo) via a separate time alloc function
-	abort_search = false;
 	move_t best;
 	H.clear();
 
-	for (int depth = 1; !abort_search; depth++) {
-		if ( (sl.depth && depth > sl.depth) || depth >= MAX_PLY )
+	for (int depth = 1; !sl.depth || depth <= sl.depth; depth++) {
+		int score;
+		
+		try {
+			score = search(B, -INF, +INF, depth, true, ss);
+		} catch (AbortSearch e) {
 			break;
+		};
 
-		int score = search(B, -INF, +INF, depth, true, ss);
-
-		if (!abort_search) {
-			best = ss->best;
-
-			std::cout << "info score cp " << score
-			          << " depth " << depth
-			          << " nodes " << node_count
-			          << " pv " << move_to_string(ss->best)
-			          << std::endl;
-		} else
-			std::cout << "info nodes " << node_count << std::endl;
+		best = ss->best;
+		std::cout << "info score cp " << score
+				  << " depth " << depth
+				  << " nodes " << node_count
+				  << " pv " << move_to_string(ss->best)
+				  << std::endl;
 	}
 
 	return best;
@@ -101,9 +100,7 @@ namespace
 			return qsearch(B, alpha, beta, depth, is_pv, ss);
 
 		assert(depth > 0);
-
-		if ( (abort_search = node_poll()) )
-			return 0;
+		node_poll();
 
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
@@ -141,9 +138,6 @@ namespace
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
 			B.undo();
 			
-			if (abort_search)
-				return 0;
-
 			if (score >= beta)		// null search fails high
 				return score < mate_in(MAX_PLY)
 				       ? score		// fail soft
@@ -181,9 +175,6 @@ namespace
 			}
 			B.undo();
 			
-			if (abort_search)
-				return 0;
-
 			if (score > best_score) {
 				best_score = score;
 				alpha = std::max(alpha, score);
@@ -230,9 +221,7 @@ namespace
 	{
 		assert(depth <= 0);
 		assert(alpha < beta);
-
-		if ( (abort_search = node_poll()) )
-			return 0;
+		node_poll();
 
 		bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
@@ -279,9 +268,6 @@ namespace
 				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
-			
-			if (abort_search)
-				return 0;
 
 			if (score > best_score) {
 				best_score = score;
@@ -307,16 +293,15 @@ namespace
 		return best_score;
 	}
 
-	bool node_poll()
+	void node_poll()
 	{
 		++node_count;
-		if (node_limit && node_count >= node_limit)
-			return true;
 		if (0 == (node_count % 1024)) {
+			if (node_limit && node_count >= node_limit)
+				throw AbortSearch();
 			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
-				return true;
+				throw AbortSearch();
 		}
-		return false;
 	}
 
 	int adjust_tt_score(int score, int ply)
