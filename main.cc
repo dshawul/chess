@@ -13,12 +13,14 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include "search.h"
+#include "eval.h"
 #include "uci.h"
 
 int main (int argc, char **argv)
 {
 	init_bitboard();
 	init_psq();
+	init_eval();
 
 	if (argc == 2) {
 		if (std::string(argv[1]) == "bench")

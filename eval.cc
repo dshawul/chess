@@ -1,5 +1,27 @@
 #include "eval.h"
 
+Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
+int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
+
+int king_dist(int s1, int s2) {
+	int df = file(s1)-file(s2);
+	int dr = rank(s1)-rank(s2);
+	return std::max(std::abs(df), std::abs(dr));
+}
+
+void init_eval()
+{
+	for (int us = WHITE; us <= BLACK; ++us) {
+		for (int sq = A1; sq <= H8; ++sq) {
+			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
+				| shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
+			int d1 = king_dist(sq, us ? E8 : E1);
+			int d2 = king_dist(sq, us ? B8 : B1);
+			KingDistanceToSafety[us][sq] = std::min(d1, d2);
+		}
+	}
+}
+
 void eval_material(const Board& B, Eval e[NB_COLOR])
 {
 	for (int color = WHITE; color <= BLACK; ++color) {
@@ -27,8 +49,8 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 
 		const Bitboard their_pawns = B.get_pieces(them, PAWN);
 		const Bitboard defended = attacks[them][PAWN] =
-			shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
-			| shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
+		                              shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
+		                              | shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
 		const Bitboard mob_targets = ~(B.get_pieces(us, PAWN) | B.get_pieces(us, KING) | defended);
 
 		Bitboard fss, tss, occ;
@@ -71,6 +93,88 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 	}
 }
 
+void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COLOR][ROOK+1])
+{
+	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
+	/*static const int ShieldWeight = 3;*/
+
+	for (int color = WHITE; color <= BLACK; color++) {
+		const int us = color, them = opp_color(us), ksq = B.get_king_pos(us);
+		const Bitboard their_pawns = B.get_pieces(them, PAWN);
+
+		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
+		// attacks are concerned
+		const Bitboard solid = attacks[us][PAWN] | their_pawns;
+		// Defended by our pieces
+		const Bitboard defended = attacks[us][KNIGHT] | attacks[us][BISHOP] | attacks[us][ROOK];
+
+		int total_weight = 0, total_count = 0, sq, count;
+		Bitboard sq_attackers, attacked, occ, fss;
+
+		// Generic attack scoring
+		#define ADD_ATTACK(p0)								\
+			if (sq_attackers) {								\
+				count = count_bit(sq_attackers);			\
+				total_weight += AttackWeight[p0] * count;	\
+				if (test_bit(defended, sq)) count--;		\
+				total_count += count;						\
+			}
+
+		// Knight attacks
+		attacked = attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
+		if (attacked) {
+			fss = B.get_pieces(them, KNIGHT);
+			while (attacked) {
+				sq = pop_lsb(&attacked);
+				sq_attackers = NAttacks[sq] & fss;
+				ADD_ATTACK(KNIGHT);
+			}
+		}
+
+		// Lateral attacks
+		attacked = attacks[them][ROOK] & KAttacks[ksq] & ~solid;
+		if (attacked) {
+			fss = B.get_RQ(them);
+			occ = B.st().occ & ~fss;	// rooks and queens see through each other
+			while (attacked) {
+				sq = pop_lsb(&attacked);
+				sq_attackers = fss & rook_attack(sq, occ);
+				ADD_ATTACK(ROOK);
+			}
+		}
+
+		// Diagonal attacks
+		attacked = attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
+		if (attacked) {
+			fss = B.get_BQ(them);
+			occ = B.st().occ & ~fss;	// bishops and queens see through each other
+			while (attacked) {
+				sq = pop_lsb(&attacked);
+				sq_attackers = fss & bishop_attack(sq, occ);
+				ADD_ATTACK(BISHOP);
+			}
+		}
+		
+		// Pawn attacks
+		fss = PawnsAttacking[us][ksq] & their_pawns;		
+		while (fss) {
+			sq = pop_lsb(&fss);
+			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
+			total_weight += AttackWeight[PAWN] * count;
+		}
+		
+		// Adjust for king's "distance to safety"
+		total_count += KingDistanceToSafety[us][ksq];
+
+		/*// Adjust for lack of pawn shield
+		total_count += count = 3 - count_bit(Shield[us][ksq] & B->b[us][Pawn]);
+		total_weight += count * ShieldWeight;*/
+		
+		if (total_count)
+			e[us].op -= total_weight * total_count;
+	}
+}
+
 int calc_phase(const Board& B)
 {
 	static const int total = 4*(vN + vB + vR) + 2*vQ;
@@ -87,8 +191,9 @@ int eval(const Board& B)
 	Bitboard attacks[NB_COLOR][ROOK+1];
 	e[WHITE].clear(); e[BLACK].clear();
 
-	eval_mobility(B, e, attacks);
 	eval_material(B, e);
+	eval_mobility(B, e, attacks);
+	eval_safety(B, e, attacks);
 
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
