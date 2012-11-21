@@ -60,8 +60,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 {
 	start = high_resolution_clock::now();
 	
-	SearchInfo ss[MAX_PLY];
-	for (int ply = 0; ply < MAX_PLY; ++ply)
+	SearchInfo ss[MAX_PLY + 1-QS_LIMIT];
+	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply)
 		ss[ply].ply = ply;
 
 	node_count = 0;
@@ -69,8 +69,9 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	time_limit = time_alloc(sl);
 	move_t best;
 	H.clear();
-
-	for (int depth = 1; !sl.depth || depth <= sl.depth; depth++) {
+	
+	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
+	for (int depth = 1; depth <= max_depth; depth++) {
 		int score;
 		
 		try {
@@ -96,8 +97,10 @@ namespace
 	{
 		assert(alpha < beta);
 
-		if ((ss->ply > 0 && B.is_draw()) || ss->ply >= MAX_PLY-2)
+		if (ss->ply > 0 && B.is_draw())
 			return 0;
+		if (ss->ply >= MAX_PLY)
+			return eval(B);
 
 		if (depth <= 0)
 			return qsearch(B, alpha, beta, depth, is_pv, ss);
@@ -120,7 +123,7 @@ namespace
 		// TT lookup
 		int current_eval;
 		move_t tt_move;
-		Key key = B.get_key();
+		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.find(key);
 		if (tte) {
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
@@ -230,13 +233,13 @@ namespace
 		assert(alpha < beta);
 		node_poll();
 
-		bool in_check = B.is_check();
+		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
 
 		// TT lookup
 		int current_eval;
 		move_t tt_move;
-		Key key = B.get_key();
+		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.find(key);
 		if (tte) {
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
