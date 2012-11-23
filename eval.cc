@@ -1,7 +1,6 @@
 #include "eval.h"
 
 Bitboard InFront[NB_COLOR][NB_RANK_FILE];
-
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
 Bitboard Shield[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
@@ -29,21 +28,38 @@ void init_eval()
 	}
 }
 
-void eval_material(const Board& B, Eval e[NB_COLOR])
+class EvalInfo
+{
+public:
+	EvalInfo(const Board *_B): B(_B) { e[WHITE].clear(); e[BLACK].clear(); }
+	void eval_material();
+	void eval_mobility();
+	void eval_safety();
+	int interpolate() const;
+	
+private:
+	const Board *B;
+	Eval e[NB_COLOR];
+	Bitboard attacks[NB_COLOR][ROOK+1];
+	
+	int calc_phase() const;
+};
+
+void EvalInfo::eval_material()
 {
 	for (int color = WHITE; color <= BLACK; ++color) {
 		// material (PSQ)
-		e[color] += B.st().psq[color];
+		e[color] += B->st().psq[color];
 
 		// bishop pair
-		if (several_bits(B.get_pieces(color, BISHOP))) {
+		if (several_bits(B->get_pieces(color, BISHOP))) {
 			e[color].op += 40;
 			e[color].eg += 50;
 		}
 	}
 }
 
-void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][ROOK+1])
+void EvalInfo::eval_mobility()
 {
 	static const int mob_zero[NB_PIECE] = {0, 3, 4, 5, 0, 0};
 	static const unsigned mob_unit[NB_PHASE][NB_PIECE] = {
@@ -54,11 +70,11 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us);
 
-		const Bitboard their_pawns = B.get_pieces(them, PAWN);
+		const Bitboard their_pawns = B->get_pieces(them, PAWN);
 		const Bitboard defended = attacks[them][PAWN] =
 		                              shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
 		                              | shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
-		const Bitboard mob_targets = ~(B.get_pieces(us, PAWN) | B.get_pieces(us, KING) | defended);
+		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING) | defended);
 
 		Bitboard fss, tss, occ;
 		int fsq, piece, count;
@@ -72,7 +88,7 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 
 		/* Knight mobility */
 		attacks[us][KNIGHT] = 0;
-		fss = B.get_pieces(us, KNIGHT);
+		fss = B->get_pieces(us, KNIGHT);
 		while (fss) {
 			tss = NAttacks[pop_lsb(&fss)];
 			MOBILITY(KNIGHT, KNIGHT);
@@ -80,34 +96,34 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 
 		/* Lateral mobility */
 		attacks[us][ROOK] = 0;
-		fss = B.get_RQ(us);
-		occ = B.st().occ & ~B.get_pieces(us, ROOK);		// see through rooks
+		fss = B->get_RQ(us);
+		occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
 		while (fss) {
-			fsq = pop_lsb(&fss); piece = B.get_piece_on(fsq);
+			fsq = pop_lsb(&fss); piece = B->get_piece_on(fsq);
 			tss = rook_attack(fsq, occ);
 			MOBILITY(ROOK, piece);
 		}
 
 		/* Diagonal mobility */
 		attacks[us][BISHOP] = 0;
-		fss = B.get_BQ(us);
-		occ = B.st().occ & ~B.get_pieces(us, BISHOP);		// see through rooks
+		fss = B->get_BQ(us);
+		occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
 		while (fss) {
-			fsq = pop_lsb(&fss); piece = B.get_piece_on(fsq);
+			fsq = pop_lsb(&fss); piece = B->get_piece_on(fsq);
 			tss = bishop_attack(fsq, occ);
 			MOBILITY(BISHOP, piece);
 		}
 	}
 }
 
-void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COLOR][ROOK+1])
+void EvalInfo::eval_safety()
 {
 	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
 	static const int ShieldWeight = 3;
 
 	for (int color = WHITE; color <= BLACK; color++) {
-		const int us = color, them = opp_color(us), ksq = B.get_king_pos(us);
-		const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
+		const int us = color, them = opp_color(us), ksq = B->get_king_pos(us);
+		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 		// attacks are concerned
@@ -130,7 +146,7 @@ void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COL
 		// Knight attacks
 		attacked = attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
 		if (attacked) {
-			fss = B.get_pieces(them, KNIGHT);
+			fss = B->get_pieces(them, KNIGHT);
 			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = NAttacks[sq] & fss;
@@ -141,8 +157,8 @@ void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COL
 		// Lateral attacks
 		attacked = attacks[them][ROOK] & KAttacks[ksq] & ~solid;
 		if (attacked) {
-			fss = B.get_RQ(them);
-			occ = B.st().occ & ~fss;	// rooks and queens see through each other
+			fss = B->get_RQ(them);
+			occ = B->st().occ & ~fss;	// rooks and queens see through each other
 			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & rook_attack(sq, occ);
@@ -153,8 +169,8 @@ void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COL
 		// Diagonal attacks
 		attacked = attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
 		if (attacked) {
-			fss = B.get_BQ(them);
-			occ = B.st().occ & ~fss;	// bishops and queens see through each other
+			fss = B->get_BQ(them);
+			occ = B->st().occ & ~fss;	// bishops and queens see through each other
 			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & bishop_attack(sq, occ);
@@ -182,25 +198,27 @@ void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COL
 	}
 }
 
-int calc_phase(const Board& B)
+int EvalInfo::calc_phase() const
 {
 	static const int total = 4*(vN + vB + vR) + 2*vQ;
-	return (B.st().piece_psq[WHITE] + B.st().piece_psq[BLACK]) * 1024 / total;
+	return (B->st().piece_psq[WHITE] + B->st().piece_psq[BLACK]) * 1024 / total;
+}
+
+int EvalInfo::interpolate() const
+{
+	const int us = B->get_turn(), them = opp_color(us);
+	const int phase = calc_phase();
+	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
 
 int eval(const Board& B)
 {
 	assert(!B.is_check());
-	const int us = B.get_turn(), them = opp_color(us);
-	const int phase = calc_phase(B);
 
-	Eval e[NB_COLOR];
-	Bitboard attacks[NB_COLOR][ROOK+1];
-	e[WHITE].clear(); e[BLACK].clear();
+	EvalInfo ei(&B);
+	ei.eval_material();
+	ei.eval_mobility();
+	ei.eval_safety();
 
-	eval_material(B, e);
-	eval_mobility(B, e, attacks);
-	eval_safety(B, e, attacks);
-
-	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
+	return ei.interpolate();
 }
