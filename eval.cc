@@ -1,6 +1,8 @@
 #include "eval.h"
 
-Bitboard InFront[NB_COLOR][NB_RANK_FILE];
+Bitboard InFront[NB_COLOR][NB_RANK_FILE], SquaresInFront[NB_COLOR][NB_SQUARE];
+Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+Bitboard AdjacentFiles[NB_RANK_FILE];
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
 Bitboard Shield[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
@@ -12,6 +14,12 @@ int kdist(int s1, int s2)
 
 void init_eval()
 {
+	for (int f = FILE_A; f <= FILE_H; f++) {
+		AdjacentFiles[f] = 0ULL;
+		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
+		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
+	}
+	
 	InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
 	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
 		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
@@ -20,6 +28,11 @@ void init_eval()
 
 	for (int us = WHITE; us <= BLACK; ++us) {
 		for (int sq = A1; sq <= H8; ++sq) {
+			const int r = rank(sq), f = file(sq);
+			
+			SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
+			PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
+			
 			Shield[us][sq] = KAttacks[sq] & InFront[us][rank(sq)];
 			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
 				| shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
@@ -35,6 +48,7 @@ public:
 	void eval_material();
 	void eval_mobility();
 	void eval_safety();
+	void eval_pawns();
 	int interpolate() const;
 	
 private:
@@ -118,7 +132,7 @@ void EvalInfo::eval_mobility()
 
 void EvalInfo::eval_safety()
 {
-	static const int AttackWeight[NB_PIECE] = {3, 3, 3, 4, 0, 0};
+	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
 	static const int ShieldWeight = 3;
 
 	for (int color = WHITE; color <= BLACK; color++) {
@@ -179,13 +193,11 @@ void EvalInfo::eval_safety()
 		}
 
 		// Pawn attacks
-		fss = PawnsAttacking[us][ksq] & their_pawns;            
+		fss = PawnsAttacking[us][ksq] & their_pawns;
 		while (fss) {
 			sq = pop_lsb(&fss);
-			if (PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns) {
-				++total_count;
-				total_weight += AttackWeight[PAWN];				
-			}
+			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
+			total_weight += AttackWeight[PAWN] * count;
 		}
 
 		// Adjust for king's "distance to safety"
@@ -197,6 +209,57 @@ void EvalInfo::eval_safety()
 
 		if (total_count)
 			e[us].op -= total_weight * total_count;
+	}
+}
+
+void EvalInfo::eval_pawns()
+{
+	static const int Chained = 5;
+	
+	for (int color = WHITE; color <= BLACK; color++) {
+		const int us = color, them = opp_color(us);
+		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
+		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
+		Bitboard sqs = our_pawns;
+		
+		while (sqs) {
+			const int sq = pop_lsb(&sqs);
+			const int r = rank(sq), f = file(sq);
+			const Bitboard besides = our_pawns & AdjacentFiles[f];
+			
+			const bool chained = besides & (rank_bb(r) | rank_bb(us ? r+1 : r-1));
+			const bool doubled = SquaresInFront[us][sq] & our_pawns;
+			const bool open = !doubled && !(SquaresInFront[us][sq] & their_pawns);
+			const bool passed = open && !(PawnSpan[us][sq] & their_pawns);
+			
+			if (chained)
+				e[us].op += Chained;
+			if (passed) {
+				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
+				const int Q = L*(L-1);						// Quadratic part	0..20
+
+				// score based on rank
+				e[us].op += 8 * Q;
+				e[us].eg += 4 * (Q + L + 1);
+				
+				const int next_sq = pawn_push(us, sq);
+				if (Q) {
+					//  adjustment for king distance
+					e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
+					e[us].eg -= kdist(next_sq, our_ksq) * Q;
+					if (rank(next_sq) != (us ? RANK_1 : RANK_8))
+						e[us].eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
+				}
+				
+				// support by friendly pawn
+				if (chained) {
+					if (PAttacks[them][next_sq] & our_pawns)
+						e[us].eg += 8 * L;	// besides is good, as it allows a further push
+					else
+						e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
+				}
+			}
+		}
 	}
 }
 
@@ -220,6 +283,7 @@ int eval(const Board& B)
 	EvalInfo ei(&B);
 	ei.eval_material();
 	ei.eval_mobility();
+	ei.eval_pawns();
 	ei.eval_safety();
 
 	return ei.interpolate();
