@@ -151,16 +151,16 @@ namespace
 		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
-		move_t *m;
-		int cnt = 0;
+		const move_t *m;
+		int cnt = 0, see;
 
-		while ( alpha < beta && (m = MS.next()) ) {
+		while ( alpha < beta && (m = MS.next(&see)) ) {
 			++cnt;
 			bool check = move_is_check(B, *m);
 
 			// check extension
 			int new_depth;
-			if (check && (check == DISCO_CHECK || see(B, *m) >= 0) )
+			if (check && (check == DISCO_CHECK || see >= 0) )
 				// extend relevant checks
 				new_depth = depth;
 			else if (MS.get_count() == 1)
@@ -260,19 +260,20 @@ namespace
 		}
 
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
-		move_t *m;
+		const move_t *m;
+		int see;
 
-		while ( alpha < beta && (m = MS.next()) ) {
+		while ( alpha < beta && (m = MS.next(&see)) ) {
 			int check = move_is_check(B, *m);
 
 			// SEE pruning
-			if (!in_check && check != DISCO_CHECK && see(B, *m) < 0)
+			if (!in_check && check != DISCO_CHECK && see < 0)
 				continue;
 
 			// recursion
 			int score;
 			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
-				score = current_eval + see(B,*m);
+				score = current_eval + see;
 			else {
 				B.play(*m);
 				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);

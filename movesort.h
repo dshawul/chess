@@ -36,14 +36,14 @@ public:
 
 	struct Token {
 		move_t m;
-		int score;
+		int score, see;
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
 	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H);
 	
-	move_t *next();
-	move_t *previous();
+	const move_t *next(int *see);
+	const move_t *previous();
 	
 	int get_count() const { return count; }
 
@@ -59,5 +59,5 @@ private:
 
 	move_t *generate(GenType type, move_t *mlist);
 	void annotate(const move_t *mlist);
-	int score(move_t m);
+	void score(MoveSort::Token *t);
 };

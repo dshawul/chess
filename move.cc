@@ -181,7 +181,7 @@ namespace
 	}
 }
 
-int see(const Board& B, move_t m)
+int calc_see(const Board& B, move_t m)
 /* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant. */
 {
 	int fsq = m.fsq(), tsq = m.tsq();
@@ -292,10 +292,10 @@ bool test_see()
 		std::cout << test[i].fen << '\t' << test[i].move << std::endl;
 		move_t m = string_to_move(B, test[i].move);
 
-		int s = see(B, m);
+		const int s = calc_see(B, m);
 
 		if (s != test[i].value) {
-			std::cout << B << "SEE = " << see(B, m) << std::endl;
+			std::cout << B << "SEE = " << s << std::endl;
 			std::cout << "should be " << test[i].value << std::endl;
 			return false;
 		}

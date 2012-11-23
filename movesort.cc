@@ -24,9 +24,9 @@ void History::clear()
 int History::get(const Board& B, move_t m) const
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
-	assert(!move_is_cop(B, m) && piece_ok(piece));	
+	assert(!move_is_cop(B, m) && piece_ok(piece));
 	assert(std::abs(h[piece][tsq]) < History::Max);
-	
+
 	return h[piece][tsq];
 }
 
@@ -35,7 +35,7 @@ void History::add(const Board& B, move_t m, int bonus)
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
 	h[piece][tsq] += bonus;
-	
+
 	if (std::abs(h[piece][tsq]) >= History::Max)
 		for (int p = PAWN; p <= KING; ++p)
 			for (int s = A1; s <= H8; h[p][s++] /= 2);
@@ -81,43 +81,51 @@ void MoveSort::annotate(const move_t *mlist)
 {
 	for (int i = idx; i < count; ++i) {
 		list[i].m = mlist[i];
-		list[i].score = score(list[i].m);
+		score(&list[i]);
 	}
 }
 
-int MoveSort::score(move_t m)
+void MoveSort::score(MoveSort::Token *t)
 {
-	if (m == tt_move)
-		return INF;
-	else if (move_is_cop(*B, m))
+	t->see = -INF;	// not computed
+
+	if (t->m == tt_move)
+		t->score = INF;
+	else if (move_is_cop(*B, t->m))
 		if (type == ALL) {
-			/* equal and winning captures, by SEE, in front of quiet moves
-			 * losing captures, after all quiet moves */
-			int s = see(*B, m);			
-			return s >= 0 ? s + History::Max : s - History::Max;
+			// equal and winning captures, by SEE, in front of quiet moves
+			// losing captures, after all quiet moves
+			t->see = calc_see(*B, t->m);
+			t->score = t->see >= 0
+			           ? t->see + History::Max
+			           : t->see - History::Max;
 		} else
-			return mvv_lva(*B, m);
+			t->score = mvv_lva(*B, t->m);
 	else {
-		/* killers first, then the rest by history */
-		if (killer && m == killer[0])
-			return History::Max-1;
-		else if (killer && m == killer[1])
-			return History::Max-2;
+		// killers first, then the rest by history
+		if (killer && t->m == killer[0])
+			t->score = History::Max-1;
+		else if (killer && t->m == killer[1])
+			t->score = History::Max-2;
 		else
-			return H->get(*B, m);
+			t->score = H->get(*B, t->m);
 	}
 }
 
-move_t *MoveSort::next()
+const move_t *MoveSort::next(int *see)
 {
 	if (idx < count) {
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
-		return &list[idx++].m;
+		const Token& t = list[idx++];
+		*see = t.see == -INF
+			? calc_see(*B, t.m)	// compute SEE
+			: t.see;			// use SEE cache
+		return &t.m;
 	} else
 		return NULL;
 }
 
-move_t *MoveSort::previous()
+const move_t *MoveSort::previous()
 {
 	if (idx > 0)
 		return &list[--idx].m;
