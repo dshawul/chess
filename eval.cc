@@ -118,7 +118,7 @@ void EvalInfo::eval_mobility()
 
 void EvalInfo::eval_safety()
 {
-	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
+	static const int AttackWeight[NB_PIECE] = {3, 3, 3, 4, 0, 0};
 	static const int ShieldWeight = 3;
 
 	for (int color = WHITE; color <= BLACK; color++) {
@@ -182,8 +182,10 @@ void EvalInfo::eval_safety()
 		fss = PawnsAttacking[us][ksq] & their_pawns;            
 		while (fss) {
 			sq = pop_lsb(&fss);
-			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
-			total_weight += AttackWeight[PAWN] * count;
+			if (PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns) {
+				++total_count;
+				total_weight += AttackWeight[PAWN];				
+			}
 		}
 
 		// Adjust for king's "distance to safety"
