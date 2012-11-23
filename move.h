@@ -18,7 +18,8 @@
 enum { NO_CHECK, NORMAL_CHECK, DISCO_CHECK };
 
 extern int move_is_check(const Board& B, move_t m);
-extern int move_is_cop(const Board& B, move_t m);	// capture or promotion
+extern bool move_is_cop(const Board& B, move_t m);	// capture or promotion
+extern bool move_is_pawn_threat(const Board& B, move_t m);
 
 extern move_t string_to_move(const Board& B, const std::string& s);
 extern std::string move_to_string(move_t m);

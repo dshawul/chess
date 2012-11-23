@@ -15,13 +15,15 @@
 #pragma once
 #include "types.h"
 
-const Bitboard FileA_bb = 0x0101010101010101ULL << FILE_A;
-const Bitboard FileH_bb = 0x0101010101010101ULL << FILE_H;
-const Bitboard Rank1_bb = 0x00000000000000FFULL;
+#define FileA_bb	0x0101010101010101ULL
+#define FileH_bb	(0x0101010101010101ULL << FILE_H)
+#define Rank1_bb	0x00000000000000FFULL
 
 /* PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color */
 const Bitboard PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
 const Bitboard PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000000FFULL };
+
+const Bitboard HalfBoard[NB_COLOR] = { 0x00000000FFFFFFFFULL, 0xFFFFFFFF00000000ULL };
 
 extern bool BitboardInitialized;
 
@@ -33,6 +35,12 @@ extern Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_
  * the board*/
 extern Bitboard Between[NB_SQUARE][NB_SQUARE];
 extern Bitboard Direction[NB_SQUARE][NB_SQUARE];
+
+/* Bitboards to detect passed pawns */
+extern Bitboard InFront[NB_COLOR][NB_RANK_FILE];
+extern Bitboard AdjacentFiles[NB_RANK_FILE];
+extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
+extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
 
 /* Occupancy independant attacks */
 extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];

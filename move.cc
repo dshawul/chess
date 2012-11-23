@@ -79,11 +79,26 @@ int move_is_check(const Board& B, move_t m)
 	return 0;
 }
 
-int move_is_cop(const Board& B, move_t m)
+bool move_is_cop(const Board& B, move_t m)
 {
 	return piece_ok(B.get_piece_on(m.tsq()))
 	       || m.flag() == EN_PASSANT
 	       || m.flag() == PROMOTION;
+}
+
+bool move_is_pawn_threat(const Board& B, move_t m)
+{
+	if (B.get_piece_on(m.fsq()) == PAWN) {
+		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
+		
+		if (test_bit(HalfBoard[them], sq)) {
+			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
+			return !(PawnSpan[us][sq] & their_pawns)
+				&& !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
+		}
+	}
+	
+	return false;
 }
 
 move_t string_to_move(const Board& B, const std::string& s)

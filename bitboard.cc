@@ -19,9 +19,18 @@
 bool BitboardInitialized = false;
 
 Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
-Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE], PAttacks[NB_COLOR][NB_SQUARE];
+
+Bitboard Between[NB_SQUARE][NB_SQUARE];
+Bitboard Direction[NB_SQUARE][NB_SQUARE];
+
+Bitboard InFront[NB_COLOR][NB_RANK_FILE];
+Bitboard AdjacentFiles[NB_RANK_FILE];
+Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
+Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+
+Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
+Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
-Bitboard Between[NB_SQUARE][NB_SQUARE], Direction[NB_SQUARE][NB_SQUARE];
 
 namespace
 {
@@ -74,6 +83,56 @@ namespace
 					_sq = pop_lsb(&mask);
 					Direction[sq][_sq] = direction;
 				}
+			}
+		}
+	}
+
+	void init_attacks()
+	{
+		const int Kdir[8][2] = { {-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1} };
+		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
+		const int Pdir[2][2] = { {1,-1}, {1,1} };
+
+		for (int sq = A1; sq <= H8; ++sq) {
+			const int r = rank(sq);
+			const int f = file(sq);
+
+			NAttacks[sq] = KAttacks[sq] = 0;
+			for (int d = 0; d < 8; d++) {
+				safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
+				safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
+			}
+
+			PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
+			for (int d = 0; d < 2; d++) {
+				safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
+				safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
+			}
+
+			BPseudoAttacks[sq] = bishop_attack(sq, 0);
+			RPseudoAttacks[sq] = rook_attack(sq, 0);
+		}
+	}
+	
+	void init_mask()
+	{
+		for (int f = FILE_A; f <= FILE_H; f++) {
+			AdjacentFiles[f] = 0ULL;
+			if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
+			if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
+		}
+		
+		InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
+		for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
+			InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
+			InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
+		}
+		
+		for (int us = WHITE; us <= BLACK; ++us) {
+			for (int sq = A1; sq <= H8; ++sq) {
+				const int r = rank(sq), f = file(sq);				
+				SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
+				PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
 			}
 		}
 	}
@@ -412,34 +471,6 @@ namespace
 			}
 		}
 	}
-
-	void init_attacks()
-	{
-		const int Kdir[8][2] = { {-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1} };
-		const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
-		const int Pdir[2][2] = { {1,-1}, {1,1} };
-
-		for (int sq = A1; sq <= H8; ++sq) {
-			const int r = rank(sq);
-			const int f = file(sq);
-
-			NAttacks[sq] = KAttacks[sq] = 0;
-			for (int d = 0; d < 8; d++) {
-				safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
-				safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
-			}
-
-			PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
-			for (int d = 0; d < 2; d++) {
-				safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
-				safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
-			}
-
-			BPseudoAttacks[sq] = bishop_attack(sq, 0);
-			RPseudoAttacks[sq] = rook_attack(sq, 0);
-		}
-	}
-
 }
 
 void init_bitboard()
@@ -450,6 +481,7 @@ void init_bitboard()
 	init_magics();
 	init_attacks();
 	init_rays();
+	init_mask();
 
 	BitboardInitialized = true;
 }
