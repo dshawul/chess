@@ -1,23 +1,30 @@
 #include "eval.h"
 
+Bitboard InFront[NB_COLOR][NB_RANK_FILE];
+
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
+Bitboard Shield[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
 
-int king_dist(int s1, int s2) {
-	int df = file(s1)-file(s2);
-	int dr = rank(s1)-rank(s2);
-	return std::max(std::abs(df), std::abs(dr));
+int kdist(int s1, int s2)
+{
+	return std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
 }
 
 void init_eval()
 {
+	InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
+	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
+		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
+		InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
+	}
+
 	for (int us = WHITE; us <= BLACK; ++us) {
 		for (int sq = A1; sq <= H8; ++sq) {
+			Shield[us][sq] = KAttacks[sq] & InFront[us][rank(sq)];
 			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
 				| shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
-			int d1 = king_dist(sq, us ? E8 : E1);
-			int d2 = king_dist(sq, us ? B8 : B1);
-			KingDistanceToSafety[us][sq] = std::min(d1, d2);
+			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
 		}
 	}
 }
@@ -96,11 +103,11 @@ void eval_mobility(const Board& B, Eval e[NB_COLOR], Bitboard attacks[NB_COLOR][
 void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COLOR][ROOK+1])
 {
 	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
-	/*static const int ShieldWeight = 3;*/
+	static const int ShieldWeight = 3;
 
 	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us), ksq = B.get_king_pos(us);
-		const Bitboard their_pawns = B.get_pieces(them, PAWN);
+		const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
 
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 		// attacks are concerned
@@ -154,22 +161,22 @@ void eval_safety(const Board& B, Eval e[NB_COLOR], const Bitboard attacks[NB_COL
 				ADD_ATTACK(BISHOP);
 			}
 		}
-		
+
 		// Pawn attacks
-		fss = PawnsAttacking[us][ksq] & their_pawns;		
+		fss = PawnsAttacking[us][ksq] & their_pawns;            
 		while (fss) {
 			sq = pop_lsb(&fss);
 			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
 			total_weight += AttackWeight[PAWN] * count;
 		}
-		
+
 		// Adjust for king's "distance to safety"
 		total_count += KingDistanceToSafety[us][ksq];
 
-		/*// Adjust for lack of pawn shield
-		total_count += count = 3 - count_bit(Shield[us][ksq] & B->b[us][Pawn]);
-		total_weight += count * ShieldWeight;*/
-		
+		// Adjust for lack of pawn shield
+		total_count += count = 3 - count_bit(Shield[us][ksq] & our_pawns);
+		total_weight += count * ShieldWeight;
+
 		if (total_count)
 			e[us].op -= total_weight * total_count;
 	}

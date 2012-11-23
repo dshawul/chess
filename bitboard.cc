@@ -19,9 +19,9 @@
 bool BitboardInitialized = false;
 
 Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
-uint64_t KAttacks[NB_SQUARE], NAttacks[NB_SQUARE], PAttacks[NB_COLOR][NB_SQUARE];
-uint64_t BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
-uint64_t Between[NB_SQUARE][NB_SQUARE], Direction[NB_SQUARE][NB_SQUARE];
+Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE], PAttacks[NB_COLOR][NB_SQUARE];
+Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
+Bitboard Between[NB_SQUARE][NB_SQUARE], Direction[NB_SQUARE][NB_SQUARE];
 
 namespace
 {
@@ -38,7 +38,7 @@ namespace
 		for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand<Key>());
 	}
 
-	void safe_add_bit(uint64_t *b, int r, int f)
+	void safe_add_bit(Bitboard *b, int r, int f)
 	{
 		if (rank_file_ok(r, f))
 			set_bit(b, square(r, f));
@@ -68,7 +68,7 @@ namespace
 					Between[sq][_sq] = mask;
 				}
 
-				uint64_t direction = mask;
+				Bitboard direction = mask;
 
 				while (mask) {
 					_sq = pop_lsb(&mask);
@@ -89,7 +89,7 @@ namespace
 		53, 54, 54, 53, 53, 53, 53, 53
 	};
 
-	const uint64_t magic_bb_r_magics[NB_SQUARE] = {
+	const Bitboard magic_bb_r_magics[NB_SQUARE] = {
 		0x0080001020400080ull, 0x0040001000200040ull, 0x0080081000200080ull, 0x0080040800100080ull,
 		0x0080020400080080ull, 0x0080010200040080ull, 0x0080008001000200ull, 0x0080002040800100ull,
 		0x0000800020400080ull, 0x0000400020005000ull, 0x0000801000200080ull, 0x0000800800100080ull,
@@ -108,7 +108,7 @@ namespace
 		0x0001000204080011ull, 0x0001000204000801ull, 0x0001000082000401ull, 0x0001FFFAABFAD1A2ull
 	};
 
-	const uint64_t magic_bb_r_mask[NB_SQUARE] = {
+	const Bitboard magic_bb_r_mask[NB_SQUARE] = {
 		0x000101010101017Eull, 0x000202020202027Cull, 0x000404040404047Aull, 0x0008080808080876ull,
 		0x001010101010106Eull, 0x002020202020205Eull, 0x004040404040403Eull, 0x008080808080807Eull,
 		0x0001010101017E00ull, 0x0002020202027C00ull, 0x0004040404047A00ull, 0x0008080808087600ull,
@@ -138,7 +138,7 @@ namespace
 		58, 59, 59, 59, 59, 59, 59, 58
 	};
 
-	const uint64_t magic_bb_b_magics[NB_SQUARE] = {
+	const Bitboard magic_bb_b_magics[NB_SQUARE] = {
 		0x0002020202020200ull, 0x0002020202020000ull, 0x0004010202000000ull, 0x0004040080000000ull,
 		0x0001104000000000ull, 0x0000821040000000ull, 0x0000410410400000ull, 0x0000104104104000ull,
 		0x0000040404040400ull, 0x0000020202020200ull, 0x0000040102020000ull, 0x0000040400800000ull,
@@ -157,7 +157,7 @@ namespace
 		0x0000000010020200ull, 0x0000000404080200ull, 0x0000040404040400ull, 0x0002020202020200ull
 	};
 
-	const uint64_t magic_bb_b_mask[NB_SQUARE] = {
+	const Bitboard magic_bb_b_mask[NB_SQUARE] = {
 		0x0040201008040200ull, 0x0000402010080400ull, 0x0000004020100A00ull, 0x0000000040221400ull,
 		0x0000000002442800ull, 0x0000000204085000ull, 0x0000020408102000ull, 0x0002040810204000ull,
 		0x0020100804020000ull, 0x0040201008040000ull, 0x00004020100A0000ull, 0x0000004022140000ull,
@@ -176,10 +176,10 @@ namespace
 		0x0028440200000000ull, 0x0050080402000000ull, 0x0020100804020000ull, 0x0040201008040200ull
 	};
 
-	uint64_t magic_bb_r_db[0x19000];
-	uint64_t magic_bb_b_db[0x1480];
+	Bitboard magic_bb_r_db[0x19000];
+	Bitboard magic_bb_b_db[0x1480];
 
-	const uint64_t* magic_bb_b_indices[NB_SQUARE] = {
+	const Bitboard* magic_bb_b_indices[NB_SQUARE] = {
 		magic_bb_b_db+4992, magic_bb_b_db+2624, magic_bb_b_db+256,	magic_bb_b_db+896,
 		magic_bb_b_db+1280, magic_bb_b_db+1664, magic_bb_b_db+4800, magic_bb_b_db+5120,
 		magic_bb_b_db+2560, magic_bb_b_db+2656, magic_bb_b_db+288,  magic_bb_b_db+928,
@@ -198,7 +198,7 @@ namespace
 		magic_bb_b_db+1632, magic_bb_b_db+2272, magic_bb_b_db+4896, magic_bb_b_db+5184
 	};
 
-	const uint64_t* magic_bb_r_indices[64] = {
+	const Bitboard* magic_bb_r_indices[64] = {
 		magic_bb_r_db+86016, magic_bb_r_db+73728, magic_bb_r_db+36864, magic_bb_r_db+43008,
 		magic_bb_r_db+47104, magic_bb_r_db+51200, magic_bb_r_db+77824, magic_bb_r_db+94208,
 		magic_bb_r_db+69632, magic_bb_r_db+32768, magic_bb_r_db+38912, magic_bb_r_db+10240,
@@ -217,11 +217,11 @@ namespace
 		magic_bb_r_db+49152, magic_bb_r_db+55296, magic_bb_r_db+79872, magic_bb_r_db+98304
 	};
 
-	uint64_t init_magic_bb_r(int sq, uint64_t occ)
+	Bitboard init_magic_bb_r(int sq, Bitboard occ)
 	{
-		uint64_t ret = 0;
-		uint64_t bit;
-		uint64_t rowbits = 0xFFULL << (sq & ~7);
+		Bitboard ret = 0;
+		Bitboard bit;
+		Bitboard rowbits = 0xFFULL << (sq & ~7);
 
 		bit = 1ULL << sq;
 		do {
@@ -255,11 +255,11 @@ namespace
 		return ret;
 	}
 
-	uint64_t init_magic_bb_b(int sq, uint64_t occ)
+	Bitboard init_magic_bb_b(int sq, Bitboard occ)
 	{
-		uint64_t ret = 0;
-		uint64_t bit, bit2;
-		uint64_t rowbits = 0xFFULL << (sq & ~7);
+		Bitboard ret = 0;
+		Bitboard bit, bit2;
+		Bitboard rowbits = 0xFFULL << (sq & ~7);
 
 		bit = 1ULL << sq;
 		bit2 = bit;
@@ -308,9 +308,9 @@ namespace
 		return ret;
 	}
 
-	uint64_t init_magic_bb_occ(const int* sq, int numSq, uint64_t linocc)
+	Bitboard init_magic_bb_occ(const int* sq, int numSq, Bitboard linocc)
 	{
-		uint64_t ret = 0;
+		Bitboard ret = 0;
 		for(int i = 0; i < numSq; i++)
 			if (linocc & (1ULL << i))
 				ret |= 1ULL << sq[i];
@@ -330,7 +330,7 @@ namespace
 			44, 24, 15,  8, 23,  7,  6,  5
 		};
 
-		uint64_t* const magic_bb_b_indices2[64] = {
+		Bitboard* const magic_bb_b_indices2[64] = {
 			magic_bb_b_db+4992, magic_bb_b_db+2624, magic_bb_b_db+256,
 			magic_bb_b_db+896,  magic_bb_b_db+1280, magic_bb_b_db+1664,
 			magic_bb_b_db+4800, magic_bb_b_db+5120, magic_bb_b_db+2560,
@@ -355,7 +355,7 @@ namespace
 			magic_bb_b_db+5184
 		};
 
-		uint64_t* const magic_bb_r_indices2[64] = {
+		Bitboard* const magic_bb_r_indices2[64] = {
 			magic_bb_r_db+86016, magic_bb_r_db+73728, magic_bb_r_db+36864,
 			magic_bb_r_db+43008, magic_bb_r_db+47104, magic_bb_r_db+51200,
 			magic_bb_r_db+77824, magic_bb_r_db+94208, magic_bb_r_db+69632,
@@ -383,14 +383,14 @@ namespace
 		for(int i = A1; i <= H8; i++) {
 			int sq[NB_SQUARE];
 			int numSq = 0;
-			uint64_t temp = magic_bb_b_mask[i];
+			Bitboard temp = magic_bb_b_mask[i];
 			while(temp) {
-				uint64_t bit = temp & -temp;
+				Bitboard bit = temp & -temp;
 				sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
 				temp ^= bit;
 			}
 			for(temp = 0; temp < (1ULL << numSq); temp++) {
-				uint64_t tempocc = init_magic_bb_occ(sq, numSq, temp);
+				Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 				*(magic_bb_b_indices2[i] + ((tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i])) =
 				    init_magic_bb_b(i,tempocc);
 			}
@@ -399,14 +399,14 @@ namespace
 		for(int i = A1; i <= H8; i++) {
 			int sq[NB_SQUARE];
 			int numSq = 0;
-			uint64_t temp = magic_bb_r_mask[i];
+			Bitboard temp = magic_bb_r_mask[i];
 			while(temp) {
-				uint64_t bit = temp & -temp;
+				Bitboard bit = temp & -temp;
 				sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
 				temp ^= bit;
 			}
 			for(temp = 0; temp < (1ULL << numSq); temp++) {
-				uint64_t tempocc = init_magic_bb_occ(sq, numSq, temp);
+				Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 				*(magic_bb_r_indices2[i] + ((tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i])) =
 				    init_magic_bb_r(i, tempocc);
 			}
@@ -454,7 +454,7 @@ void init_bitboard()
 	BitboardInitialized = true;
 }
 
-void print_bitboard(std::ostream& ostrm, uint64_t b)
+void print_bitboard(std::ostream& ostrm, Bitboard b)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
@@ -466,7 +466,7 @@ void print_bitboard(std::ostream& ostrm, uint64_t b)
 	}
 }
 
-uint64_t piece_attack(int piece, int sq, uint64_t occ)
+Bitboard piece_attack(int piece, int sq, Bitboard occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
@@ -490,21 +490,21 @@ uint64_t piece_attack(int piece, int sq, uint64_t occ)
 	}
 }
 
-uint64_t bishop_attack(int sq, uint64_t occ)
+Bitboard bishop_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_b_indices[sq]
 	         + (((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq]));
 }
 
-uint64_t rook_attack(int sq, uint64_t occ)
+Bitboard rook_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	return *(magic_bb_r_indices[sq]
 	         + (((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq]));
 }
 
-int count_bit(uint64_t b)
+int count_bit(Bitboard b)
 /* General purpose bit counting, using a simple loop */
 {
 	int cnt = 0;
@@ -515,7 +515,7 @@ int count_bit(uint64_t b)
 	return cnt;
 }
 
-int count_bit_max15(uint64_t b)
+int count_bit_max15(Bitboard b)
 /* From Stockfish: count bits up to 15, without a loop */
 {
 	assert(count_bit(b) <= 15);
