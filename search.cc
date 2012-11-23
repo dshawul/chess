@@ -51,6 +51,8 @@ namespace
 	int mate_in(int ply)	{ return MATE-ply; }
 
 	int null_reduction(int depth) { return 3 + depth/4; }
+	const int IIDDepth[2] = {7, 4};
+	const int IIDMargin = vOP;
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
@@ -148,6 +150,14 @@ namespace
 				return score < mate_in(MAX_PLY)
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
+		}
+		
+		// Internal Iterative Deepening
+		if ( depth >= IIDDepth[is_pv] && !tt_move
+			&& (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
+		{
+			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
+			tt_move = ss->best;
 		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
