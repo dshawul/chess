@@ -194,7 +194,8 @@ void EvalInfo::eval_safety()
 
 void EvalInfo::eval_pawns()
 {
-	static const int Chained = 5;
+	static const int Chained = 5, Isolated = 20;
+	static const Eval Hole = {16, 10};
 	
 	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us);
@@ -203,26 +204,36 @@ void EvalInfo::eval_pawns()
 		Bitboard sqs = our_pawns;
 		
 		while (sqs) {
-			const int sq = pop_lsb(&sqs);
+			const int sq = pop_lsb(&sqs), next_sq = pawn_push(us, sq);
 			const int r = rank(sq), f = file(sq);
 			const Bitboard besides = our_pawns & AdjacentFiles[f];
 			
 			const bool chained = besides & (rank_bb(r) | rank_bb(us ? r+1 : r-1));
-			const bool doubled = SquaresInFront[us][sq] & our_pawns;
-			const bool open = !doubled && !(SquaresInFront[us][sq] & their_pawns);
+			const bool hole = !chained && !(PawnSpan[them][next_sq] & our_pawns)
+				&& test_bit(attacks[them][PAWN], next_sq);
+			const bool isolated = !besides;
+			
+			const bool open = !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 			const bool passed = open && !(PawnSpan[us][sq] & their_pawns);
 			
 			if (chained)
 				e[us].op += Chained;
+			else if (hole) {
+				e[us].op -= open ? Hole.op : Hole.op/2;
+				e[us].eg -= Hole.eg;
+			} else if (isolated) {
+				e[us].op -= open ? Isolated : Isolated/2;
+				e[us].eg -= Isolated;
+			}
+				
 			if (passed) {
 				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
-				const int Q = L*(L-1);						// Quadratic part	0..20
+				const int Q = L*(L-1);						// Quadratic part	0..20				
 
 				// score based on rank
 				e[us].op += 8 * Q;
 				e[us].eg += 4 * (Q + L + 1);
 				
-				const int next_sq = pawn_push(us, sq);
 				if (Q) {
 					//  adjustment for king distance
 					e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
