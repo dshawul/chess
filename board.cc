@@ -67,7 +67,10 @@ void Board::set_fen(const std::string& _fen)
 	// turn of play
 	fen >> c;
 	turn = c == 'w' ? WHITE : BLACK;
-	_st->key ^= turn ? zob_turn : 0ULL;
+	if (turn) {
+		_st->key ^= zob_turn;
+		_st->kpkey ^= zob_turn;
+	}
 	fen >> c;
 
 	// castling rights
@@ -92,7 +95,7 @@ void Board::set_fen(const std::string& _fen)
 	_st->attacked = calc_attacks(them);
 	_st->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
-	assert(calc_key() == st().key);
+	assert(verify_keys());
 	assert(verify_psq());
 }
 
@@ -246,13 +249,15 @@ void Board::play(move_t m)
 		++move_count;
 
 	_st->key ^= zob_turn;
+	_st->kpkey ^= zob_turn;	
+	
 	_st->capture = capture;
 	_st->pinned = hidden_checkers(1, them);
 	_st->dcheckers = hidden_checkers(0, them);
 	_st->attacked = calc_attacks(us);
 	_st->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
-	assert(calc_key() == st().key);
+	assert(verify_keys());
 	assert(verify_psq());
 }
 
@@ -328,48 +333,6 @@ Bitboard Board::calc_attacks(int color) const
 	return r;
 }
 
-void Board::set_square(int color, int piece, int sq, bool play)
-{
-	assert(initialized);
-	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
-	assert(get_piece_on(sq) == NO_PIECE);
-
-	set_bit(&b[color][piece], sq);
-	set_bit(&all[color], sq);
-	piece_on[sq] = piece;
-
-	if (play) {
-		set_bit(&_st->occ, sq);
-		_st->key ^= zob[color][piece][sq];
-
-		const Eval& e = get_psq(color, piece, sq);
-		_st->psq[color] += e;
-		if (KNIGHT <= piece && piece <= QUEEN)
-			_st->piece_psq[color] += e.op;
-	}
-}
-
-void Board::clear_square(int color, int piece, int sq, bool play)
-{
-	assert(initialized);
-	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
-	assert(get_piece_on(sq) == piece);
-
-	clear_bit(&b[color][piece], sq);
-	clear_bit(&all[color], sq);
-	piece_on[sq] = NO_PIECE;
-
-	if (play) {
-		clear_bit(&_st->occ, sq);
-		_st->key ^= zob[color][piece][sq];
-
-		const Eval& e = get_psq(color, piece, sq);
-		_st->psq[color] -= e;
-		if (KNIGHT <= piece && piece <= QUEEN)
-			_st->piece_psq[color] -= e.op;
-	}
-}
-
 Bitboard Board::hidden_checkers(bool find_pins, int color) const
 {
 	assert(initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
@@ -408,19 +371,71 @@ Bitboard Board::calc_checkers(int kcolor) const
 	       | (b[them][PAWN] & PAttacks[kcolor][kpos]);
 }
 
-Key Board::calc_key() const
-/* Calculates the zobrist key from scratch. Used to assert() the dynamically computed st->key */
+void Board::set_square(int color, int piece, int sq, bool play)
 {
-	Key key = 0ULL;
+	assert(initialized);
+	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
+	assert(get_piece_on(sq) == NO_PIECE);
+
+	set_bit(&b[color][piece], sq);
+	set_bit(&all[color], sq);
+	piece_on[sq] = piece;
+
+	if (play) {
+		set_bit(&_st->occ, sq);
+
+		const Eval& e = get_psq(color, piece, sq);
+		_st->psq[color] += e;
+		if (KNIGHT <= piece && piece <= QUEEN)
+			_st->piece_psq[color] += e.op;
+		else
+			_st->kpkey ^= zob[color][piece][sq];
+		
+		_st->key ^= zob[color][piece][sq];
+	}
+}
+
+void Board::clear_square(int color, int piece, int sq, bool play)
+{
+	assert(initialized);
+	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
+	assert(get_piece_on(sq) == piece);
+
+	clear_bit(&b[color][piece], sq);
+	clear_bit(&all[color], sq);
+	piece_on[sq] = NO_PIECE;
+
+	if (play) {
+		clear_bit(&_st->occ, sq);
+
+		const Eval& e = get_psq(color, piece, sq);
+		_st->psq[color] -= e;
+		if (KNIGHT <= piece && piece <= QUEEN)
+			_st->piece_psq[color] -= e.op;
+		else
+			_st->kpkey ^= zob[color][piece][sq];
+	
+		_st->key ^= zob[color][piece][sq];
+	}
+}
+
+bool Board::verify_keys() const
+{
+	const Key base = get_turn() ? zob_turn : 0;
+	Key key = base, kpkey = base;
 
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = b[color][piece];
-			while (sqs)
-				key ^= zob[color][piece][pop_lsb(&sqs)];
+			while (sqs) {
+				const int sq = pop_lsb(&sqs);
+				key ^= zob[color][piece][sq];
+				if (piece == PAWN || piece == KING)
+					kpkey ^= zob[color][piece][sq];
+			}
 		}
 
-	return turn ? key ^ zob_turn : key;
+	return key == st().key && kpkey == st().kpkey;
 }
 
 bool Board::verify_psq() const

@@ -73,7 +73,7 @@ struct GameInfo {
 	int epsq;					// en passant square
 	int crights;				// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
-	Key key;					// base zobrist key
+	Key key, kpkey;				// zobrist key, king+pawn key
 	Bitboard pinned, dcheckers;	// pinned and discovery checkers for turn
 	Bitboard attacked;			// squares attacked by opp_color(turn)
 	Bitboard checkers;			// pieces checking turn's King
@@ -99,12 +99,12 @@ class Board
 	void clear();
 	void set_square(int color, int piece, int sq, bool play = true);
 	void clear_square(int color, int piece, int sq, bool play = true);
-
-	Key calc_key() const;
+	
 	Bitboard calc_attacks(int color) const;
 	Bitboard calc_checkers(int kcolor) const;
 	Bitboard hidden_checkers(bool find_pins, int color) const;
 	
+	bool verify_keys() const;
 	bool verify_psq() const;
 
 public:
