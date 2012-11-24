@@ -294,9 +294,32 @@ namespace
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
 		const move_t *m;
 		int see;
+		const int fut_base = current_eval + vEP/2;
 
 		while ( alpha < beta && (m = MS.next(&see)) ) {
 			int check = move_is_check(B, *m);
+
+			// Futility pruning
+			if (!check && !in_check && !is_pv) {
+				// opt_score = current eval + some margin + max material gain of the move
+				const int opt_score = fut_base
+					+ Material[B.get_piece_on(m->tsq())].eg
+					+ (m->flag() == EN_PASSANT ? vEP : 0)
+					+ (m->flag() == PROMOTION ? Material[m->prom()].eg - vOP : 0);
+				
+				// still can't raise alpha, skip
+				if (opt_score <= alpha) {
+					best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
+					continue;
+				}
+
+				/* TODO: test this
+				 * // the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
+				if (fut_base <= alpha && depth < 0 && see <= 0) {
+					best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
+					continue;					
+				}*/
+			}
 
 			// SEE pruning
 			if (!in_check && check != DISCO_CHECK && see < 0)
