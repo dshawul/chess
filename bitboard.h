@@ -41,6 +41,7 @@ extern Bitboard InFront[NB_COLOR][NB_RANK_FILE];
 extern Bitboard AdjacentFiles[NB_RANK_FILE];
 extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
 extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+extern Bitboard Shield[NB_COLOR][NB_SQUARE];
 
 /* Occupancy independant attacks */
 extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];

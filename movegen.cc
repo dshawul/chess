@@ -271,23 +271,31 @@ move_t *gen_quiet_checks(const Board& B, move_t *mlist)
 {
 	assert(!B.is_check());
 	const int us = B.get_turn(), them = opp_color(us);
-	const int kpos = B.get_king_pos(them);
+	const int ksq = B.get_king_pos(them);
+	const Bitboard occ = B.st().occ;
+	Bitboard fss, tss;
+
+	// Pawn push checks (single push only)
+	if (B.get_pieces(us, PAWN) & NAttacks[ksq] & PawnSpan[them][ksq]) {
+		tss = Shield[them][ksq] & AdjacentFiles[file(ksq)] & ~occ;
+		if (tss)
+			mlist = gen_pawn_moves(B, tss, mlist, false);
+	}
 
 	// Piece quiet checks (direct + discovered)
 	for (int piece = KNIGHT; piece <= QUEEN; piece++) {
-		const Bitboard occ = B.st().occ;
-		const Bitboard check_squares = piece_attack(piece, kpos, occ);
-		Bitboard fss = B.get_pieces(us, piece);
+		const Bitboard check_squares = piece_attack(piece, ksq, occ);
+		fss = B.get_pieces(us, piece);
 
 		while (fss) {
 			const int fsq = pop_lsb(&fss);
 			// possible destinations of piece on fsq
-			uint64_t attacks = piece_attack(piece, fsq, occ);
+			Bitboard attacks = piece_attack(piece, fsq, occ);
 			// direct checks
-			uint64_t tss = attacks & check_squares;
+			tss = attacks & check_squares;
 			// revealed checks
 			if (test_bit(B.st().dcheckers, fsq))
-				tss |= attacks & ~Direction[kpos][fsq];
+				tss |= attacks & ~Direction[ksq][fsq];
 			// exclude captures
 			tss &= ~occ;
 

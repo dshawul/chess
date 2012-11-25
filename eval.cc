@@ -1,7 +1,6 @@
 #include "eval.h"
 
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
-Bitboard Shield[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
 
 int kdist(int s1, int s2)
@@ -13,7 +12,6 @@ void init_eval()
 {
 	for (int us = WHITE; us <= BLACK; ++us) {
 		for (int sq = A1; sq <= H8; ++sq) {
-			Shield[us][sq] = KAttacks[sq] & InFront[us][rank(sq)];
 			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
 				| shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
