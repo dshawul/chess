@@ -97,7 +97,7 @@ namespace
 {
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
-		assert(alpha < beta);
+		assert(alpha < beta && (is_pv || alpha+1 == beta));
 
 		if (ss->ply > 0 && B.is_draw())
 			return 0;
@@ -262,7 +262,7 @@ namespace
 	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
 		assert(depth <= 0);
-		assert(alpha < beta);
+		assert(alpha < beta && (is_pv || alpha+1 == beta));
 		node_poll();
 
 		const bool in_check = B.is_check();
