@@ -51,8 +51,15 @@ namespace
 	int mate_in(int ply)	{ return MATE-ply; }
 
 	int null_reduction(int depth) { return 3 + depth/4; }
+
 	const int IIDDepth[2] = {7, 4};
 	const int IIDMargin = vOP;
+
+	const int RazorDepth = 3;
+	int RazorMargin(int depth) {
+		assert(1 <= depth && depth <= RazorDepth);
+		return 2*vEP + (depth-1)*(vEP/4);
+	}
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
@@ -135,6 +142,17 @@ namespace
 			current_eval = tte->eval;
 		} else
 			current_eval = in_check ? -INF : eval(B);
+
+		// Razoring
+		if (depth <= RazorDepth && !is_pv
+			&& !in_check && !is_mate_score(beta)) {
+			const int threshold = beta - RazorMargin(depth);
+			if (current_eval < threshold) {
+				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
+				if (score < threshold)
+					return score;
+			}
+		}
 
 		// Null move pruning
 		if (!is_pv && !in_check && !is_mate_score(beta)
