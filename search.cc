@@ -313,12 +313,11 @@ namespace
 					continue;
 				}
 
-				/* TODO: test this
-				 * // the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
-				if (fut_base <= alpha && depth < 0 && see <= 0) {
+				// the "SEE proxy" tells us we are unlikely to raise alpha, skip if we are deep into the qsearch
+				if (fut_base <= alpha && depth <= QS_LIMIT/2 && see <= 0) {
 					best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
 					continue;					
-				}*/
+				}
 			}
 
 			// SEE pruning
