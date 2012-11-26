@@ -309,28 +309,31 @@ void Board::undo()
 Bitboard Board::calc_attacks(int color) const
 {
 	assert(initialized);
+	Bitboard fss, r = 0;
+	
+	// Pawn
+	r |= _st->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
+		| shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
 
-	// King, Knights
-	Bitboard r = KAttacks[king_pos[color]];
-	Bitboard fss = b[color][KNIGHT];
+	// Knight
+	_st->attacks[color][KNIGHT] = 0;
+	fss = b[color][KNIGHT];
 	while (fss)
-		r |= NAttacks[pop_lsb(&fss)];
+		r |= _st->attacks[color][KNIGHT] |= NAttacks[pop_lsb(&fss)];
 
-	// Lateral
-	fss = get_RQ(color);
-	while (fss)
-		r |= rook_attack(pop_lsb(&fss), st().occ);
-
-	// Diagonal
+	// Bishop + Queen (diagonal)
+	_st->attacks[color][BISHOP] = 0;
 	fss = get_BQ(color);
 	while (fss)
-		r |= bishop_attack(pop_lsb(&fss), st().occ);
+		r |= _st->attacks[color][BISHOP] |= bishop_attack(pop_lsb(&fss), st().occ);
 
-	// Pawns
-	r |= shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7);
-	r |= shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
+	// Rook + Queen (lateral)
+	_st->attacks[color][ROOK] = 0;
+	fss = get_RQ(color);
+	while (fss)
+		r |= _st->attacks[color][ROOK] |= rook_attack(pop_lsb(&fss), st().occ);
 
-	return r;
+	return r | KAttacks[get_king_pos(color)];
 }
 
 Bitboard Board::hidden_checkers(bool find_pins, int color) const
