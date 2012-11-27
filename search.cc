@@ -24,7 +24,8 @@ using namespace std::chrono;
 
 namespace
 {
-	struct SearchInfo {
+	struct SearchInfo
+	{
 		move_t best, killer[2];
 		int ply;
 	};
@@ -46,11 +47,23 @@ namespace
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
-	bool is_mate_score(int score) { return std::abs(score) >= MATE-MAX_PLY; }
-	int mated_in(int ply)	{ return ply-MATE; }
-	int mate_in(int ply)	{ return MATE-ply; }
+	bool is_mate_score(int score)
+	{
+		return std::abs(score) >= MATE-MAX_PLY;
+	}
+	int mated_in(int ply)
+	{
+		return ply-MATE;
+	}
+	int mate_in(int ply)
+	{
+		return MATE-ply;
+	}
 
-	int null_reduction(int depth) { return 3 + depth/4; }
+	int null_reduction(int depth)
+	{
+		return 3 + depth/4;
+	}
 
 	const int IIDDepth[2] = {7, 4};
 	const int IIDMargin = vOP;
@@ -95,12 +108,16 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	H.clear();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
-	for (int depth = 1; depth <= max_depth; depth++) {
+	for (int depth = 1; depth <= max_depth; depth++)
+	{
 		int score;
 
-		try {
+		try
+		{
 			score = search(B, -INF, +INF, depth, true, ss);
-		} catch (AbortSearch e) {
+		}
+		catch (AbortSearch e)
+		{
 			break;
 		};
 
@@ -139,7 +156,8 @@ namespace
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
 		beta = std::min(beta, mate_in(ss->ply+1));
-		if (alpha >= beta) {
+		if (alpha >= beta)
+		{
 			assert(ss->ply > 0);
 			return alpha;
 		}
@@ -149,20 +167,24 @@ namespace
 		move_t tt_move;
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.find(key);
-		if (tte) {
+		if (tte)
+		{
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
 				return adjust_tt_score(tte->score, ss->ply);
 			if (tte->depth > 0)		// do not use qsearch results
 				tt_move = tte->move;
 			current_eval = tte->eval;
-		} else
+		}
+		else
 			current_eval = in_check ? -INF : eval(B);
 
 		// Razoring
 		if (depth <= 3 && !is_pv
-		        && !in_check && !is_mate_score(beta)) {
+		        && !in_check && !is_mate_score(beta))
+		{
 			const int threshold = beta - razor_margin(depth);
-			if (current_eval < threshold) {
+			if (current_eval < threshold)
+			{
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
 					return score;
@@ -179,9 +201,10 @@ namespace
 
 		// Null move pruning
 		if (!is_pv && !in_check && !is_mate_score(beta)
-		        && (current_eval >= beta || depth <= null_reduction(depth))
-		        && B.st().piece_psq[B.get_turn()]) {
-			int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
+		        && current_eval >= beta
+		        && B.st().piece_psq[B.get_turn()])
+		{
+			const int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
 
 			B.play(0);
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
@@ -195,7 +218,8 @@ namespace
 
 		// Internal Iterative Deepening
 		if ( depth >= IIDDepth[is_pv] && !tt_move
-		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) ) {
+		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
+		{
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
 			tt_move = ss->best;
 		}
@@ -204,7 +228,8 @@ namespace
 		const move_t *m;
 		int cnt = 0, see;
 
-		while ( alpha < beta && (m = MS.next(&see)) ) {
+		while ( alpha < beta && (m = MS.next(&see)) )
+		{
 			++cnt;
 			bool check = move_is_check(B, *m);
 
@@ -239,10 +264,13 @@ namespace
 			B.play(*m);
 
 			int score;
-			if (is_pv && first) {
+			if (is_pv && first)
+			{
 				// search full window
 				score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
-			} else {
+			}
+			else
+			{
 				// zero window search (reduced)
 				score = -search(B, -alpha-1, -alpha, new_depth-reduction, false, ss+1);
 
@@ -257,7 +285,8 @@ namespace
 
 			B.undo();
 
-			if (score > best_score) {
+			if (score > best_score)
+			{
 				best_score = score;
 				alpha = std::max(alpha, score);
 				ss->best = *m;
@@ -265,7 +294,8 @@ namespace
 		}
 
 		// mated or stalemated
-		if (!MS.get_count()) {
+		if (!MS.get_count())
+		{
 			assert(ss->ply > 0);
 			return in_check ? mated_in(ss->ply) : 0;
 		}
@@ -281,16 +311,19 @@ namespace
 		TT.write(&e);
 
 		// best move is quiet: update killers and history
-		if (ss->best && !move_is_cop(B, ss->best)) {
+		if (ss->best && !move_is_cop(B, ss->best))
+		{
 			// update killers on a LIFO basis
-			if (ss->killer[0] != ss->best) {
+			if (ss->killer[0] != ss->best)
+			{
 				ss->killer[1] = ss->killer[0];
 				ss->killer[0] = ss->best;
 			}
 
 			// mark ss->best as good, and all other moves searched as bad
 			while ( (m = MS.previous()) )
-				if (!move_is_cop(B, *m)) {
+				if (!move_is_cop(B, *m))
+				{
 					int bonus = *m == ss->best ? depth*depth : -depth*depth;
 					H.add(B, *m, bonus);
 				}
@@ -313,20 +346,24 @@ namespace
 		move_t tt_move;
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.find(key);
-		if (tte) {
+		if (tte)
+		{
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
 				return adjust_tt_score(tte->score, ss->ply);
 			tt_move = tte->move;
 			current_eval = tte->eval;
-		} else
+		}
+		else
 			current_eval = in_check ? -INF : eval(B);
 
 		// stand pat
-		if (!in_check) {
+		if (!in_check)
+		{
 			best_score = current_eval;
 			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
-			if (alpha >= beta) {
+			if (alpha >= beta)
+			{
 				return alpha;
 			}
 		}
@@ -336,11 +373,13 @@ namespace
 		int see;
 		const int fut_base = current_eval + vEP/2;
 
-		while ( alpha < beta && (m = MS.next(&see)) ) {
+		while ( alpha < beta && (m = MS.next(&see)) )
+		{
 			int check = move_is_check(B, *m);
 
 			// Futility pruning
-			if (!check && !in_check && !is_pv) {
+			if (!check && !in_check && !is_pv)
+			{
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
 				                      + Material[B.get_piece_on(m->tsq())].eg
@@ -348,13 +387,15 @@ namespace
 				                      + (m->flag() == PROMOTION ? Material[m->prom()].eg - vOP : 0);
 
 				// still can't raise alpha, skip
-				if (opt_score <= alpha) {
+				if (opt_score <= alpha)
+				{
 					best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
 					continue;
 				}
 
 				// the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
-				if (fut_base <= alpha && depth < 0 && see <= 0) {
+				if (fut_base <= alpha && depth < 0 && see <= 0)
+				{
 					best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
 					continue;
 				}
@@ -368,13 +409,15 @@ namespace
 			int score;
 			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
 				score = current_eval + see;
-			else {
+			else
+			{
 				B.play(*m);
 				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
 
-			if (score > best_score) {
+			if (score > best_score)
+			{
 				best_score = score;
 				alpha = std::max(alpha, score);
 				ss->best = *m;
@@ -401,7 +444,8 @@ namespace
 	void node_poll()
 	{
 		++node_count;
-		if (0 == (node_count % 1024)) {
+		if (0 == (node_count % 1024))
+		{
 			if (node_limit && node_count >= node_limit)
 				throw AbortSearch();
 			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
@@ -430,7 +474,8 @@ namespace
 
 		if (is_pv)
 			return depth_ok && tte->type == SCORE_EXACT;
-		else {
+		else
+		{
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
 			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
@@ -444,23 +489,27 @@ namespace
 	{
 		if (sl.movetime > 0)
 			return sl.movetime;
-		else if (sl.time > 0 && sl.inc > 0) {
+		else if (sl.time > 0 && sl.inc > 0)
+		{
 			static const int time_buffer = 100;
 			int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
 			return std::max(std::min(sl.time / movestogo + sl.inc, sl.time-time_buffer), 1);
-		} else
+		}
+		else
 			return 0;
 	}
 }
 
 void bench()
 {
-	struct TestPosition {
+	struct TestPosition
+	{
 		const char *fen;
 		int depth;
 	};
 
-	static const TestPosition test[] = {
+	static const TestPosition test[] =
+	{
 		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 11},
 		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 11},
 		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 11},
@@ -489,7 +538,8 @@ void bench()
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
 
-	for (int i = 0; test[i].fen; ++i) {
+	for (int i = 0; test[i].fen; ++i)
+	{
 		B.set_fen(test[i].fen);
 		std::cout << B.get_fen() << std::endl;
 		sl.depth = test[i].depth;
