@@ -55,10 +55,25 @@ namespace
 	const int IIDDepth[2] = {7, 4};
 	const int IIDMargin = vOP;
 
-	const int RazorDepth = 3;
-	int RazorMargin(int depth) {
-		assert(1 <= depth && depth <= RazorDepth);
+	int razor_margin(int depth)
+	{
+		assert(1 <= depth && depth <= 3);
 		return 2*vEP + (depth-1)*(vEP/4);
+	}
+
+	int eval_margin(int depth)
+	{
+		assert(1 <= depth && depth <= 3);
+		return depth * vEP;
+	}
+
+	Bitboard threats(const Board& B)
+	{
+		assert(!B.is_check());
+		const int us = B.get_turn(), them = opp_color(us);
+
+		return (B.st().attacks[them][PAWN] & B.get_pieces(us) & ~B.get_pieces(us, PAWN))
+		       | (B.get_RQ(us) & B.st().attacks[them][KNIGHT]);
 	}
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
@@ -144,15 +159,23 @@ namespace
 			current_eval = in_check ? -INF : eval(B);
 
 		// Razoring
-		if (depth <= RazorDepth && !is_pv
-			&& !in_check && !is_mate_score(beta)) {
-			const int threshold = beta - RazorMargin(depth);
+		if (depth <= 3 && !is_pv
+		        && !in_check && !is_mate_score(beta)) {
+			const int threshold = beta - razor_margin(depth);
 			if (current_eval < threshold) {
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
 					return score;
 			}
 		}
+
+		// Eval pruning
+		if ( depth <= 3 && !is_pv
+		        && !in_check && !is_mate_score(beta)
+		        && current_eval - eval_margin(depth) >= beta
+		        && B.st().piece_psq[B.get_turn()]
+		        && !several_bits(threats(B)) )
+			return current_eval - eval_margin(depth);
 
 		// Null move pruning
 		if (!is_pv && !in_check && !is_mate_score(beta)
@@ -169,11 +192,10 @@ namespace
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
 		}
-		
+
 		// Internal Iterative Deepening
 		if ( depth >= IIDDepth[is_pv] && !tt_move
-			&& (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
-		{
+		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) ) {
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
 			tt_move = ss->best;
 		}
@@ -321,10 +343,10 @@ namespace
 			if (!check && !in_check && !is_pv) {
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
-					+ Material[B.get_piece_on(m->tsq())].eg
-					+ (m->flag() == EN_PASSANT ? vEP : 0)
-					+ (m->flag() == PROMOTION ? Material[m->prom()].eg - vOP : 0);
-				
+				                      + Material[B.get_piece_on(m->tsq())].eg
+				                      + (m->flag() == EN_PASSANT ? vEP : 0)
+				                      + (m->flag() == PROMOTION ? Material[m->prom()].eg - vOP : 0);
+
 				// still can't raise alpha, skip
 				if (opt_score <= alpha) {
 					best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
@@ -334,7 +356,7 @@ namespace
 				// the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
 				if (fut_base <= alpha && depth < 0 && see <= 0) {
 					best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
-					continue;					
+					continue;
 				}
 			}
 
@@ -439,22 +461,22 @@ void bench()
 	};
 
 	static const TestPosition test[] = {
-		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 10},
-		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 10},
-		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 10},
-		{"4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19", 10},
-		{"rq3rk1/ppp2ppp/1bnpb3/3N2B1/3NP3/7P/PPPQ1PP1/2KR3R w - - 7 14", 10},
-		{"r1bq1r1k/1pp1n1pp/1p1p4/4p2Q/4Pp2/1BNP4/PPP2PPP/3R1RK1 w - - 2 14", 10},
-		{"r3r1k1/2p2ppp/p1p1bn2/8/1q2P3/2NPQN2/PPP3PP/R4RK1 b - - 2 15", 10},
-		{"r1bbk1nr/pp3p1p/2n5/1N4p1/2Np1B2/8/PPP2PPP/2KR1B1R w kq - 0 13", 10},
-		{"r1bq1rk1/ppp1nppp/4n3/3p3Q/3P4/1BP1B3/PP1N2PP/R4RK1 w - - 1 16", 10},
-		{"4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 17", 10},
-		{"2rqkb1r/ppp2p2/2npb1p1/1N1Nn2p/2P1PP2/8/PP2B1PP/R1BQK2R b KQ - 0 11", 10},
-		{"r1bq1r1k/b1p1npp1/p2p3p/1p6/3PP3/1B2NN2/PP3PPP/R2Q1RK1 w - - 1 16", 10},
-		{"3r1rk1/p5pp/bpp1pp2/8/q1PP1P2/b3P3/P2NQRPP/1R2B1K1 b - - 6 22", 10},
-		{"r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18", 10},
-		{"4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22", 10},
-		{"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26", 10},
+		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 11},
+		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 11},
+		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 11},
+		{"4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19", 11},
+		{"rq3rk1/ppp2ppp/1bnpb3/3N2B1/3NP3/7P/PPPQ1PP1/2KR3R w - - 7 14", 11},
+		{"r1bq1r1k/1pp1n1pp/1p1p4/4p2Q/4Pp2/1BNP4/PPP2PPP/3R1RK1 w - - 2 14", 11},
+		{"r3r1k1/2p2ppp/p1p1bn2/8/1q2P3/2NPQN2/PPP3PP/R4RK1 b - - 2 15", 11},
+		{"r1bbk1nr/pp3p1p/2n5/1N4p1/2Np1B2/8/PPP2PPP/2KR1B1R w kq - 0 13", 11},
+		{"r1bq1rk1/ppp1nppp/4n3/3p3Q/3P4/1BP1B3/PP1N2PP/R4RK1 w - - 1 16", 11},
+		{"4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 17", 11},
+		{"2rqkb1r/ppp2p2/2npb1p1/1N1Nn2p/2P1PP2/8/PP2B1PP/R1BQK2R b KQ - 0 11", 11},
+		{"r1bq1r1k/b1p1npp1/p2p3p/1p6/3PP3/1B2NN2/PP3PPP/R2Q1RK1 w - - 1 16", 11},
+		{"3r1rk1/p5pp/bpp1pp2/8/q1PP1P2/b3P3/P2NQRPP/1R2B1K1 b - - 6 22", 11},
+		{"r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18", 11},
+		{"4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22", 11},
+		{"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26", 11},
 		{NULL, 0}
 	};
 
