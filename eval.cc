@@ -1,3 +1,18 @@
+/*
+ * DiscoCheck, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ *
+ * DiscoCheck is free software: you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * DiscoCheck is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
+#include <cstring>
 #include "eval.h"
 
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
@@ -10,41 +25,81 @@ int kdist(int s1, int s2)
 
 void init_eval()
 {
-	for (int us = WHITE; us <= BLACK; ++us) {
-		for (int sq = A1; sq <= H8; ++sq) {
+	for (int us = WHITE; us <= BLACK; ++us)
+	{
+		for (int sq = A1; sq <= H8; ++sq)
+		{
 			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
-				| shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
+			                         | shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
 		}
 	}
 }
 
+class PHTable
+{
+public:
+	struct Entry
+	{
+		Key key;
+		Eval eval_white;
+	};
+	
+	PHTable() { memset(buf, 0, sizeof(buf)); }
+
+	void write(const Entry& e) { buf[e.key & (count-1)] = e; }
+	const Entry *find(Key key) const {
+		const int idx = key & (count-1);
+		return buf[idx].key == key ? &buf[idx] : NULL;
+	}
+	
+private:
+	static const int count = 0x10000;
+	Entry buf[count];
+};
+
+PHTable PHT;
+
 class EvalInfo
 {
 public:
-	EvalInfo(const Board *_B): B(_B) { e[WHITE].clear(); e[BLACK].clear(); }
+	EvalInfo(const Board *_B): B(_B)
+	{
+		e[WHITE].clear();
+		e[BLACK].clear();
+	}
+	
 	void eval_material();
 	void eval_mobility();
 	void eval_safety();
+
 	void eval_pawns();
-	int interpolate() const;
+	void do_eval_pawns();
 	
+	int interpolate() const;
+
 private:
 	const Board *B;
 	Eval e[NB_COLOR];
 	Bitboard attacks[NB_COLOR][ROOK+1];
-	
+
 	int calc_phase() const;
+	Eval eval_white() const {
+		Eval tmp = e[WHITE];
+		return tmp -= e[BLACK];
+	}
 };
 
 void EvalInfo::eval_material()
 {
-	for (int color = WHITE; color <= BLACK; ++color) {
+	for (int color = WHITE; color <= BLACK; ++color)
+	{
 		// material (PSQ)
 		e[color] += B->st().psq[color];
 
 		// bishop pair
-		if (several_bits(B->get_pieces(color, BISHOP))) {
+		if (several_bits(B->get_pieces(color, BISHOP)))
+		{
 			e[color].op += 40;
 			e[color].eg += 50;
 		}
@@ -54,12 +109,14 @@ void EvalInfo::eval_material()
 void EvalInfo::eval_mobility()
 {
 	static const int mob_zero[NB_PIECE] = {0, 3, 4, 5, 0, 0};
-	static const unsigned mob_unit[NB_PHASE][NB_PIECE] = {
+	static const unsigned mob_unit[NB_PHASE][NB_PIECE] =
+	{
 		{0, 4, 5, 2, 1, 0},		// Opening
 		{0, 4, 5, 4, 2, 0}		// EndGame
 	};
 
-	for (int color = WHITE; color <= BLACK; color++) {
+	for (int color = WHITE; color <= BLACK; color++)
+	{
 		const int us = color, them = opp_color(us);
 
 		const Bitboard their_pawns = B->get_pieces(them, PAWN);
@@ -72,7 +129,7 @@ void EvalInfo::eval_mobility()
 		int fsq, piece, count;
 
 		/* Generic linear mobility */
-		#define MOBILITY(p0, p)											\
+#define MOBILITY(p0, p)											\
 			attacks[us][p0] |= tss;										\
 			count = count_bit_max15(tss & mob_targets) - mob_zero[p0];	\
 			e[us].op += count * mob_unit[OPENING][p];					\
@@ -81,7 +138,8 @@ void EvalInfo::eval_mobility()
 		/* Knight mobility */
 		attacks[us][KNIGHT] = 0;
 		fss = B->get_pieces(us, KNIGHT);
-		while (fss) {
+		while (fss)
+		{
 			tss = NAttacks[pop_lsb(&fss)];
 			MOBILITY(KNIGHT, KNIGHT);
 		}
@@ -90,8 +148,10 @@ void EvalInfo::eval_mobility()
 		attacks[us][ROOK] = 0;
 		fss = B->get_RQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
-		while (fss) {
-			fsq = pop_lsb(&fss); piece = B->get_piece_on(fsq);
+		while (fss)
+		{
+			fsq = pop_lsb(&fss);
+			piece = B->get_piece_on(fsq);
 			tss = rook_attack(fsq, occ);
 			MOBILITY(ROOK, piece);
 		}
@@ -100,8 +160,10 @@ void EvalInfo::eval_mobility()
 		attacks[us][BISHOP] = 0;
 		fss = B->get_BQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
-		while (fss) {
-			fsq = pop_lsb(&fss); piece = B->get_piece_on(fsq);
+		while (fss)
+		{
+			fsq = pop_lsb(&fss);
+			piece = B->get_piece_on(fsq);
 			tss = bishop_attack(fsq, occ);
 			MOBILITY(BISHOP, piece);
 		}
@@ -113,7 +175,8 @@ void EvalInfo::eval_safety()
 	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
 	static const int ShieldWeight = 3;
 
-	for (int color = WHITE; color <= BLACK; color++) {
+	for (int color = WHITE; color <= BLACK; color++)
+	{
 		const int us = color, them = opp_color(us), ksq = B->get_king_pos(us);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 
@@ -127,7 +190,7 @@ void EvalInfo::eval_safety()
 		Bitboard sq_attackers, attacked, occ, fss;
 
 		// Generic attack scoring
-		#define ADD_ATTACK(p0)								\
+#define ADD_ATTACK(p0)								\
 			if (sq_attackers) {								\
 				count = count_bit(sq_attackers);			\
 				total_weight += AttackWeight[p0] * count;	\
@@ -137,9 +200,11 @@ void EvalInfo::eval_safety()
 
 		// Knight attacks
 		attacked = attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
-		if (attacked) {
+		if (attacked)
+		{
 			fss = B->get_pieces(them, KNIGHT);
-			while (attacked) {
+			while (attacked)
+			{
 				sq = pop_lsb(&attacked);
 				sq_attackers = NAttacks[sq] & fss;
 				ADD_ATTACK(KNIGHT);
@@ -148,10 +213,12 @@ void EvalInfo::eval_safety()
 
 		// Lateral attacks
 		attacked = attacks[them][ROOK] & KAttacks[ksq] & ~solid;
-		if (attacked) {
+		if (attacked)
+		{
 			fss = B->get_RQ(them);
 			occ = B->st().occ & ~fss;	// rooks and queens see through each other
-			while (attacked) {
+			while (attacked)
+			{
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & rook_attack(sq, occ);
 				ADD_ATTACK(ROOK);
@@ -160,10 +227,12 @@ void EvalInfo::eval_safety()
 
 		// Diagonal attacks
 		attacked = attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
-		if (attacked) {
+		if (attacked)
+		{
 			fss = B->get_BQ(them);
 			occ = B->st().occ & ~fss;	// bishops and queens see through each other
-			while (attacked) {
+			while (attacked)
+			{
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & bishop_attack(sq, occ);
 				ADD_ATTACK(BISHOP);
@@ -172,7 +241,8 @@ void EvalInfo::eval_safety()
 
 		// Pawn attacks
 		fss = PawnsAttacking[us][ksq] & their_pawns;
-		while (fss) {
+		while (fss)
+		{
 			sq = pop_lsb(&fss);
 			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
 			total_weight += AttackWeight[PAWN] * count;
@@ -192,56 +262,82 @@ void EvalInfo::eval_safety()
 
 void EvalInfo::eval_pawns()
 {
+	const Key key = B->st().kpkey;
+	const PHTable::Entry *h = PHT.find(key);
+	if (h)
+		e[WHITE] += h->eval_white;
+	else {
+		const Eval ew0 = eval_white();
+		do_eval_pawns();
+		
+		PHTable::Entry tmp;
+		tmp.key = key;
+		tmp.eval_white = eval_white();
+		tmp.eval_white -= ew0;
+		PHT.write(tmp);
+	}
+}
+
+void EvalInfo::do_eval_pawns()
+{
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
-	
-	for (int color = WHITE; color <= BLACK; color++) {
+
+	for (int color = WHITE; color <= BLACK; color++)
+	{
 		const int us = color, them = opp_color(us);
 		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard sqs = our_pawns;
-		
-		while (sqs) {
+
+		while (sqs)
+		{
 			const int sq = pop_lsb(&sqs), next_sq = pawn_push(us, sq);
 			const int r = rank(sq), f = file(sq);
 			const Bitboard besides = our_pawns & AdjacentFiles[f];
-			
+
 			const bool chained = besides & (rank_bb(r) | rank_bb(us ? r+1 : r-1));
 			const bool hole = !chained && !(PawnSpan[them][next_sq] & our_pawns)
-				&& test_bit(attacks[them][PAWN], next_sq);
+			                  && test_bit(attacks[them][PAWN], next_sq);
 			const bool isolated = !besides;
-			
+
 			const bool open = !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 			const bool passed = open && !(PawnSpan[us][sq] & their_pawns);
-			
+
 			if (chained)
 				e[us].op += Chained;
-			else if (hole) {
+			else if (hole)
+			{
 				e[us].op -= open ? Hole.op : Hole.op/2;
 				e[us].eg -= Hole.eg;
-			} else if (isolated) {
+			}
+			else if (isolated)
+			{
 				e[us].op -= open ? Isolated : Isolated/2;
 				e[us].eg -= Isolated;
 			}
-				
-			if (passed) {
+
+			if (passed)
+			{
 				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
-				const int Q = L*(L-1);						// Quadratic part	0..20				
+				const int Q = L*(L-1);						// Quadratic part	0..20
 
 				// score based on rank
 				e[us].op += 8 * Q;
 				e[us].eg += 4 * (Q + L + 1);
-				
-				if (Q) {
+
+				if (Q)
+				{
 					//  adjustment for king distance
 					e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
 					e[us].eg -= kdist(next_sq, our_ksq) * Q;
 					if (rank(next_sq) != (us ? RANK_1 : RANK_8))
 						e[us].eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
 				}
-				
+
 				// support by friendly pawn
-				if (chained) {
+				if (chained)
+				{
 					if (PAttacks[them][next_sq] & our_pawns)
 						e[us].eg += 8 * L;	// besides is good, as it allows a further push
 					else

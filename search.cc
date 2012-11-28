@@ -258,8 +258,9 @@ namespace
 			                      && (bad_capture || bad_quiet)
 			                      && new_depth < depth	// do not reduce extended moves
 			                      && !killer
-			                      && !pthreat;
-
+			                      && !pthreat
+								  && !check;
+			
 			// recursion
 			B.play(*m);
 
@@ -308,7 +309,7 @@ namespace
 		e.move = ss->best;
 		e.score = best_score;
 		e.type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(&e);
+		TT.write(e);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -436,7 +437,7 @@ namespace
 		e.score = best_score;
 		e.type = best_score <= old_alpha ? SCORE_UBOUND
 		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(&e);
+		TT.write(e);
 
 		return best_score;
 	}

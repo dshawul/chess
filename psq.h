@@ -36,10 +36,12 @@ struct Eval {
 	int op, eg;
 
 	void clear() { op = eg = 0; }
-	void operator+= (const Eval& e) { op += e.op; eg += e.eg; }
-	void operator-= (const Eval& e) { op -= e.op; eg -= e.eg; }
+
 	bool operator== (const Eval& e) { return op == e.op && eg == e.eg; }
 	bool operator!= (const Eval& e) { return !(*this == e); }
+
+	const Eval& operator+= (const Eval& e) { op += e.op; eg += e.eg; return *this; }
+	const Eval& operator-= (const Eval& e) { op -= e.op; eg -= e.eg; return *this; }
 };
 
 extern const Eval Material[NB_PIECE];

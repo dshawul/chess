@@ -19,8 +19,8 @@ public:
 	void alloc(uint64_t size);
 	void clear();
 	
-	void write(const Entry *e);
-	Entry *find(Key key) const;
+	void write(const Entry& e);
+	const Entry *find(Key key) const;
 	
 private:
 	int count;

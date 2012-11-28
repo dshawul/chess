@@ -1,3 +1,17 @@
+/*
+ * DiscoCheck, an UCI chess interface. Copyright (C) 2012 Lucas Braesch.
+ *
+ * DiscoCheck is free software: you can redistribute it and/or modify it under the terms of the GNU
+ * General Public License as published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * DiscoCheck is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without
+ * even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License along with this program. If not,
+ * see <http://www.gnu.org/licenses/>.
+*/
 #include <cstring>
 #include "tt.h"
 
@@ -36,16 +50,16 @@ void TTable::clear()
 	memset(buf, 0, count * sizeof(Entry));
 }
 
-void TTable::write(const TTable::Entry *e)
+void TTable::write(const TTable::Entry& e)
 {
 	assert(count && buf);
-	Entry& slot = buf[e->key & (count - 1)];
+	Entry& slot = buf[e.key & (count - 1)];
 
-	if (e->key != slot.key || e->depth >= slot.depth)
-		slot = *e;
+	if (e.key != slot.key || e.depth >= slot.depth)
+		slot = e;
 }
 
-TTable::Entry *TTable::find(Key key) const
+const TTable::Entry *TTable::find(Key key) const
 {
 	Entry *slot = &buf[key & (count - 1)];
 	return slot->key == key ? slot : NULL;
