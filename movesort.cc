@@ -112,7 +112,7 @@ void MoveSort::score(MoveSort::Token *t)
 	}
 }
 
-const move_t *MoveSort::next(int *see)
+move_t MoveSort::next(int *see)
 {
 	if (idx < count) {
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
@@ -120,15 +120,15 @@ const move_t *MoveSort::next(int *see)
 		*see = t.see == -INF
 			? calc_see(*B, t.m)	// compute SEE
 			: t.see;			// use SEE cache
-		return &t.m;
+		return t.m;
 	} else
-		return NULL;
+		return move_t(0);
 }
 
-const move_t *MoveSort::previous()
+move_t MoveSort::previous()
 {
 	if (idx > 0)
-		return &list[--idx].m;
+		return list[--idx].m;
 	else
-		return NULL;
+		return move_t(0);
 }

@@ -26,7 +26,7 @@ namespace
 {
 	struct SearchInfo
 	{
-		move_t best, killer[2];
+		move_t m, best, killer[2];
 		int ply;
 	};
 	const int MAX_PLY = 0x80;
@@ -225,13 +225,12 @@ namespace
 		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
-		const move_t *m;
 		int cnt = 0, see;
 
-		while ( alpha < beta && (m = MS.next(&see)) )
+		while ( alpha < beta && (ss->m = MS.next(&see)) )
 		{
 			++cnt;
-			bool check = move_is_check(B, *m);
+			bool check = move_is_check(B, ss->m);
 
 			// check extension
 			int new_depth;
@@ -246,10 +245,10 @@ namespace
 
 			// move properties
 			const bool first = cnt == 1;
-			const bool capture = move_is_cop(B, *m);
-			const int hscore = capture ? 0 : H.get(B, *m);
-			const bool killer = (*m == ss->killer[0]) || (*m == ss->killer[1]);
-			const bool pthreat = move_is_pawn_threat(B, *m) && see >= 0;
+			const bool capture = move_is_cop(B, ss->m);
+			const int hscore = capture ? 0 : H.get(B, ss->m);
+			const bool killer = (ss->m == ss->killer[0]) || (ss->m == ss->killer[1]);
+			const bool pthreat = move_is_pawn_threat(B, ss->m) && see >= 0;
 
 			// reduction decision
 			const bool bad_capture = capture && see < 0;
@@ -262,7 +261,7 @@ namespace
 								  && !check;
 			
 			// recursion
-			B.play(*m);
+			B.play(ss->m);
 
 			int score;
 			if (is_pv && first)
@@ -290,7 +289,7 @@ namespace
 			{
 				best_score = score;
 				alpha = std::max(alpha, score);
-				ss->best = *m;
+				ss->best = ss->m;
 			}
 		}
 
@@ -322,11 +321,12 @@ namespace
 			}
 
 			// mark ss->best as good, and all other moves searched as bad
+			move_t m;
 			while ( (m = MS.previous()) )
-				if (!move_is_cop(B, *m))
+				if (!move_is_cop(B, m))
 				{
-					int bonus = *m == ss->best ? depth*depth : -depth*depth;
-					H.add(B, *m, bonus);
+					int bonus = m == ss->best ? depth*depth : -depth*depth;
+					H.add(B, m, bonus);
 				}
 		}
 
@@ -364,28 +364,25 @@ namespace
 			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
-			{
 				return alpha;
-			}
 		}
 
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
-		const move_t *m;
 		int see;
 		const int fut_base = current_eval + vEP/2;
 
-		while ( alpha < beta && (m = MS.next(&see)) )
+		while ( alpha < beta && (ss->m = MS.next(&see)) )
 		{
-			int check = move_is_check(B, *m);
+			int check = move_is_check(B, ss->m);
 
 			// Futility pruning
 			if (!check && !in_check && !is_pv)
 			{
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
-				                      + Material[B.get_piece_on(m->tsq())].eg
-				                      + (m->flag() == EN_PASSANT ? vEP : 0)
-				                      + (m->flag() == PROMOTION ? Material[m->prom()].eg - vOP : 0);
+				                      + Material[B.get_piece_on(ss->m.tsq())].eg
+				                      + (ss->m.flag() == EN_PASSANT ? vEP : 0)
+				                      + (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 				// still can't raise alpha, skip
 				if (opt_score <= alpha)
@@ -412,7 +409,7 @@ namespace
 				score = current_eval + see;
 			else
 			{
-				B.play(*m);
+				B.play(ss->m);
 				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
@@ -421,7 +418,7 @@ namespace
 			{
 				best_score = score;
 				alpha = std::max(alpha, score);
-				ss->best = *m;
+				ss->best = ss->m;
 			}
 		}
 
