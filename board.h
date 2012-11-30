@@ -81,7 +81,7 @@ struct GameInfo {
 	int rule50;					// counter for the 50 move rule
 	Eval psq[NB_COLOR];			// PSQ Eval by color
 	int piece_psq[NB_COLOR];	// PSQ Eval.op for pieces only
-	Bitboard attacks[NB_COLOR][ROOK+1];
+	Bitboard attacks[NB_COLOR][NB_PIECE+1];
 
 	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };

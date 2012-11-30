@@ -43,16 +43,18 @@ public:
 	{
 		Key key;
 		Eval eval_white;
+		Bitboard passers;
 	};
-	
-	PHTable() { memset(buf, 0, sizeof(buf)); }
 
-	void write(const Entry& e) { buf[e.key & (count-1)] = e; }
-	const Entry *find(Key key) const {
-		const int idx = key & (count-1);
-		return buf[idx].key == key ? &buf[idx] : NULL;
+	PHTable()
+	{
+		memset(buf, 0, sizeof(buf));
 	}
-	
+	Entry &find(Key key)
+	{
+		return buf[key & (count-1)];
+	}
+
 private:
 	static const int count = 0x10000;
 	Entry buf[count];
@@ -68,14 +70,11 @@ public:
 		e[WHITE].clear();
 		e[BLACK].clear();
 	}
-	
+
 	void eval_material();
 	void eval_mobility();
 	void eval_safety();
-
-	void eval_pawns();
-	void do_eval_pawns();
-	
+	void eval_pawns();	
 	int interpolate() const;
 
 private:
@@ -83,8 +82,12 @@ private:
 	Eval e[NB_COLOR];
 	Bitboard attacks[NB_COLOR][ROOK+1];
 
+	Bitboard do_eval_pawns();
+	void eval_passer(int sq);
+	
 	int calc_phase() const;
-	Eval eval_white() const {
+	Eval eval_white() const
+	{
 		Eval tmp = e[WHITE];
 		return tmp -= e[BLACK];
 	}
@@ -260,28 +263,81 @@ void EvalInfo::eval_safety()
 	}
 }
 
-void EvalInfo::eval_pawns()
+void EvalInfo::eval_passer(int sq)
 {
-	const Key key = B->st().kpkey;
-	const PHTable::Entry *h = PHT.find(key);
-	if (h)
-		e[WHITE] += h->eval_white;
-	else {
-		const Eval ew0 = eval_white();
-		do_eval_pawns();
-		
-		PHTable::Entry tmp;
-		tmp.key = key;
-		tmp.eval_white = eval_white();
-		tmp.eval_white -= ew0;
-		PHT.write(tmp);
+	const int us = B->get_color_on(sq), them = opp_color(us);
+
+	if (B->get_pieces(them) == (B->get_pieces(them, PAWN) | B->get_pieces(them, KING)))
+	{
+		// opponent has no pieces
+		const int psq = square(us ? RANK_1 : RANK_8, file(sq));
+		const int pd = kdist(sq, psq);
+		const int kd = kdist(B->get_king_pos(them), psq) - (them == B->get_turn());
+
+		if (kd > pd)  	// unstoppable passer
+		{
+			// don't forget this is on top of the scor calculated by do_eval_pawns()
+			// so we already incentivise rank advancement, and need to be sure we never reach vQ
+			e[us].eg += vQ - 2*vEP - pd*vEP/2;
+			return;
+		}
+	}
+
+	const int r = rank(sq);
+	const int L = (us ? 7-r : r) - RANK_2;	// Linear part		0..5
+	const int Q = L*(L-1);					// Quadratic part	0..20
+
+	if (Q && !test_bit(B->st().occ, pawn_push(us, sq)))
+	{
+		const Bitboard path = SquaresInFront[us][sq];
+		const Bitboard b = file_bb(file(sq)) & rook_attack(sq, B->st().occ);
+
+		uint64_t defended, attacked;
+		if (B->get_RQ(them) & b)
+		{
+			defended = path & B->st().attacks[us][NO_PIECE];
+			attacked = path;
+		}
+		else
+		{
+			defended = (B->get_RQ(us) & b) ? path : path & B->st().attacks[us][NO_PIECE];
+			attacked = path & (B->st().attacks[them][NO_PIECE] | B->get_pieces(them));
+		}
+
+		if (!attacked)
+			e[us].eg += Q * (path == defended ? 7 : 6);
+		else
+			e[us].eg += Q * ((attacked & defended) == attacked ? 5 : 3);
 	}
 }
 
-void EvalInfo::do_eval_pawns()
+void EvalInfo::eval_pawns()
+{
+	const Key key = B->st().kpkey;
+	PHTable::Entry h = PHT.find(key);
+
+	if (h.key == key)
+		e[WHITE] += h.eval_white;
+	else
+	{
+		const Eval ew0 = eval_white();
+		h.key = key;
+		h.passers = do_eval_pawns();
+		h.eval_white = eval_white();
+		h.eval_white -= ew0;
+	}
+
+	// piece-dependant passed pawn scoring
+	Bitboard b = h.passers;
+	while (b)
+		eval_passer(pop_lsb(&b));
+}
+
+Bitboard EvalInfo::do_eval_pawns()
 {
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
+	Bitboard passers = 0;
 
 	for (int color = WHITE; color <= BLACK; color++)
 	{
@@ -319,6 +375,8 @@ void EvalInfo::do_eval_pawns()
 
 			if (passed)
 			{
+				set_bit(&passers, sq);
+
 				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
 				const int Q = L*(L-1);						// Quadratic part	0..20
 
@@ -346,6 +404,8 @@ void EvalInfo::do_eval_pawns()
 			}
 		}
 	}
+
+	return passers;
 }
 
 int EvalInfo::calc_phase() const

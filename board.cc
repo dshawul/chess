@@ -333,7 +333,11 @@ Bitboard Board::calc_attacks(int color) const
 	while (fss)
 		r |= _st->attacks[color][ROOK] |= rook_attack(pop_lsb(&fss), st().occ);
 
-	return r | KAttacks[get_king_pos(color)];
+	// King
+	r |= _st->attacks[color][KING] = KAttacks[get_king_pos(color)];
+	
+	//All
+	return _st->attacks[color][NO_PIECE] = r;	
 }
 
 Bitboard Board::hidden_checkers(bool find_pins, int color) const
