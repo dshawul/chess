@@ -1,2 +1,3 @@
+- search: SEE pruning near the leaves (needs testing/tuning)
 - search: do not reduce castling moves
 - Trapped pieces. Let's make it more general than NA8 H8 etc. Perhaps when mobility == 0 ?

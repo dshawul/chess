@@ -249,16 +249,20 @@ namespace
 			const int hscore = capture ? 0 : H.get(B, ss->m);
 			const bool killer = (ss->m == ss->killer[0]) || (ss->m == ss->killer[1]);
 			const bool pthreat = move_is_pawn_threat(B, ss->m) && see >= 0;
+			const bool dangerous = (new_depth == depth) || check || killer || pthreat;
 
 			// reduction decision
 			const bool bad_capture = capture && see < 0;
 			const bool bad_quiet = !capture && (hscore < 0 || (hscore == 0 && see < 0));
 			const int reduction = !first
 			                      && (bad_capture || bad_quiet)
-			                      && new_depth < depth	// do not reduce extended moves
-			                      && !killer
-			                      && !pthreat
-								  && !check;
+			                      && !dangerous;
+			
+			// SEE pruning near the leaves
+			if (new_depth <= 1 && see < 0 && !capture && !dangerous) {
+				best_score = std::max(best_score, current_eval + see);
+				continue;
+			}
 			
 			// recursion
 			B.play(ss->m);
