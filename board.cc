@@ -92,7 +92,10 @@ void Board::set_fen(const std::string& _fen)
 	const int us = turn, them = opp_color(us);
 	_st->pinned = hidden_checkers(1, us);
 	_st->dcheckers = hidden_checkers(0, us);
+	
+	calc_attacks(us);
 	_st->attacked = calc_attacks(them);
+	
 	_st->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(verify_keys());
@@ -254,7 +257,10 @@ void Board::play(move_t m)
 	_st->capture = capture;
 	_st->pinned = hidden_checkers(1, them);
 	_st->dcheckers = hidden_checkers(0, them);
+	
 	_st->attacked = calc_attacks(us);
+	calc_attacks(them);
+	
 	_st->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
 	assert(verify_keys());

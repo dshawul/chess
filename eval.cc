@@ -81,7 +81,6 @@ public:
 private:
 	const Board *B;
 	Eval e[NB_COLOR];
-	Bitboard attacks[NB_COLOR][ROOK+1];
 
 	Bitboard do_eval_pawns();
 	void eval_passer(int sq);
@@ -110,6 +109,12 @@ void EvalInfo::eval_material()
 	}
 }
 
+// Generic linear mobility
+#define MOBILITY(p0, p)											\
+	count = count_bit_max15(tss & mob_targets) - mob_zero[p0];	\
+	e[us].op += count * mob_unit[OPENING][p];					\
+	e[us].eg += count * mob_unit[ENDGAME][p]
+
 void EvalInfo::eval_mobility()
 {
 	static const int mob_zero[NB_PIECE] = {0, 3, 4, 5, 0, 0};
@@ -124,23 +129,14 @@ void EvalInfo::eval_mobility()
 		const int us = color, them = opp_color(us);
 
 		const Bitboard their_pawns = B->get_pieces(them, PAWN);
-		const Bitboard defended = attacks[them][PAWN] =
-		                              shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
-		                              | shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
+		const Bitboard defended = shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
+			| shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
 		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING) | defended);
 
 		Bitboard fss, tss, occ;
 		int fsq, piece, count;
 
-		/* Generic linear mobility */
-#define MOBILITY(p0, p)											\
-			attacks[us][p0] |= tss;										\
-			count = count_bit_max15(tss & mob_targets) - mob_zero[p0];	\
-			e[us].op += count * mob_unit[OPENING][p];					\
-			e[us].eg += count * mob_unit[ENDGAME][p]
-
-		/* Knight mobility */
-		attacks[us][KNIGHT] = 0;
+		// Knight mobility
 		fss = B->get_pieces(us, KNIGHT);
 		while (fss)
 		{
@@ -148,8 +144,7 @@ void EvalInfo::eval_mobility()
 			MOBILITY(KNIGHT, KNIGHT);
 		}
 
-		/* Lateral mobility */
-		attacks[us][ROOK] = 0;
+		// Lateral mobility
 		fss = B->get_RQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
 		while (fss)
@@ -160,8 +155,7 @@ void EvalInfo::eval_mobility()
 			MOBILITY(ROOK, piece);
 		}
 
-		/* Diagonal mobility */
-		attacks[us][BISHOP] = 0;
+		// Diagonal mobility
 		fss = B->get_BQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
 		while (fss)
@@ -173,6 +167,15 @@ void EvalInfo::eval_mobility()
 		}
 	}
 }
+
+// Generic attack scoring
+#define ADD_ATTACK(p0)								\
+	if (sq_attackers) {								\
+		count = count_bit(sq_attackers);			\
+		total_weight += AttackWeight[p0] * count;	\
+		if (test_bit(defended, sq)) count--;		\
+		total_count += count;						\
+	}
 
 void EvalInfo::eval_safety()
 {
@@ -186,24 +189,18 @@ void EvalInfo::eval_safety()
 
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 		// attacks are concerned
-		const Bitboard solid = attacks[us][PAWN] | their_pawns;
+		const Bitboard solid = B->st().attacks[us][PAWN] | their_pawns;
+		
 		// Defended by our pieces
-		const Bitboard defended = attacks[us][KNIGHT] | attacks[us][BISHOP] | attacks[us][ROOK];
+		const Bitboard defended = B->st().attacks[us][KNIGHT]
+			| B->st().attacks[us][BISHOP]
+			| B->st().attacks[us][ROOK];
 
 		int total_weight = 0, total_count = 0, sq, count;
 		Bitboard sq_attackers, attacked, occ, fss;
 
-		// Generic attack scoring
-#define ADD_ATTACK(p0)								\
-			if (sq_attackers) {								\
-				count = count_bit(sq_attackers);			\
-				total_weight += AttackWeight[p0] * count;	\
-				if (test_bit(defended, sq)) count--;		\
-				total_count += count;						\
-			}
-
 		// Knight attacks
-		attacked = attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
+		attacked = B->st().attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
 		if (attacked)
 		{
 			fss = B->get_pieces(them, KNIGHT);
@@ -216,7 +213,7 @@ void EvalInfo::eval_safety()
 		}
 
 		// Lateral attacks
-		attacked = attacks[them][ROOK] & KAttacks[ksq] & ~solid;
+		attacked = B->st().attacks[them][ROOK] & KAttacks[ksq] & ~solid;
 		if (attacked)
 		{
 			fss = B->get_RQ(them);
@@ -230,7 +227,7 @@ void EvalInfo::eval_safety()
 		}
 
 		// Diagonal attacks
-		attacked = attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
+		attacked = B->st().attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
 		if (attacked)
 		{
 			fss = B->get_BQ(them);
@@ -353,7 +350,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 			const bool chained = besides & (rank_bb(r) | rank_bb(us ? r+1 : r-1));
 			const bool hole = !chained && !(PawnSpan[them][next_sq] & our_pawns)
-			                  && test_bit(attacks[them][PAWN], next_sq);
+			                  && test_bit(B->st().attacks[them][PAWN], next_sq);
 			const bool isolated = !besides;
 
 			const bool open = !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
