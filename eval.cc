@@ -267,7 +267,7 @@ void EvalInfo::eval_passer(int sq)
 {
 	const int us = B->get_color_on(sq), them = opp_color(us);
 
-	if (B->get_pieces(them) == (B->get_pieces(them, PAWN) | B->get_pieces(them, KING)))
+	if (!B->st().piece_psq[them])
 	{
 		// opponent has no pieces
 		const int psq = square(us ? RANK_1 : RANK_8, file(sq));
@@ -276,9 +276,7 @@ void EvalInfo::eval_passer(int sq)
 
 		if (kd > pd)  	// unstoppable passer
 		{
-			// don't forget this is on top of the scor calculated by do_eval_pawns()
-			// so we already incentivise rank advancement, and need to be sure we never reach vQ
-			e[us].eg += vQ - 2*vEP - pd*vEP/2;
+			e[us].eg += vR;	// on top of the bonus from do_eval_pawns()
 			return;
 		}
 	}
