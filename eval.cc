@@ -74,7 +74,8 @@ public:
 	void eval_material();
 	void eval_mobility();
 	void eval_safety();
-	void eval_pawns();	
+	void eval_pieces();
+	void eval_pawns();
 	int interpolate() const;
 
 private:
@@ -406,6 +407,36 @@ Bitboard EvalInfo::do_eval_pawns()
 	return passers;
 }
 
+void EvalInfo::eval_pieces()
+{
+	static const int Rook7th = 10;
+	
+	for (int color = WHITE; color <= BLACK; ++color) {
+		const int us = color, them = opp_color(us);
+		Bitboard fss, tss;
+		int count;
+		
+		// Rook or Queen on 7th rank
+		fss = B->get_RQ(us);
+		tss = PInitialRank[them];
+		if (	(fss & tss)											// rook or queen on 7th ?
+			&&	((PPromotionRank[us] & B->get_pieces(them, KING))	// enemy king on 8th ?
+				||	(tss & B->get_pieces(them, PAWN)))				// or enemy pawns on 7th ?
+			)
+		{
+			if ((count = count_bit(B->get_pieces(us, ROOK) & tss))) {	// rook on 7th ?
+				e[us].op += count * Rook7th/2;
+				e[us].eg += count * Rook7th;
+			}
+			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss))) {	// queen on 7th ?
+				e[us].op += count * Rook7th/4;
+				e[us].eg += count * Rook7th/2;
+			}
+		}
+
+	}
+}
+
 int EvalInfo::calc_phase() const
 {
 	static const int total = 4*(vN + vB + vR) + 2*vQ;
@@ -428,6 +459,7 @@ int eval(const Board& B)
 	ei.eval_mobility();
 	ei.eval_pawns();
 	ei.eval_safety();
+	ei.eval_pieces();
 
 	return ei.interpolate();
 }

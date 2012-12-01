@@ -1,1 +1,3 @@
-- experiment with threat detection on null move failing low.
+- eval_pieces: Rook/Queen 7th rank (testing in progress)
+- search: do not reduce castling moves
+- Trapped pieces. Let's make it more general than NA8 H8 etc. Perhaps when mobility == 0 ?
