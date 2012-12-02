@@ -225,7 +225,7 @@ namespace
 		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
-		int cnt = 0, see;
+		int cnt = 0, LMR = 0, see;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) )
 		{
@@ -247,16 +247,18 @@ namespace
 			const bool first = cnt == 1;
 			const bool capture = move_is_cop(B, ss->m);
 			const int hscore = capture ? 0 : H.get(B, ss->m);
+			const bool bad_quiet = !capture && (hscore < 0 || (hscore == 0 && see < 0));
+			const bool bad_capture = capture && see < 0;
 			const bool killer = (ss->m == ss->killer[0]) || (ss->m == ss->killer[1]);
 			const bool pthreat = move_is_pawn_threat(B, ss->m) && see >= 0;
 			const bool dangerous = (new_depth == depth) || check || killer || pthreat || (ss->m.flag() == CASTLING);
 
 			// reduction decision
-			const bool bad_capture = capture && see < 0;
-			const bool bad_quiet = !capture && (hscore < 0 || (hscore == 0 && see < 0));
-			const int reduction = !first
-			                      && (bad_capture || bad_quiet)
-			                      && !dangerous;
+			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
+			if (reduction) {
+				LMR += !capture;
+				reduction += (bad_quiet && LMR >= 3+8/depth);
+			}
 			
 			// SEE pruning near the leaves
 			if (new_depth <= 1 && see < 0 && !capture && !dangerous) {
@@ -264,9 +266,18 @@ namespace
 				continue;
 			}
 			
+			const int us = B.get_turn(), them = opp_color(us);
+			const bool queen_was_attacked = B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE];
+			
 			// recursion
 			B.play(ss->m);
 
+			// do not reduce credible queen threats at low depth
+			if ( reduction && new_depth <= 6 && see >= 0 && !queen_was_attacked
+				&& B.get_piece_on(ss->m.tsq()) != QUEEN		// Q exchange is not a threat
+				&& (B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE]) )
+				reduction = 0;
+			
 			int score;
 			if (is_pv && first)
 			{
@@ -512,22 +523,22 @@ void bench()
 
 	static const TestPosition test[] =
 	{
-		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 11},
-		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 11},
-		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 11},
-		{"4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19", 11},
-		{"rq3rk1/ppp2ppp/1bnpb3/3N2B1/3NP3/7P/PPPQ1PP1/2KR3R w - - 7 14", 11},
-		{"r1bq1r1k/1pp1n1pp/1p1p4/4p2Q/4Pp2/1BNP4/PPP2PPP/3R1RK1 w - - 2 14", 11},
-		{"r3r1k1/2p2ppp/p1p1bn2/8/1q2P3/2NPQN2/PPP3PP/R4RK1 b - - 2 15", 11},
-		{"r1bbk1nr/pp3p1p/2n5/1N4p1/2Np1B2/8/PPP2PPP/2KR1B1R w kq - 0 13", 11},
-		{"r1bq1rk1/ppp1nppp/4n3/3p3Q/3P4/1BP1B3/PP1N2PP/R4RK1 w - - 1 16", 11},
-		{"4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 17", 11},
-		{"2rqkb1r/ppp2p2/2npb1p1/1N1Nn2p/2P1PP2/8/PP2B1PP/R1BQK2R b KQ - 0 11", 11},
-		{"r1bq1r1k/b1p1npp1/p2p3p/1p6/3PP3/1B2NN2/PP3PPP/R2Q1RK1 w - - 1 16", 11},
-		{"3r1rk1/p5pp/bpp1pp2/8/q1PP1P2/b3P3/P2NQRPP/1R2B1K1 b - - 6 22", 11},
-		{"r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18", 11},
-		{"4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22", 11},
-		{"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26", 11},
+		{"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -", 12},
+		{"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -", 12},
+		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 12},
+		{"4rrk1/pp1n3p/3q2pQ/2p1pb2/2PP4/2P3N1/P2B2PP/4RRK1 b - - 7 19", 12},
+		{"rq3rk1/ppp2ppp/1bnpb3/3N2B1/3NP3/7P/PPPQ1PP1/2KR3R w - - 7 14", 12},
+		{"r1bq1r1k/1pp1n1pp/1p1p4/4p2Q/4Pp2/1BNP4/PPP2PPP/3R1RK1 w - - 2 14", 12},
+		{"r3r1k1/2p2ppp/p1p1bn2/8/1q2P3/2NPQN2/PPP3PP/R4RK1 b - - 2 15", 12},
+		{"r1bbk1nr/pp3p1p/2n5/1N4p1/2Np1B2/8/PPP2PPP/2KR1B1R w kq - 0 13", 12},
+		{"r1bq1rk1/ppp1nppp/4n3/3p3Q/3P4/1BP1B3/PP1N2PP/R4RK1 w - - 1 16", 12},
+		{"4r1k1/r1q2ppp/ppp2n2/4P3/5Rb1/1N1BQ3/PPP3PP/R5K1 w - - 1 17", 12},
+		{"2rqkb1r/ppp2p2/2npb1p1/1N1Nn2p/2P1PP2/8/PP2B1PP/R1BQK2R b KQ - 0 11", 12},
+		{"r1bq1r1k/b1p1npp1/p2p3p/1p6/3PP3/1B2NN2/PP3PPP/R2Q1RK1 w - - 1 16", 12},
+		{"3r1rk1/p5pp/bpp1pp2/8/q1PP1P2/b3P3/P2NQRPP/1R2B1K1 b - - 6 22", 12},
+		{"r1q2rk1/2p1bppp/2Pp4/p6b/Q1PNp3/4B3/PP1R1PPP/2K4R w - - 2 18", 12},
+		{"4k2r/1pb2ppp/1p2p3/1R1p4/3P4/2r1PN2/P4PPP/1R4K1 b - - 3 22", 12},
+		{"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26", 12},
 		{NULL, 0}
 	};
 
