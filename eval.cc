@@ -127,11 +127,8 @@ void EvalInfo::eval_mobility()
 	for (int color = WHITE; color <= BLACK; color++)
 	{
 		const int us = color, them = opp_color(us);
-
-		const Bitboard their_pawns = B->get_pieces(them, PAWN);
-		const Bitboard defended = shift_bit(their_pawns & ~FileA_bb, them ? -9 : 7)
-			| shift_bit(their_pawns & ~FileH_bb, them ? -7 : 9);
-		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING) | defended);
+		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING)
+			| B->st().attacks[them][PAWN]);
 
 		Bitboard fss, tss, occ;
 		int fsq, piece, count;
