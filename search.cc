@@ -249,9 +249,13 @@ namespace
 			const int hscore = capture ? 0 : H.get(B, ss->m);
 			const bool bad_quiet = !capture && (hscore < 0 || (hscore == 0 && see < 0));
 			const bool bad_capture = capture && see < 0;
-			const bool killer = (ss->m == ss->killer[0]) || (ss->m == ss->killer[1]);
-			const bool pthreat = move_is_pawn_threat(B, ss->m) && see >= 0;
-			const bool dangerous = (new_depth == depth) || check || killer || pthreat || (ss->m.flag() == CASTLING);
+			// dangerous movea are not reduced
+			const bool dangerous = check
+				|| new_depth == depth
+				|| ss->m == ss->killer[0]
+				|| ss->m == ss->killer[1]
+				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
+				|| (ss->m.flag() == CASTLING);
 
 			// reduction decision
 			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
