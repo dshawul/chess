@@ -403,7 +403,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 void EvalInfo::eval_pieces()
 {
-	static const int Rook7th = 10;
+	static const int Rook7th = 8;
 	
 	for (int color = WHITE; color <= BLACK; ++color) {
 		const int us = color, them = opp_color(us);
