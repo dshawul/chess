@@ -104,29 +104,61 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_limit = time_alloc(sl);
-	move_t best;
+	move_t best = 0;
 	H.clear();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
-	for (int depth = 1; depth <= max_depth; depth++)
+	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++)
 	{
-		int score;
+		int score, delta = 16;
 
-		try
+		// Aspiration loop
+		for (;;)
 		{
-			score = search(B, -INF, +INF, depth, true, ss);
+			try {
+				score = search(B, alpha, beta, depth, true, ss);
+			}
+			catch (AbortSearch e)
+			{
+				return best;
+			}
+
+			if (alpha < score && score < beta)
+			{
+				// score is within bounds
+				if (depth >= 4 && !is_mate_score(score))
+				{
+					// set aspiration window for the next depth (so aspiration starts at depth 5)
+					alpha = score - delta;
+					beta = score + delta;
+				}
+				// stop the aspiration loop
+				break;
+			}
+			else
+			{
+				// score is outside bounds
+				std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
+						  << " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
+
+				// resize window
+				if (score <= alpha) {
+					alpha -= delta;
+					std::cout << " upperbound" << std::endl;
+				}
+				else if (score >= beta) {
+					beta += delta;
+					std::cout << " lowerbound" << std::endl;
+				}
+				// double delta
+				delta *= 2;
+			}
 		}
-		catch (AbortSearch e)
-		{
-			break;
-		};
 
 		best = ss->best;
-		std::cout << "info score cp " << score
-		          << " depth " << depth
-		          << " nodes " << node_count
-		          << " pv " << move_to_string(ss->best)
-		          << std::endl;
+		std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
+				  << " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count()
+		          << " pv " << move_to_string(ss->best) << std::endl;
 	}
 
 	return best;
@@ -251,37 +283,39 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-				|| new_depth == depth
-				|| ss->m == ss->killer[0]
-				|| ss->m == ss->killer[1]
-				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
-				|| (ss->m.flag() == CASTLING);
+			                       || new_depth == depth
+			                       || ss->m == ss->killer[0]
+			                       || ss->m == ss->killer[1]
+			                       || (move_is_pawn_threat(B, ss->m) && see >= 0)
+			                       || (ss->m.flag() == CASTLING);
 
 			// reduction decision
 			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
-			if (reduction) {
+			if (reduction)
+			{
 				LMR += !capture;
 				reduction += (bad_quiet && LMR >= 3+8/depth);
 			}
-			
+
 			// SEE pruning near the leaves
-			if (new_depth <= 1 && see < 0 && !capture && !dangerous) {
+			if (new_depth <= 1 && see < 0 && !capture && !dangerous)
+			{
 				best_score = std::max(best_score, current_eval + see);
 				continue;
 			}
-			
+
 			const int us = B.get_turn(), them = opp_color(us);
 			const bool queen_was_attacked = B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE];
-			
+
 			// recursion
 			B.play(ss->m);
 
 			// do not reduce credible queen threats at low depth
 			if ( reduction && new_depth <= 6 && see >= 0 && !queen_was_attacked
-				&& B.get_piece_on(ss->m.tsq()) != QUEEN		// Q exchange is not a threat
-				&& (B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE]) )
+			        && B.get_piece_on(ss->m.tsq()) != QUEEN		// Q exchange is not a threat
+			        && (B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE]) )
 				reduction = 0;
-			
+
 			int score;
 			if (is_pv && first)
 			{
