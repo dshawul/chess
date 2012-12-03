@@ -409,11 +409,38 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int Rook7th = 8;
+	static const int RookOpenFile = 12;	
 	
 	for (int color = WHITE; color <= BLACK; ++color) {
 		const int us = color, them = opp_color(us);
+		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard fss, tss;
-		int count;
+
+		// Rook on (semi)open file
+		fss = B->get_pieces(us, ROOK);
+		while (fss) {
+			const int fsq = pop_lsb(&fss);
+			tss = file_bb(fsq);
+			int bonus = RookOpenFile;
+			
+			if (!(tss & our_pawns)) {
+				// semi open file (at least)
+				
+				if (tss & B->get_pieces(them, KING))
+					// increase bonus on enemy king's file
+					bonus += bonus/2;
+				
+				if (!(tss & their_pawns)) {
+					// open file
+					e[us].op += bonus;
+					e[us].eg += bonus/2;
+				} else {
+					// semi open (only)
+					e[us].op += bonus/2;
+					e[us].eg += bonus/4;
+				}
+			}
+		}
 		
 		// Rook or Queen on 7th rank
 		fss = B->get_RQ(us);
@@ -423,6 +450,7 @@ void EvalInfo::eval_pieces()
 				||	(tss & B->get_pieces(them, PAWN)))				// or enemy pawns on 7th ?
 			)
 		{
+			int count;
 			if ((count = count_bit(B->get_pieces(us, ROOK) & tss))) {	// rook on 7th ?
 				e[us].op += count * Rook7th/2;
 				e[us].eg += count * Rook7th;
