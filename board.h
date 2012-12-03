@@ -125,6 +125,7 @@ public:
 	
 	Bitboard get_RQ(int color) const { return get_pieces(color, ROOK) ^ get_pieces(color, QUEEN); }
 	Bitboard get_BQ(int color) const { return get_pieces(color, BISHOP) ^ get_pieces(color, QUEEN); }
+	Bitboard get_NB(int color) const { return get_pieces(color, KNIGHT) ^ get_pieces(color, BISHOP); }
 	
 	Bitboard get_RQ() const { return get_RQ(WHITE) ^ get_RQ(BLACK); }
 	Bitboard get_BQ() const { return get_BQ(WHITE) ^ get_BQ(BLACK); }

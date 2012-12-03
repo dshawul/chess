@@ -488,6 +488,12 @@ bool Board::is_draw() const
 	if (st().rule50 >= 100)
 		return true;
 
+	// insufficient material
+	if (	get_pieces(WHITE) == (get_NB(WHITE) ^ get_pieces(WHITE, KING))
+		&&	get_pieces(BLACK) == (get_NB(BLACK) ^ get_pieces(BLACK, KING))
+		&&	!several_bits(get_NB(WHITE)) &&	!several_bits(get_NB(BLACK))	)
+		return true;
+	
 	return false;
 }
 
