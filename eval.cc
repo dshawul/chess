@@ -107,6 +107,11 @@ void EvalInfo::eval_material()
 			e[color].eg += 50;
 		}
 	}
+	
+	// If the stronger side has no pawns, half the material difference in the endgame
+	const int strong_side = e[BLACK].eg > e[WHITE].eg;
+	if (!B->get_pieces(strong_side, PAWN))
+		e[strong_side].eg -= std::abs(e[WHITE].eg - e[BLACK].eg)/2;
 }
 
 // Generic linear mobility
