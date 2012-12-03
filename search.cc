@@ -170,13 +170,11 @@ namespace
 	{
 		assert(alpha < beta && (is_pv || alpha+1 == beta));
 
+		if (depth <= 0 || ss->ply >= MAX_PLY)
+			return qsearch(B, alpha, beta, depth, is_pv, ss);
+
 		if (ss->ply > 0 && B.is_draw())
 			return 0;
-		if (ss->ply >= MAX_PLY)
-			return eval(B);
-
-		if (depth <= 0)
-			return qsearch(B, alpha, beta, depth, is_pv, ss);
 
 		assert(depth > 0);
 		node_poll();
@@ -391,6 +389,9 @@ namespace
 		assert(depth <= 0);
 		assert(alpha < beta && (is_pv || alpha+1 == beta));
 		node_poll();
+
+		if (B.is_draw())
+			return 0;
 
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
