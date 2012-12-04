@@ -357,6 +357,8 @@ Bitboard EvalInfo::do_eval_pawns()
 
 			const bool open = !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 			const bool passed = open && !(PawnSpan[us][sq] & their_pawns);
+			const bool candidate = chained && open && !passed
+				&& !several_bits(PawnSpan[us][sq] & their_pawns);
 
 			if (chained)
 				e[us].op += Chained;
@@ -371,7 +373,18 @@ Bitboard EvalInfo::do_eval_pawns()
 				e[us].eg -= Isolated;
 			}
 
-			if (passed)
+			if (candidate)
+			{
+				int n = us ? 7-r : r;
+				const int d1 = kdist(sq, our_ksq), d2 = kdist(sq, their_ksq);
+				
+				if (d1 > d2)		// penalise if enemy king is closer
+					n -= d1 - d2;
+				
+				if (n > 0)			// quadratic score
+					e[us].eg += n*n;
+			}
+			else if (passed)
 			{
 				set_bit(&passers, sq);
 
