@@ -19,7 +19,7 @@ public:
 	void alloc(uint64_t size);
 	void clear();
 	
-	void write(const Entry& e);
+	void write(Key key, int8_t depth, uint8_t type, int16_t eval, int16_t score, move_t move);
 	const Entry *find(Key key) const;
 	
 private:

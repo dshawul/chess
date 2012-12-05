@@ -50,13 +50,21 @@ void TTable::clear()
 	memset(buf, 0, count * sizeof(Entry));
 }
 
-void TTable::write(const TTable::Entry& e)
+void TTable::write(Key key, int8_t depth, uint8_t type, int16_t eval, int16_t score, move_t move)
 {
 	assert(count && buf);
-	Entry& slot = buf[e.key & (count - 1)];
+	Entry& slot = buf[key & (count - 1)];
 
-	if (e.key != slot.key || e.depth >= slot.depth)
-		slot = e;
+	if (key != slot.key || depth >= slot.depth)
+	{
+		slot.key = key;
+		slot.type = type;
+		slot.depth = depth;
+		
+		slot.score = score;
+		slot.eval = eval;
+		slot.move = move;		
+	}
 }
 
 const TTable::Entry *TTable::find(Key key) const

@@ -352,14 +352,8 @@ namespace
 		}
 
 		// update TT
-		TTable::Entry e;
-		e.depth = depth;
-		e.eval = current_eval;
-		e.key = key;
-		e.move = ss->best;
-		e.score = best_score;
-		e.type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(e);
+		int8_t type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		TT.write(key, depth, type, current_eval, best_score, ss->best);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -480,15 +474,9 @@ namespace
 			return mated_in(ss->ply);
 
 		// update TT
-		TTable::Entry e;
-		e.depth = depth;
-		e.eval = current_eval;
-		e.key = key;
-		e.move = ss->best;
-		e.score = best_score;
-		e.type = best_score <= old_alpha ? SCORE_UBOUND
+		int8_t type = best_score <= old_alpha ? SCORE_UBOUND
 		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(e);
+		TT.write(key, depth, type, current_eval, best_score, ss->best);
 
 		return best_score;
 	}
