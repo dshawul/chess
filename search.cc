@@ -529,7 +529,7 @@ namespace
 	{
 		if (sl.movetime > 0)
 			return sl.movetime;
-		else if (sl.time > 0 && sl.inc > 0)
+		else if (sl.time > 0 || sl.inc > 0)
 		{
 			static const int time_buffer = 100;
 			int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
