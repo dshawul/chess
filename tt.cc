@@ -63,7 +63,8 @@ void TTable::write(Key key, int8_t depth, uint8_t type, int16_t eval, int16_t sc
 		
 		slot.score = score;
 		slot.eval = eval;
-		slot.move = move;		
+		if (move)
+			slot.move = move;
 	}
 }
 

@@ -1,3 +1,1 @@
-- draw by chess rules: no major+no pawn+at most 1 minor per side = draw
-- DiscoCheck rules when no pawns
-- If stronger side has no pawns and oppenent has, half the material difference
+- recognize some common draws
