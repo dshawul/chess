@@ -58,7 +58,7 @@ void loop()
 		else if (token == "setoption")
 			setoption(is);
 		else if (token == "eval")
-			std::cout << B << "eval = " << eval(B, B.get_key()) << std::endl;
+			std::cout << B << "eval = " << eval(B) << std::endl;
 	}
 }
 

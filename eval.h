@@ -3,4 +3,4 @@
 
 extern void init_eval();
 
-extern int eval(const Board& B, Key key);
+extern int eval(const Board& B);

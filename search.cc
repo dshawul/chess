@@ -196,7 +196,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		int current_eval = in_check ? -INF : eval(B, key);
+		int current_eval = in_check ? -INF : eval(B);
 		
 		// TT lookup
 		move_t tt_move;
@@ -396,7 +396,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		int current_eval = in_check ? -INF : eval(B, key);
+		int current_eval = in_check ? -INF : eval(B);
 		
 		// TT lookup
 		move_t tt_move;
