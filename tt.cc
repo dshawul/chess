@@ -17,58 +17,72 @@
 
 TTable::~TTable()
 {
-	free(buf);
-	buf = NULL;
+	delete[] cluster;
+	cluster = NULL;
+	generation = 0;
 	count = 0;
 }
 
 void TTable::alloc(uint64_t size)
 {
-	const uint64_t old_size = count * sizeof(Entry);
+	if (cluster)
+		delete[] cluster;
 	
-	// calculate the number of hash slots to allocate
-	for (count = 1; count * sizeof(Entry) <= size; count *= 2);
+	// calculate the number of clusters allocate
+	for (count = 1; count * sizeof(Cluster) <= size; count *= 2);
 	count /= 2;
-
-	// adjust size to the correct power of two
-	size = count * sizeof(Entry);
-
-	// buf already allocated to the correct size: nothing to do
-	if (size == old_size)
-		return;
-
-	// use realloc to preserve the first min(size,old_size) bytes
-	buf = (Entry *)realloc(buf, size);
-
-	// when growing the buffer, the exceeding portion must be cleared
-	if (size > old_size)
-		memset((char *)buf + old_size, 0, size - old_size);
+	
+	// Allocate the cluster array. On failure, std::bad_alloc is thrown and not caught, which
+	// terminates the program. It's not a bug, it's a "feature" ;-)
+	cluster = new Cluster[count];
+	
+	clear();
 }
 
 void TTable::clear()
 {
-	memset(buf, 0, count * sizeof(Entry));
+	memset(cluster, 0, count * sizeof(Cluster));
+	generation = 0;
 }
 
-void TTable::write(Key key, int8_t depth, uint8_t type, int16_t score, move_t move)
+void TTable::new_search()
 {
-	assert(count && buf);
-	Entry& slot = buf[key & (count - 1)];
+	++generation;
+}
 
-	if (key != slot.key || depth >= slot.depth)
+const TTable::Entry *TTable::probe(Key key) const
+{
+	const Entry *e = cluster[key & (count-1)].entry;
+	
+	for (size_t i = 0; i < 4; ++i, ++e)
+		if (e->key == key)
+			return e;
+	
+	return NULL;
+}
+
+void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t move)
+// Stockfish's replacement strategy
+{
+	Entry *e = cluster[key & (count-1)].entry, *replace = e;
+	
+	for (size_t i = 0; i < 4; ++i, ++e)
 	{
-		slot.key = key;
-		slot.type = type;
-		slot.depth = depth;
+		// overwrite empty or old
+		if (!e->key || e->key == key) {
+			replace = e;
+			if (!move)
+				move = e->move;
+			break;				
+		}
 		
-		slot.score = score;
-		if (move)
-			slot.move = move;
+		// replacement strategy
+		int c1 = generation == replace->generation ? 2 : 0;
+		int c2 = e->generation == generation || e->bound == SCORE_EXACT ? -2 : 0;
+		int c3 = e->depth < replace->depth ? 1 : 0;		
+		if (c1 + c2 + c3 > 0)
+			replace = e;
 	}
-}
-
-const TTable::Entry *TTable::find(Key key) const
-{
-	Entry *slot = &buf[key & (count - 1)];
-	return slot->key == key ? slot : NULL;
+	
+	replace->save(key, generation, bound, depth, score, move);
 }

@@ -105,7 +105,9 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_limit = sl.nodes;
 	time_limit = time_alloc(sl);
 	move_t best = 0;
+	
 	H.clear();
+	TT.new_search();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++)
@@ -198,7 +200,7 @@ namespace
 		
 		// TT lookup
 		move_t tt_move;
-		const TTable::Entry *tte = TT.find(key);
+		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
@@ -351,8 +353,8 @@ namespace
 		}
 
 		// update TT
-		int8_t type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(key, depth, type, best_score, ss->best);
+		uint8_t bound = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		TT.store(key, bound, depth, best_score, ss->best);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -395,7 +397,7 @@ namespace
 		
 		// TT lookup
 		move_t tt_move;
-		const TTable::Entry *tte = TT.find(key);
+		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
@@ -472,9 +474,9 @@ namespace
 			return mated_in(ss->ply);
 
 		// update TT
-		int8_t type = best_score <= old_alpha ? SCORE_UBOUND
+		int8_t bound = best_score <= old_alpha ? SCORE_UBOUND
 		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(key, depth, type, best_score, ss->best);
+		TT.store(key, bound, depth, best_score, ss->best);
 
 		return best_score;
 	}
@@ -511,15 +513,15 @@ namespace
 		const bool depth_ok = tte->depth >= depth;
 
 		if (is_pv)
-			return depth_ok && tte->type == SCORE_EXACT;
+			return depth_ok && tte->bound == SCORE_EXACT;
 		else
 		{
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
 			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
 			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
-			       &&	((tte->type == SCORE_LBOUND && tt_score >= beta)
-			            ||(tte->type == SCORE_UBOUND && tt_score < beta));
+			       &&	((tte->bound == SCORE_LBOUND && tt_score >= beta)
+			            ||(tte->bound == SCORE_UBOUND && tt_score < beta));
 		}
 	}
 
