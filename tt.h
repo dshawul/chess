@@ -8,7 +8,8 @@ class TTable
 public:
 	struct Entry {
 		Key key;
-		uint8_t generation, bound;
+		mutable uint8_t generation;
+		uint8_t bound;
 		int8_t depth;
 		int16_t score;
 		move_t move;
@@ -35,6 +36,7 @@ public:
 	void clear();
 	
 	void new_search();
+	void refresh(const Entry *e) const { e->generation = generation; }
 	
 	void store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t move);
 	const Entry *probe(Key key) const;

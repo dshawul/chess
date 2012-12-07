@@ -204,7 +204,10 @@ namespace
 		if (tte)
 		{
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
-				return adjust_tt_score(tte->score, ss->ply);
+			{
+				TT.refresh(tte);
+				return adjust_tt_score(tte->score, ss->ply);				
+			}
 			if (tte->depth > 0)		// do not use qsearch results
 				tt_move = tte->move;
 		}
@@ -401,7 +404,10 @@ namespace
 		if (tte)
 		{
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
-				return adjust_tt_score(tte->score, ss->ply);
+			{
+				TT.refresh(tte);
+				return adjust_tt_score(tte->score, ss->ply);				
+			}
 			tt_move = tte->move;
 		}
 
