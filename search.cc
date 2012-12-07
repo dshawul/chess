@@ -192,10 +192,12 @@ namespace
 			return alpha;
 		}
 
-		// TT lookup
-		int current_eval;
-		move_t tt_move;
+		// Eval cache
 		const Key key = B.get_key();
+		int current_eval = in_check ? -INF : eval(B, key);
+		
+		// TT lookup
+		move_t tt_move;
 		const TTable::Entry *tte = TT.find(key);
 		if (tte)
 		{
@@ -203,10 +205,7 @@ namespace
 				return adjust_tt_score(tte->score, ss->ply);
 			if (tte->depth > 0)		// do not use qsearch results
 				tt_move = tte->move;
-			current_eval = tte->eval;
 		}
-		else
-			current_eval = in_check ? -INF : eval(B);
 
 		// Razoring
 		if (depth <= 3 && !is_pv
@@ -353,7 +352,7 @@ namespace
 
 		// update TT
 		int8_t type = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(key, depth, type, current_eval, best_score, ss->best);
+		TT.write(key, depth, type, best_score, ss->best);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -390,20 +389,19 @@ namespace
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
 
-		// TT lookup
-		int current_eval;
-		move_t tt_move;
+		// Eval cache
 		const Key key = B.get_key();
+		int current_eval = in_check ? -INF : eval(B, key);
+		
+		// TT lookup
+		move_t tt_move;
 		const TTable::Entry *tte = TT.find(key);
 		if (tte)
 		{
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
 				return adjust_tt_score(tte->score, ss->ply);
 			tt_move = tte->move;
-			current_eval = tte->eval;
 		}
-		else
-			current_eval = in_check ? -INF : eval(B);
 
 		// stand pat
 		if (!in_check)
@@ -476,7 +474,7 @@ namespace
 		// update TT
 		int8_t type = best_score <= old_alpha ? SCORE_UBOUND
 		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
-		TT.write(key, depth, type, current_eval, best_score, ss->best);
+		TT.write(key, depth, type, best_score, ss->best);
 
 		return best_score;
 	}

@@ -8,7 +8,7 @@ class TTable
 public:
 	struct Entry {
 		Key key;
-		int16_t eval, score;
+		int16_t score;
 		int8_t depth, type;
 		move_t move;
 	};
@@ -19,7 +19,7 @@ public:
 	void alloc(uint64_t size);
 	void clear();
 	
-	void write(Key key, int8_t depth, uint8_t type, int16_t eval, int16_t score, move_t move);
+	void write(Key key, int8_t depth, uint8_t type, int16_t score, move_t move);
 	const Entry *find(Key key) const;
 	
 private:

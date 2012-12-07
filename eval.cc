@@ -36,7 +36,7 @@ void init_eval()
 	}
 }
 
-class PHTable
+class PawnCache
 {
 public:
 	struct Entry
@@ -46,21 +46,15 @@ public:
 		Bitboard passers;
 	};
 
-	PHTable()
-	{
-		memset(buf, 0, sizeof(buf));
-	}
-	Entry &find(Key key)
-	{
-		return buf[key & (count-1)];
-	}
+	PawnCache() { memset(buf, 0, sizeof(buf)); }
+	Entry &probe(Key key) { return buf[key & (count-1)]; }
 
 private:
 	static const int count = 0x10000;
 	Entry buf[count];
 };
 
-PHTable PHT;
+PawnCache P;
 
 class EvalInfo
 {
@@ -84,7 +78,7 @@ private:
 
 	Bitboard do_eval_pawns();
 	void eval_passer(int sq);
-	
+
 	int calc_phase() const;
 	Eval eval_white() const
 	{
@@ -107,7 +101,7 @@ void EvalInfo::eval_material()
 			e[color].eg += 50;
 		}
 	}
-	
+
 	// If the stronger side has no pawns, half the material difference in the endgame
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	if (!B->get_pieces(strong_side, PAWN))
@@ -133,7 +127,7 @@ void EvalInfo::eval_mobility()
 	{
 		const int us = color, them = opp_color(us);
 		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING)
-			| B->st().attacks[them][PAWN]);
+		                               | B->st().attacks[them][PAWN]);
 
 		Bitboard fss, tss, occ;
 		int fsq, piece, count;
@@ -192,11 +186,11 @@ void EvalInfo::eval_safety()
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 		// attacks are concerned
 		const Bitboard solid = B->st().attacks[us][PAWN] | their_pawns;
-		
+
 		// Defended by our pieces
 		const Bitboard defended = B->st().attacks[us][KNIGHT]
-			| B->st().attacks[us][BISHOP]
-			| B->st().attacks[us][ROOK];
+		                          | B->st().attacks[us][BISHOP]
+		                          | B->st().attacks[us][ROOK];
 
 		int total_weight = 0, total_count = 0, sq, count;
 		Bitboard sq_attackers, attacked, occ, fss;
@@ -312,7 +306,7 @@ void EvalInfo::eval_passer(int sq)
 void EvalInfo::eval_pawns()
 {
 	const Key key = B->st().kpkey;
-	PHTable::Entry h = PHT.find(key);
+	PawnCache::Entry h = P.probe(key);
 
 	if (h.key == key)
 		e[WHITE] += h.eval_white;
@@ -358,7 +352,7 @@ Bitboard EvalInfo::do_eval_pawns()
 			const bool open = !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 			const bool passed = open && !(PawnSpan[us][sq] & their_pawns);
 			const bool candidate = chained && open && !passed
-				&& !several_bits(PawnSpan[us][sq] & their_pawns);
+			                       && !several_bits(PawnSpan[us][sq] & their_pawns);
 
 			if (chained)
 				e[us].op += Chained;
@@ -377,10 +371,10 @@ Bitboard EvalInfo::do_eval_pawns()
 			{
 				int n = us ? 7-r : r;
 				const int d1 = kdist(sq, our_ksq), d2 = kdist(sq, their_ksq);
-				
+
 				if (d1 > d2)		// penalise if enemy king is closer
 					n -= d1 - d2;
-				
+
 				if (n > 0)			// quadratic score
 					e[us].eg += n*n;
 			}
@@ -422,8 +416,9 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int Rook7th = 8;
-	
-	for (int color = WHITE; color <= BLACK; ++color) {
+
+	for (int color = WHITE; color <= BLACK; ++color)
+	{
 		const int us = color, them = opp_color(us);
 		Bitboard fss, tss;
 
@@ -431,16 +426,18 @@ void EvalInfo::eval_pieces()
 		fss = B->get_RQ(us);
 		tss = PInitialRank[them];
 		if (	(fss & tss)											// rook or queen on 7th ?
-			&&	((PPromotionRank[us] & B->get_pieces(them, KING))	// enemy king on 8th ?
-				||	(tss & B->get_pieces(them, PAWN)))				// or enemy pawns on 7th ?
-			)
+		        &&	((PPromotionRank[us] & B->get_pieces(them, KING))	// enemy king on 8th ?
+		             ||	(tss & B->get_pieces(them, PAWN)))				// or enemy pawns on 7th ?
+		   )
 		{
 			int count;
-			if ((count = count_bit(B->get_pieces(us, ROOK) & tss))) {	// rook on 7th ?
+			if ((count = count_bit(B->get_pieces(us, ROOK) & tss)))  	// rook on 7th ?
+			{
 				e[us].op += count * Rook7th/2;
 				e[us].eg += count * Rook7th;
 			}
-			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss))) {	// queen on 7th ?
+			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss)))  	// queen on 7th ?
+			{
 				e[us].op += count * Rook7th/4;
 				e[us].eg += count * Rook7th/2;
 			}
@@ -462,16 +459,42 @@ int EvalInfo::interpolate() const
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
 
-int eval(const Board& B)
+class EvalCache
+{
+public:
+	struct Entry
+	{
+		Key k: 48;
+		int16_t e;
+	};
+
+	EvalCache() { memset(data, 0, sizeof(data)); }
+	Entry& probe(Key k) { return data[k & (size-1)]; }
+
+private:
+	static const size_t size = 0x100000;
+	Entry data[size];
+};
+
+EvalCache C;
+
+int eval(const Board& B, Key key)
 {
 	assert(!B.is_check());
+	EvalCache::Entry &ce = C.probe(key), tmp = {key};
 
-	EvalInfo ei(&B);
-	ei.eval_material();
-	ei.eval_mobility();
-	ei.eval_pawns();
-	ei.eval_safety();
-	ei.eval_pieces();
+	if (ce.k == tmp.k)
+		return ce.e;
+	else
+	{
+		EvalInfo ei(&B);
+		ei.eval_material();
+		ei.eval_mobility();
+		ei.eval_pawns();
+		ei.eval_safety();
+		ei.eval_pieces();
 
-	return ei.interpolate();
+		ce.k = key;
+		return ce.e = ei.interpolate();
+	}
 }
