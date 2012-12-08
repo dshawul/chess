@@ -1,1 +1,3 @@
+- display PV
 - recognize some common draws
+- make Eval Cache and Pawn Cache size UCI parameters

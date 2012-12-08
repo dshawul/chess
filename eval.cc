@@ -54,7 +54,7 @@ private:
 	Entry buf[count];
 };
 
-PawnCache P;
+PawnCache PC;
 
 class EvalInfo
 {
@@ -306,7 +306,7 @@ void EvalInfo::eval_passer(int sq)
 void EvalInfo::eval_pawns()
 {
 	const Key key = B->st().kpkey;
-	PawnCache::Entry h = P.probe(key);
+	PawnCache::Entry h = PC.probe(key);
 
 	if (h.key == key)
 		e[WHITE] += h.eval_white;
@@ -416,6 +416,14 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int Rook7th = 8;
+	static const uint64_t BishopTrap[NB_COLOR] = {
+		(1ULL << A7) | (1ULL << H7),
+		(1ULL << A2) | (1ULL << H2)
+	};
+	static const Bitboard KnightTrap[NB_COLOR] = {
+		(1ULL << A8) | (1ULL << H8) | (1ULL << A7) | (1ULL << H7),
+		(1ULL << A1) | (1ULL << H1) | (1ULL << A2) | (1ULL << H2)
+	};
 
 	for (int color = WHITE; color <= BLACK; ++color)
 	{
@@ -425,24 +433,44 @@ void EvalInfo::eval_pieces()
 		// Rook or Queen on 7th rank
 		fss = B->get_RQ(us);
 		tss = PInitialRank[them];
-		if (	(fss & tss)											// rook or queen on 7th ?
-		        &&	((PPromotionRank[us] & B->get_pieces(them, KING))	// enemy king on 8th ?
-		             ||	(tss & B->get_pieces(them, PAWN)))				// or enemy pawns on 7th ?
-		   )
+		// If we have are rooks and/or queens on the 7th rank, and the enemy king is on the 8th, or
+		// there are enemy pawns on the 7th
+		if ((fss & tss) && ((PPromotionRank[us] & B->get_pieces(them, KING)) || (tss & B->get_pieces(them, PAWN))))
 		{
 			int count;
-			if ((count = count_bit(B->get_pieces(us, ROOK) & tss)))  	// rook on 7th ?
+			
+			// Rook(s) on 7th rank
+			if ((count = count_bit(B->get_pieces(us, ROOK) & tss)))
 			{
 				e[us].op += count * Rook7th/2;
 				e[us].eg += count * Rook7th;
 			}
-			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss)))  	// queen on 7th ?
+			
+			// Queen(s) on 7th rank
+			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss)))
 			{
 				e[us].op += count * Rook7th/4;
 				e[us].eg += count * Rook7th/2;
 			}
 		}
 
+		// Knight trapped
+		fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
+		while (fss)
+		{
+			// If all escape squares are either attacked by a pawn, or attacked and not defended by
+			// a pawn, then the knight is likely to be trapped and we penalize it.
+			tss = NAttacks[pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];			
+			if (!(tss & ~(B->st().attacks[them][NO_PIECE] & ~B->st().attacks[us][PAWN])))
+				e[us].op -= vOP;
+		}
+
+		// Bishop trapped
+		fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
+		while (fss)
+			// See if the retreat path of the bishop is blocked by a defended pawn
+			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][pop_lsb(&fss)])
+				e[us].op -= vOP;
 	}
 }
 
@@ -476,7 +504,7 @@ private:
 	Entry data[size];
 };
 
-EvalCache C;
+EvalCache EC;
 
 int eval(const Board& B)
 {
@@ -485,7 +513,7 @@ int eval(const Board& B)
 	// en-passant square and castling rights do not affect the eval. so we can use the "unrefined"
 	// key directly, and get (a little bit) more cache hits
 	Key key = B.st().key;
-	EvalCache::Entry *ce = C.probe(key), tmp = {key};
+	EvalCache::Entry *ce = EC.probe(key), tmp = {key};
 
 	if (ce->key48 == tmp.key48)
 		return ce->e;
@@ -495,7 +523,7 @@ int eval(const Board& B)
 		// The last move played is a null move. So we should have an entry for the same position,
 		// with the turn of play revesed. And the eval is symetric, so we take advantage of it.
 		Key key_rev = key ^ zob_turn;
-		EvalCache::Entry *ce_rev = C.probe(key_rev), tmp_rev = {key_rev};
+		EvalCache::Entry *ce_rev = EC.probe(key_rev), tmp_rev = {key_rev};
 		if (ce_rev->key48 == tmp_rev.key48)
 			return -ce_rev->e;
 	}
