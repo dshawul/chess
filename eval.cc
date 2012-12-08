@@ -416,11 +416,13 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int Rook7th = 8;
-	static const uint64_t BishopTrap[NB_COLOR] = {
+	static const uint64_t BishopTrap[NB_COLOR] =
+	{
 		(1ULL << A7) | (1ULL << H7),
 		(1ULL << A2) | (1ULL << H2)
 	};
-	static const Bitboard KnightTrap[NB_COLOR] = {
+	static const Bitboard KnightTrap[NB_COLOR] =
+	{
 		(1ULL << A8) | (1ULL << H8) | (1ULL << A7) | (1ULL << H7),
 		(1ULL << A1) | (1ULL << H1) | (1ULL << A2) | (1ULL << H2)
 	};
@@ -438,14 +440,14 @@ void EvalInfo::eval_pieces()
 		if ((fss & tss) && ((PPromotionRank[us] & B->get_pieces(them, KING)) || (tss & B->get_pieces(them, PAWN))))
 		{
 			int count;
-			
+
 			// Rook(s) on 7th rank
 			if ((count = count_bit(B->get_pieces(us, ROOK) & tss)))
 			{
 				e[us].op += count * Rook7th/2;
 				e[us].eg += count * Rook7th;
 			}
-			
+
 			// Queen(s) on 7th rank
 			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss)))
 			{
@@ -458,19 +460,31 @@ void EvalInfo::eval_pieces()
 		fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
 		while (fss)
 		{
-			// If all escape squares are either attacked by a pawn, or attacked and not defended by
-			// a pawn, then the knight is likely to be trapped and we penalize it.
-			tss = NAttacks[pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];			
+			// escape squares = not defended by enemy pawns
+			tss = NAttacks[pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];
+			// If escape square(s) are attacked and not defended by a pawn, then the knight is likely
+			// to be trapped and we penalize it
 			if (!(tss & ~(B->st().attacks[them][NO_PIECE] & ~B->st().attacks[us][PAWN])))
 				e[us].op -= vOP;
+			// in the endgame, we only look at king attacks, and incentivise the king to go and grab
+			// the trapped knight
+			if (!(tss & ~(B->st().attacks[them][KING] & ~B->st().attacks[us][PAWN])))
+				e[us].eg -= vEP;
 		}
 
 		// Bishop trapped
 		fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
-		while (fss)
+		while (fss) {
+			const int fsq = pop_lsb(&fss);
 			// See if the retreat path of the bishop is blocked by a defended pawn
-			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][pop_lsb(&fss)])
+			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][fsq])
+			{
 				e[us].op -= vOP;
+				// in the endgame, we only penalize if there's no escape via the 8th rank
+				if (PAttacks[us][fsq] & B->st().attacks[them][KING])
+					e[us].eg -= vEP;
+			}
+		}
 	}
 }
 
@@ -509,7 +523,7 @@ EvalCache EC;
 int eval(const Board& B)
 {
 	assert(!B.is_check());
-	
+
 	// en-passant square and castling rights do not affect the eval. so we can use the "unrefined"
 	// key directly, and get (a little bit) more cache hits
 	Key key = B.st().key;
@@ -517,7 +531,7 @@ int eval(const Board& B)
 
 	if (ce->key48 == tmp.key48)
 		return ce->e;
-	
+
 	if (!B.st().last_move)
 	{
 		// The last move played is a null move. So we should have an entry for the same position,
@@ -527,7 +541,7 @@ int eval(const Board& B)
 		if (ce_rev->key48 == tmp_rev.key48)
 			return -ce_rev->e;
 	}
-	
+
 	EvalInfo ei(&B);
 	ei.eval_material();
 	ei.eval_mobility();
