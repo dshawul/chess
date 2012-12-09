@@ -80,6 +80,13 @@ inline int lsb(Bitboard b)
 	return index;
 }
 
+inline int msb(Bitboard b)
+{
+	Bitboard index;
+	__asm__("bsrq %1, %0": "=r"(index): "rm"(b) );
+	return index;
+}
+
 inline int pop_lsb(Bitboard *b)
 {
 	const int s = lsb(*b);

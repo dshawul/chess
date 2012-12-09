@@ -17,14 +17,19 @@
 
 Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
+int KingDistance[NB_SQUARE][NB_SQUARE];
 
 int kdist(int s1, int s2)
 {
-	return std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
+	return KingDistance[s1][s2];
 }
 
 void init_eval()
 {
+	for (int s1 = A1; s1 <= H8; ++s1)
+		for (int s2 = A1; s2 <= H8; ++s2)
+			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
+
 	for (int us = WHITE; us <= BLACK; ++us)
 	{
 		for (int sq = A1; sq <= H8; ++sq)
@@ -399,12 +404,14 @@ Bitboard EvalInfo::do_eval_pawns()
 				}
 
 				// support by friendly pawn
-				if (chained)
+				if (besides & PawnSpan[them][next_sq])
 				{
 					if (PAttacks[them][next_sq] & our_pawns)
 						e[us].eg += 8 * L;	// besides is good, as it allows a further push
-					else
+					else if (PAttacks[them][sq] & our_pawns)
 						e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
+					else if (!(their_pawns & PawnSpan[them][sq]))
+						e[us].eg += 2 * L;	// further behind
 				}
 			}
 		}
@@ -474,7 +481,8 @@ void EvalInfo::eval_pieces()
 
 		// Bishop trapped
 		fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
-		while (fss) {
+		while (fss)
+		{
 			const int fsq = pop_lsb(&fss);
 			// See if the retreat path of the bishop is blocked by a defended pawn
 			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][fsq])

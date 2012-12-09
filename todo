@@ -1,3 +1,5 @@
+- test new connected passed pawn progressive bonus
+- penalize pieces with no "mobility" (no target squares that aren't attcked)
 - display PV
 - recognize some common draws
 - make Eval Cache and Pawn Cache size UCI parameters
