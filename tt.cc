@@ -29,8 +29,7 @@ void TTable::alloc(uint64_t size)
 		delete[] cluster;
 	
 	// calculate the number of clusters allocate
-	for (count = 1; count * sizeof(Cluster) <= size; count *= 2);
-	count /= 2;
+	count = 1ULL << msb(size / sizeof(Cluster));
 	
 	// Allocate the cluster array. On failure, std::bad_alloc is thrown and not caught, which
 	// terminates the program. It's not a bug, it's a "feature" ;-)
