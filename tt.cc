@@ -76,7 +76,7 @@ void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t m
 		
 		// Stockfish replacement strategy
 		int c1 = generation == replace->generation ? 2 : 0;
-		int c2 = e->generation == generation || e->bound == SCORE_EXACT ? -2 : 0;
+		int c2 = e->generation == generation || e->bound == BOUND_EXACT ? -2 : 0;
 		int c3 = e->depth < replace->depth ? 1 : 0;		
 		if (c1 + c2 + c3 > 0)
 			replace = e;

@@ -356,7 +356,7 @@ namespace
 		}
 
 		// update TT
-		uint8_t bound = best_score <= old_alpha ? SCORE_UBOUND : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		uint8_t bound = best_score <= old_alpha ? BOUND_UPPER : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
 		TT.store(key, bound, depth, best_score, ss->best);
 
 		// best move is quiet: update killers and history
@@ -480,8 +480,8 @@ namespace
 			return mated_in(ss->ply);
 
 		// update TT
-		int8_t bound = best_score <= old_alpha ? SCORE_UBOUND
-		         : (best_score >= beta ? SCORE_LBOUND : SCORE_EXACT);
+		int8_t bound = best_score <= old_alpha ? BOUND_UPPER
+		         : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
 		TT.store(key, bound, depth, best_score, ss->best);
 
 		return best_score;
@@ -519,15 +519,15 @@ namespace
 		const bool depth_ok = tte->depth >= depth;
 
 		if (is_pv)
-			return depth_ok && tte->bound == SCORE_EXACT;
+			return depth_ok && tte->bound == BOUND_EXACT;
 		else
 		{
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
 			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
 			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
-			       &&	((tte->bound == SCORE_LBOUND && tt_score >= beta)
-			            ||(tte->bound == SCORE_UBOUND && tt_score < beta));
+			       &&	((tte->bound == BOUND_LOWER && tt_score >= beta)
+			            ||(tte->bound == BOUND_UPPER && tt_score < beta));
 		}
 	}
 
