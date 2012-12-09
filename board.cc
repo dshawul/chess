@@ -504,3 +504,9 @@ Key Board::get_key() const
 	       ^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
 	       ^ zob_castle[st().crights];
 }
+
+void Board::unwind()
+{
+	while (_st > game_stack)
+		undo();
+}

@@ -38,7 +38,7 @@ namespace
 	uint64_t node_count, node_limit;
 	int time_limit;
 	time_point<high_resolution_clock> start;
-	void node_poll();
+	void node_poll(Board& B);
 
 	int time_alloc(const SearchLimits& sl);
 
@@ -88,6 +88,8 @@ namespace
 		return (B.st().attacks[them][PAWN] & B.get_pieces(us) & ~B.get_pieces(us, PAWN))
 		       | (B.get_RQ(us) & B.st().attacks[them][KNIGHT]);
 	}
+	
+	void print_pv(Board& B);
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
@@ -105,7 +107,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_limit = sl.nodes;
 	time_limit = time_alloc(sl);
 	move_t best = 0;
-	
+
 	H.clear();
 	TT.new_search();
 
@@ -117,13 +119,17 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 		// Aspiration loop
 		for (;;)
 		{
-			try {
+			try
+			{
 				score = search(B, alpha, beta, depth, true, ss);
 			}
 			catch (AbortSearch e)
 			{
 				return best;
 			}
+
+			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
+				<< " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
 
 			if (alpha < score && score < beta)
 			{
@@ -139,28 +145,23 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			}
 			else
 			{
-				// score is outside bounds
-				std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
-						  << " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
-
-				// resize window
-				if (score <= alpha) {
+				// score is outside bounds: resize window and double delta
+				if (score <= alpha)
+				{
 					alpha -= delta;
 					std::cout << " upperbound" << std::endl;
 				}
-				else if (score >= beta) {
+				else if (score >= beta)
+				{
 					beta += delta;
 					std::cout << " lowerbound" << std::endl;
 				}
-				// double delta
 				delta *= 2;
 			}
 		}
 
 		best = ss->best;
-		std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
-				  << " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count()
-		          << " pv " << move_to_string(ss->best) << std::endl;
+		print_pv(B);
 	}
 
 	return best;
@@ -179,7 +180,7 @@ namespace
 			return 0;
 
 		assert(depth > 0);
-		node_poll();
+		node_poll(B);
 
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
@@ -197,7 +198,7 @@ namespace
 		// Eval cache
 		const Key key = B.get_key();
 		int current_eval = in_check ? -INF : eval(B);
-		
+
 		// TT lookup
 		move_t tt_move;
 		const TTable::Entry *tte = TT.probe(key);
@@ -206,7 +207,7 @@ namespace
 			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
 			{
 				TT.refresh(tte);
-				return adjust_tt_score(tte->score, ss->ply);				
+				return adjust_tt_score(tte->score, ss->ply);
 			}
 			if (tte->depth > 0)		// do not use qsearch results
 				tt_move = tte->move;
@@ -386,7 +387,7 @@ namespace
 	{
 		assert(depth <= 0);
 		assert(alpha < beta && (is_pv || alpha+1 == beta));
-		node_poll();
+		node_poll(B);
 
 		if (B.is_draw())
 			return 0;
@@ -397,7 +398,7 @@ namespace
 		// Eval cache
 		const Key key = B.get_key();
 		int current_eval = in_check ? -INF : eval(B);
-		
+
 		// TT lookup
 		move_t tt_move;
 		const TTable::Entry *tte = TT.probe(key);
@@ -406,7 +407,7 @@ namespace
 			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
 			{
 				TT.refresh(tte);
-				return adjust_tt_score(tte->score, ss->ply);				
+				return adjust_tt_score(tte->score, ss->ply);
 			}
 			tt_move = tte->move;
 		}
@@ -481,21 +482,27 @@ namespace
 
 		// update TT
 		int8_t bound = best_score <= old_alpha ? BOUND_UPPER
-		         : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
+		               : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
 		TT.store(key, bound, depth, best_score, ss->best);
 
 		return best_score;
 	}
 
-	void node_poll()
+	void node_poll(Board &B)
 	{
 		++node_count;
 		if (0 == (node_count % 1024))
 		{
 			if (node_limit && node_count >= node_limit)
+			{
+				B.unwind();
 				throw AbortSearch();
+			}
 			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
+			{
+				B.unwind();
 				throw AbortSearch();
+			}
 		}
 	}
 
@@ -544,6 +551,26 @@ namespace
 		else
 			return 0;
 	}
+
+	void print_pv(Board& B)
+	{
+		std::cout << " pv";
+
+		for (int i = 0; i < MAX_PLY; i++)
+		{
+			const TTable::Entry *tte = TT.probe(B.get_key());
+
+			if (tte && tte->bound == BOUND_EXACT && tte->move && !B.is_draw())
+			{
+				std::cout << ' ' << move_to_string(tte->move);
+				B.play(tte->move);
+			}
+		}
+		
+		std::cout << std::endl;		
+		B.unwind();		
+	}
+
 }
 
 void bench()

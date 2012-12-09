@@ -136,6 +136,8 @@ public:
 	void play(move_t m);
 	void undo();
 	
+	void unwind();
+	
 	bool is_check() const { return st().checkers; }
 	bool is_draw() const;
 	
