@@ -29,9 +29,9 @@ void Board::clear()
 	for (int sq = A1; sq <= H8; piece_on[sq++] = NO_PIECE);
 	memset(b, 0, sizeof(b));
 
-	_st = game_stack;
-	memset(_st, 0, sizeof(GameInfo));
-	_st->epsq = NO_SQUARE;
+	sp = sp0 = game_stack;
+	memset(sp, 0, sizeof(GameInfo));
+	sp->epsq = NO_SQUARE;
 	move_count = 1;
 
 	initialized = true;
@@ -68,8 +68,8 @@ void Board::set_fen(const std::string& _fen)
 	fen >> c;
 	turn = c == 'w' ? WHITE : BLACK;
 	if (turn) {
-		_st->key ^= zob_turn;
-		_st->kpkey ^= zob_turn;
+		sp->key ^= zob_turn;
+		sp->kpkey ^= zob_turn;
 	}
 	fen >> c;
 
@@ -78,25 +78,25 @@ void Board::set_fen(const std::string& _fen)
 		int color = isupper(c) ? WHITE : BLACK;
 		c = toupper(c);
 		if (c == 'K')
-			_st->crights |= OO << (2 * color);
+			sp->crights |= OO << (2 * color);
 		else if (c == 'Q')
-			_st->crights |= OOO << (2 * color);
+			sp->crights |= OOO << (2 * color);
 	}
 
 	if ( (fen >> f) && ('a' <= f && f <= 'h')
 	        && (fen >> r) && ('1' <= r && r <= '8') )
-		_st->epsq = square(r - '1', f - 'a');
+		sp->epsq = square(r - '1', f - 'a');
 
-	fen >> std::skipws >> _st->rule50 >> move_count;
+	fen >> std::skipws >> sp->rule50 >> move_count;
 
 	const int us = turn, them = opp_color(us);
-	_st->pinned = hidden_checkers(1, us);
-	_st->dcheckers = hidden_checkers(0, us);
+	sp->pinned = hidden_checkers(1, us);
+	sp->dcheckers = hidden_checkers(0, us);
 	
 	calc_attacks(us);
-	_st->attacked = calc_attacks(them);
+	sp->attacked = calc_attacks(them);
 	
-	_st->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
+	sp->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(verify_keys());
 	assert(verify_psq());
@@ -179,10 +179,10 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 void Board::play(move_t m)
 {
 	assert(initialized);
-	++_st;
-	memcpy(_st, _st-1, sizeof(GameInfo));
-	_st->last_move = m;
-	_st->rule50++;
+	++sp;
+	memcpy(sp, sp-1, sizeof(GameInfo));
+	sp->last_move = m;
+	sp->rule50++;
 
 	const int us = turn, them = opp_color(us);
 	const int fsq = m.fsq(), tsq = m.tsq();
@@ -191,7 +191,7 @@ void Board::play(move_t m)
 	if (m) {
 		// normal capture: remove captured piece
 		if (piece_ok(capture)) {
-			_st->rule50 = 0;
+			sp->rule50 = 0;
 			clear_square(them, capture, tsq);
 		}
 
@@ -200,26 +200,26 @@ void Board::play(move_t m)
 		set_square(us, m.flag() == PROMOTION ? m.prom() : piece, tsq);
 
 		if (piece == PAWN) {
-			_st->rule50 = 0;
+			sp->rule50 = 0;
 			int inc_pp = us ? -8 : 8;
 			// set the epsq if double push
-			_st->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
+			sp->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
 			// capture en passant
 			if (m.flag() == EN_PASSANT)
 				clear_square(them, PAWN, tsq - inc_pp);
 		} else {
-			_st->epsq = NO_SQUARE;
+			sp->epsq = NO_SQUARE;
 
 			if (piece == ROOK) {
 				// a rook move can alter castling rights
 				if (fsq == (us ? H8 : H1))
-					_st->crights &= ~(OO << (2 * us));
+					sp->crights &= ~(OO << (2 * us));
 				else if (fsq == (us ? A8 : A1))
-					_st->crights &= ~(OOO << (2 * us));
+					sp->crights &= ~(OOO << (2 * us));
 			} else if (piece == KING) {
 				// update king_pos and clear crights
 				king_pos[us] = tsq;
-				_st->crights &= ~((OO | OOO) << (2 * us));
+				sp->crights &= ~((OO | OOO) << (2 * us));
 
 				if (m.flag() == CASTLING) {
 					// rook jump
@@ -237,31 +237,31 @@ void Board::play(move_t m)
 		if (capture == ROOK) {
 			// Rook captures can alter opponent's castling rights
 			if (tsq == (us ? H1 : H8))
-				_st->crights &= ~(OO << (2 * them));
+				sp->crights &= ~(OO << (2 * them));
 			else if (tsq == (us ? A1 : A8))
-				_st->crights &= ~(OOO << (2 * them));
+				sp->crights &= ~(OOO << (2 * them));
 		}
 	} else {
 		// Null move
 		assert(!is_check());
-		_st->epsq = NO_SQUARE;
+		sp->epsq = NO_SQUARE;
 	}
 
 	turn = them;
 	if (turn == WHITE)
 		++move_count;
 
-	_st->key ^= zob_turn;
-	_st->kpkey ^= zob_turn;	
+	sp->key ^= zob_turn;
+	sp->kpkey ^= zob_turn;	
 	
-	_st->capture = capture;
-	_st->pinned = hidden_checkers(1, them);
-	_st->dcheckers = hidden_checkers(0, them);
+	sp->capture = capture;
+	sp->pinned = hidden_checkers(1, them);
+	sp->dcheckers = hidden_checkers(0, them);
 	
-	_st->attacked = calc_attacks(us);
+	sp->attacked = calc_attacks(us);
 	calc_attacks(them);
 	
-	_st->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
+	sp->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
 	assert(verify_keys());
 	assert(verify_psq());
@@ -309,7 +309,7 @@ void Board::undo()
 	if (turn == BLACK)
 		--move_count;
 
-	--_st;
+	--sp;
 }
 
 Bitboard Board::calc_attacks(int color) const
@@ -318,32 +318,32 @@ Bitboard Board::calc_attacks(int color) const
 	Bitboard fss, r = 0;
 	
 	// Pawn
-	r |= _st->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
+	r |= sp->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
 		| shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
 
 	// Knight
-	_st->attacks[color][KNIGHT] = 0;
+	sp->attacks[color][KNIGHT] = 0;
 	fss = b[color][KNIGHT];
 	while (fss)
-		r |= _st->attacks[color][KNIGHT] |= NAttacks[pop_lsb(&fss)];
+		r |= sp->attacks[color][KNIGHT] |= NAttacks[pop_lsb(&fss)];
 
 	// Bishop + Queen (diagonal)
-	_st->attacks[color][BISHOP] = 0;
+	sp->attacks[color][BISHOP] = 0;
 	fss = get_BQ(color);
 	while (fss)
-		r |= _st->attacks[color][BISHOP] |= bishop_attack(pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][BISHOP] |= bishop_attack(pop_lsb(&fss), st().occ);
 
 	// Rook + Queen (lateral)
-	_st->attacks[color][ROOK] = 0;
+	sp->attacks[color][ROOK] = 0;
 	fss = get_RQ(color);
 	while (fss)
-		r |= _st->attacks[color][ROOK] |= rook_attack(pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][ROOK] |= rook_attack(pop_lsb(&fss), st().occ);
 
 	// King
-	r |= _st->attacks[color][KING] = KAttacks[get_king_pos(color)];
+	r |= sp->attacks[color][KING] = KAttacks[get_king_pos(color)];
 	
 	//All
-	return _st->attacks[color][NO_PIECE] = r;	
+	return sp->attacks[color][NO_PIECE] = r;	
 }
 
 Bitboard Board::hidden_checkers(bool find_pins, int color) const
@@ -395,16 +395,16 @@ void Board::set_square(int color, int piece, int sq, bool play)
 	piece_on[sq] = piece;
 
 	if (play) {
-		set_bit(&_st->occ, sq);
+		set_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
-		_st->psq[color] += e;
+		sp->psq[color] += e;
 		if (KNIGHT <= piece && piece <= QUEEN)
-			_st->piece_psq[color] += e.op;
+			sp->piece_psq[color] += e.op;
 		else
-			_st->kpkey ^= zob[color][piece][sq];
+			sp->kpkey ^= zob[color][piece][sq];
 		
-		_st->key ^= zob[color][piece][sq];
+		sp->key ^= zob[color][piece][sq];
 	}
 }
 
@@ -419,16 +419,16 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 	piece_on[sq] = NO_PIECE;
 
 	if (play) {
-		clear_bit(&_st->occ, sq);
+		clear_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
-		_st->psq[color] -= e;
+		sp->psq[color] -= e;
 		if (KNIGHT <= piece && piece <= QUEEN)
-			_st->piece_psq[color] -= e.op;
+			sp->piece_psq[color] -= e.op;
 		else
-			_st->kpkey ^= zob[color][piece][sq];
+			sp->kpkey ^= zob[color][piece][sq];
 	
-		_st->key ^= zob[color][piece][sq];
+		sp->key ^= zob[color][piece][sq];
 	}
 }
 
@@ -481,7 +481,7 @@ bool Board::is_draw() const
 {
 	// 3 move rule
 	for (int i = 4; i <= st().rule50; i += 2)
-		if (_st[-i].key == st().key)
+		if (sp[-i].key == st().key)
 			return true;
 
 	// 50 move
@@ -503,10 +503,4 @@ Key Board::get_key() const
 	return st().key
 	       ^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
 	       ^ zob_castle[st().crights];
-}
-
-void Board::unwind()
-{
-	while (_st > game_stack)
-		undo();
 }

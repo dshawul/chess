@@ -91,7 +91,7 @@ class Board
 	Bitboard b[NB_COLOR][NB_PIECE];
 	Bitboard all[NB_COLOR];
 	int piece_on[NB_SQUARE];
-	GameInfo game_stack[MAX_GAME_PLY], *_st;
+	GameInfo game_stack[MAX_GAME_PLY], *sp, *sp0;
 	int turn;
 	int king_pos[NB_COLOR];
 	int move_count;				// full move count, as per FEN standard
@@ -136,7 +136,8 @@ public:
 	void play(move_t m);
 	void undo();
 	
-	void unwind();
+	void set_unwind()	{ sp0 = sp; }
+	void unwind()		{ while (sp > sp0) undo(); }
 	
 	bool is_check() const { return st().checkers; }
 	bool is_draw() const;
@@ -192,7 +193,7 @@ inline int Board::get_king_pos(int c) const
 inline const GameInfo& Board::st() const
 {
 	assert(initialized);
-	return *_st;
+	return *sp;
 }
 
 inline int Board::get_move_count() const

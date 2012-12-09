@@ -110,6 +110,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	H.clear();
 	TT.new_search();
+	B.set_unwind();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++)
