@@ -26,7 +26,7 @@ Bitboard Direction[NB_SQUARE][NB_SQUARE];
 Bitboard InFront[NB_COLOR][NB_RANK_FILE];
 Bitboard AdjacentFiles[NB_RANK_FILE];
 Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
-Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+Bitboard PawnSpan[NB_COLOR][NB_SQUARE], PassedPawnMask[NB_COLOR][NB_SQUARE];
 Bitboard Shield[NB_COLOR][NB_SQUARE];
 
 Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
@@ -134,6 +134,7 @@ namespace
 				const int r = rank(sq), f = file(sq);				
 				SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
 				PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
+				PassedPawnMask[us][sq] = PawnSpan[us][sq] ^ SquaresInFront[us][sq];
 				Shield[us][sq] = KAttacks[sq] & InFront[us][r];
 			}
 		}

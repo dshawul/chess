@@ -181,12 +181,11 @@ void EvalInfo::eval_mobility()
 void EvalInfo::eval_safety()
 {
 	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
-	static const int ShieldWeight = 3;
 
 	for (int color = WHITE; color <= BLACK; color++)
 	{
 		const int us = color, them = opp_color(us), ksq = B->get_king_pos(us);
-		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
+		const Bitboard their_pawns = B->get_pieces(them, PAWN);
 
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 		// attacks are concerned
@@ -252,10 +251,6 @@ void EvalInfo::eval_safety()
 
 		// Adjust for king's "distance to safety"
 		total_count += KingDistanceToSafety[us][ksq];
-
-		// Adjust for lack of pawn shield
-		total_count += count = 3 - count_bit(Shield[us][ksq] & our_pawns);
-		total_weight += count * ShieldWeight;
 
 		if (total_count)
 			e[us].op -= total_weight * total_count;
@@ -334,6 +329,8 @@ Bitboard EvalInfo::do_eval_pawns()
 {
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
+	static const int ShelterPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
+	
 	Bitboard passers = 0;
 
 	for (int color = WHITE; color <= BLACK; color++)
@@ -342,6 +339,23 @@ Bitboard EvalInfo::do_eval_pawns()
 		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard sqs = our_pawns;
+		
+		int kf = file(our_ksq);
+		for (int f = kf-1; f <= kf+1; ++f)
+		{
+			if (f < FILE_A || f > FILE_H)
+				continue;
+			
+			const Bitboard b = our_pawns & file_bb(f);
+			
+			int r;
+			if (us == WHITE)
+				r = b ? rank(lsb(b)): 0;
+			else
+				r = b ? 7-rank(msb(b)): 0;
+			
+			e[us].op -= ShelterPenalty[r] >> (f != kf);
+		}
 
 		while (sqs)
 		{
