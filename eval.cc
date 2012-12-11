@@ -15,7 +15,6 @@
 #include <cstring>
 #include "eval.h"
 
-Bitboard PawnsAttacking[NB_COLOR][NB_SQUARE];
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
 int KingDistance[NB_SQUARE][NB_SQUARE];
 
@@ -31,14 +30,8 @@ void init_eval()
 			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
 
 	for (int us = WHITE; us <= BLACK; ++us)
-	{
 		for (int sq = A1; sq <= H8; ++sq)
-		{
-			PawnsAttacking[us][sq] = shift_bit(KAttacks[sq] & ~FileA_bb, us ? -9 : 7)
-			                         | shift_bit(KAttacks[sq] & ~FileH_bb, us ? -7 : 9);
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
-		}
-	}
 }
 
 class PawnCache
@@ -180,7 +173,7 @@ void EvalInfo::eval_mobility()
 
 void EvalInfo::eval_safety()
 {
-	static const int AttackWeight[NB_PIECE] = {2, 3, 3, 4, 0, 0};
+	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
 
 	for (int color = WHITE; color <= BLACK; color++)
 	{
@@ -238,15 +231,6 @@ void EvalInfo::eval_safety()
 				sq_attackers = fss & bishop_attack(sq, occ);
 				ADD_ATTACK(BISHOP);
 			}
-		}
-
-		// Pawn attacks
-		fss = PawnsAttacking[us][ksq] & their_pawns;
-		while (fss)
-		{
-			sq = pop_lsb(&fss);
-			total_count += count = count_bit(PAttacks[them][sq] & KAttacks[ksq] & ~their_pawns);
-			total_weight += AttackWeight[PAWN] * count;
 		}
 
 		// Adjust for king's "distance to safety"
