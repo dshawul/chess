@@ -330,7 +330,8 @@ Bitboard EvalInfo::do_eval_pawns()
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
 	static const int ShelterPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
-	
+	static const int StormPenalty[8] = {10, 0, 50, 20, 10, 0, 0, 0};
+
 	Bitboard passers = 0;
 
 	for (int color = WHITE; color <= BLACK; color++)
@@ -339,22 +340,37 @@ Bitboard EvalInfo::do_eval_pawns()
 		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard sqs = our_pawns;
-		
+
 		int kf = file(our_ksq);
 		for (int f = kf-1; f <= kf+1; ++f)
 		{
 			if (f < FILE_A || f > FILE_H)
 				continue;
-			
-			const Bitboard b = our_pawns & file_bb(f);
-			
-			int r;
-			if (us == WHITE)
-				r = b ? rank(lsb(b)): 0;
+
+			Bitboard b;
+			int r, sq;
+			bool half;
+
+			// Pawn shelter
+			b = our_pawns & file_bb(f);
+			r = b ? (us ? 7-rank(msb(b)) : rank(lsb(b))): 0;
+			half = f != kf;
+			e[us].op -= ShelterPenalty[r] >> half;
+
+			// Pawn storm
+			b = their_pawns & file_bb(f);
+			if (b)
+			{
+				sq = us ? msb(b) : lsb(b);
+				r = us ? 7-rank(sq) : rank(sq);
+				half = test_bit(our_pawns, pawn_push(them, sq));
+			}
 			else
-				r = b ? 7-rank(msb(b)): 0;
-			
-			e[us].op -= ShelterPenalty[r] >> (f != kf);
+			{
+				r = RANK_1;		// actually we penalize for the semi open file here
+				half = false;
+			}
+			e[us].op -= StormPenalty[r] >> half;
 		}
 
 		while (sqs)
