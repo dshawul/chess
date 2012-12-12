@@ -108,13 +108,19 @@ void EvalInfo::eval_material()
 
 // Generic linear mobility
 #define MOBILITY(p0, p)											\
-	count = count_bit_max15(tss & mob_targets) - mob_zero[p0];	\
+	count = mob_count[p0][count_bit_max15(tss & mob_targets)];	\
 	e[us].op += count * mob_unit[OPENING][p];					\
 	e[us].eg += count * mob_unit[ENDGAME][p]
 
 void EvalInfo::eval_mobility()
 {
-	static const int mob_zero[NB_PIECE] = {0, 3, 4, 5, 0, 0};
+	static const int mob_count[ROOK+1][15] =
+	{
+		{},
+		{-3, -2, -1, 0, 1, 2, 3, 4, 4},
+		{-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
+		{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
+	};
 	static const unsigned mob_unit[NB_PHASE][NB_PIECE] =
 	{
 		{0, 4, 5, 2, 1, 0},		// Opening
