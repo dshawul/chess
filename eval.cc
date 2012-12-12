@@ -457,6 +457,7 @@ void EvalInfo::eval_pieces()
 	for (int color = WHITE; color <= BLACK; ++color)
 	{
 		const int us = color, them = opp_color(us);
+		const Bitboard our_pawns = B->get_pieces(us, PAWN);
 		Bitboard fss, tss;
 
 		// Rook or Queen on 7th rank
@@ -512,6 +513,17 @@ void EvalInfo::eval_pieces()
 				if (PAttacks[us][fsq] & B->st().attacks[them][KING])
 					e[us].eg -= vEP;
 			}
+		}
+	
+		// Hanging pieces
+		Bitboard loose_pawns = our_pawns & ~B->st().attacks[us][NO_PIECE];
+		Bitboard loose_pieces = (B->get_pieces(us) & ~our_pawns)
+			& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
+		Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
+		while (hanging) {
+			const int victim = B->get_piece_on(pop_lsb(&hanging));
+			e[us].op -= 4 + Material[victim].op/32;
+			e[us].eg -= 8 + Material[victim].eg/32;
 		}
 	}
 }
