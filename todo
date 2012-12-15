@@ -1,4 +1,3 @@
-- retire tt_move
 - ss->eval
 - history gain
 - futility pruning (at depth == 1)
