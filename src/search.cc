@@ -27,7 +27,7 @@ namespace
 	struct SearchInfo
 	{
 		move_t m, best, killer[2];
-		int ply, eval;
+		int ply;
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -101,10 +101,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	SearchInfo ss[MAX_PLY + 1-QS_LIMIT];
 	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply)
-	{
 		ss[ply].ply = ply;
-		ss[ply].eval = 0;
-	}
 
 	node_count = 0;
 	node_limit = sl.nodes;
@@ -201,7 +198,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		ss->eval = in_check ? -INF : eval(B);
+		int current_eval = in_check ? -INF : eval(B);
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
@@ -221,7 +218,7 @@ namespace
 		        && !in_check && !is_mate_score(beta))
 		{
 			const int threshold = beta - razor_margin(depth);
-			if (ss->eval < threshold)
+			if (current_eval < threshold)
 			{
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
@@ -232,17 +229,17 @@ namespace
 		// Eval pruning
 		if ( depth <= 3 && !is_pv
 		        && !in_check && !is_mate_score(beta)
-		        && ss->eval - eval_margin(depth) >= beta
+		        && current_eval - eval_margin(depth) >= beta
 		        && B.st().piece_psq[B.get_turn()]
 		        && !several_bits(threats(B)) )
-			return ss->eval - eval_margin(depth);
+			return current_eval - eval_margin(depth);
 
 		// Null move pruning
 		if (!is_pv && !in_check && !is_mate_score(beta)
-		        && ss->eval >= beta
+		        && current_eval >= beta
 		        && B.st().piece_psq[B.get_turn()])
 		{
-			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
+			const int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
 
 			B.play(0);
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
@@ -256,7 +253,7 @@ namespace
 
 		// Internal Iterative Deepening
 		if ( depth >= IIDDepth[is_pv] && !ss->best
-		        && (is_pv || (!in_check && ss->eval + IIDMargin >= beta)) )
+		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, &H);
@@ -303,14 +300,13 @@ namespace
 			// SEE pruning near the leaves
 			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
 			{
-				best_score = std::max(best_score, std::min(alpha, ss->eval + see));
+				best_score = std::max(best_score, std::min(alpha, current_eval + see));
 				continue;
 			}
 
 			const int us = B.get_turn(), them = opp_color(us);
 			const bool queen_was_attacked = B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE];
 
-			// recursion
 			B.play(ss->m);
 
 			// do not reduce credible queen threats at low depth
@@ -319,12 +315,11 @@ namespace
 			        && (B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE]) )
 				reduction = 0;
 
+			// PVS
 			int score;
 			if (is_pv && first)
-			{
 				// search full window
 				score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
-			}
 			else
 			{
 				// zero window search (reduced)
@@ -398,7 +393,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		ss->eval = in_check ? -INF : eval(B);
+		int current_eval = in_check ? -INF : eval(B);
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
@@ -415,7 +410,7 @@ namespace
 		// stand pat
 		if (!in_check)
 		{
-			best_score = ss->eval;
+			best_score = current_eval;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;
@@ -423,7 +418,7 @@ namespace
 
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, &H);
 		int see;
-		const int fut_base = ss->eval + vEP/2;
+		const int fut_base = current_eval + vEP/2;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) )
 		{
@@ -460,7 +455,7 @@ namespace
 			// recursion
 			int score;
 			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
-				score = ss->eval + see;
+				score = current_eval + see;
 			else
 			{
 				B.play(ss->m);
