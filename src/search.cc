@@ -289,19 +289,19 @@ namespace
 				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
 				|| (ss->m.flag() == CASTLING);
 
+			// SEE pruning near the leaves
+			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
+			{
+				best_score = std::max(best_score, std::min(alpha, current_eval + see));
+				continue;
+			}
+
 			// reduction decision
 			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
 			if (reduction)
 			{
 				LMR += !capture;
 				reduction += (bad_quiet && LMR >= 3+8/depth);
-			}
-
-			// SEE pruning near the leaves
-			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
-			{
-				best_score = std::max(best_score, std::min(alpha, current_eval + see));
-				continue;
 			}
 
 			const int us = B.get_turn(), them = opp_color(us);
