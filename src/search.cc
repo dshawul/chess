@@ -303,7 +303,7 @@ namespace
 			// SEE pruning near the leaves
 			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
 			{
-				best_score = std::max(best_score, ss->eval + see);
+				best_score = std::max(best_score, std::min(alpha, ss->eval + see));
 				continue;
 			}
 
