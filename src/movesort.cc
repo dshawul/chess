@@ -19,7 +19,6 @@
 void History::clear()
 {
 	memset(h, 0, sizeof(h));
-	memset(max_gain, 0, sizeof(max_gain));
 }
 
 int History::get(const Board& B, move_t m) const
@@ -40,22 +39,6 @@ void History::add(const Board& B, move_t m, int bonus)
 	if (std::abs(h[piece][tsq]) >= History::Max)
 		for (int p = PAWN; p <= KING; ++p)
 			for (int s = A1; s <= H8; h[p][s++] /= 2);
-}
-
-void History::update_gain(const Board& B, move_t m, int g)
-// update max_gain[][] with the move that *has* been played
-{
-	const int piece = B.get_piece_on(m.tsq()), tsq = m.tsq();
-	assert(!move_is_cop(B, m) && piece_ok(piece));
-	max_gain[piece][tsq] = std::max(max_gain[piece][tsq], g);
-}
-
-int History::gain(const Board& B, move_t m) const
-// get max_gain[][] for the move that is about to be played
-{
-	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
-	assert(!move_is_cop(B, m) && piece_ok(piece));
-	return max_gain[piece][tsq];
 }
 
 MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H)

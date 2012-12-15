@@ -17,17 +17,12 @@
 
 class History {
 	int h[NB_PIECE][NB_SQUARE];
-	int max_gain[NB_PIECE][NB_SQUARE];
 public:
 	static const int Max = 2000;
 	
 	void clear();
-	
 	void add(const Board& B, move_t m, int bonus);
 	int get(const Board& B, move_t m) const;
-
-	void update_gain(const Board& B, move_t m, int g);
-	int gain(const Board& B, move_t m) const;
 };
 
 class MoveSort
