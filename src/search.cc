@@ -390,11 +390,12 @@ namespace
 		assert(alpha < beta && (is_pv || alpha+1 == beta));
 		node_poll(B);
 
-		if (B.is_draw())
-			return 0;
-
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
+		ss->best = 0;
+
+		if (B.is_draw())
+			return 0;
 
 		// Eval cache
 		const Key key = B.get_key();
@@ -417,7 +418,6 @@ namespace
 		if (!in_check)
 		{
 			best_score = current_eval;
-			ss->best = NO_MOVE;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;

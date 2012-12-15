@@ -66,8 +66,6 @@ public:
 	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
 };
 
-static const move_t NO_MOVE = {move_t()};
-
 struct GameInfo {
 	int capture;				// piece just captured
 	int epsq;					// en passant square

@@ -1,4 +1,8 @@
-- double time alloc: one normal, one (higher) on aspiration cutoffs
+- retire tt_move
+- ss->eval
+- history gain
+- futility pruning (at depth == 1)
 - implement proper PV extraction
 - recognize some common draws
+- KPK bitbase
 - make Eval Cache and Pawn Cache size UCI parameters
