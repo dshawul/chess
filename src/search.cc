@@ -177,15 +177,15 @@ namespace
 		if (depth <= 0 || ss->ply >= MAX_PLY)
 			return qsearch(B, alpha, beta, depth, is_pv, ss);
 
-		if (ss->ply > 0 && B.is_draw())
-			return 0;
-
 		assert(depth > 0);
 		node_poll(B);
 
 		const bool in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
 		ss->best = 0;
+
+		if (ss->ply > 0 && B.is_draw())
+			return 0;
 
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
@@ -201,7 +201,6 @@ namespace
 		int current_eval = in_check ? -INF : eval(B);
 
 		// TT lookup
-		move_t tt_move;
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
@@ -211,7 +210,7 @@ namespace
 				return adjust_tt_score(tte->score, ss->ply);
 			}
 			if (tte->depth > 0)		// do not use qsearch results
-				tt_move = tte->move;
+				ss->best = tte->move;
 		}
 
 		// Razoring
@@ -253,14 +252,11 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( depth >= IIDDepth[is_pv] && !tt_move
+		if ( depth >= IIDDepth[is_pv] && !ss->best
 		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
-		{
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
-			tt_move = ss->best;
-		}
 
-		MoveSort MS(&B, MoveSort::ALL, ss->killer, tt_move, &H);
+		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, &H);
 		int cnt = 0, LMR = 0, see;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) )
