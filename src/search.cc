@@ -402,7 +402,6 @@ namespace
 		int current_eval = in_check ? -INF : eval(B);
 
 		// TT lookup
-		move_t tt_move;
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
@@ -411,7 +410,7 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
-			tt_move = tte->move;
+			ss->best = tte->move;
 		}
 
 		// stand pat
@@ -423,7 +422,7 @@ namespace
 				return alpha;
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, tt_move, &H);
+		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, &H);
 		int see;
 		const int fut_base = current_eval + vEP/2;
 
