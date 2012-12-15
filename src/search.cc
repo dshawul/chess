@@ -286,11 +286,11 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-			                       || new_depth == depth
-			                       || ss->m == ss->killer[0]
-			                       || ss->m == ss->killer[1]
-			                       || (move_is_pawn_threat(B, ss->m) && see >= 0)
-			                       || (ss->m.flag() == CASTLING);
+				|| new_depth == depth
+				|| ss->m == ss->killer[0]
+				|| ss->m == ss->killer[1]
+				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
+				|| (ss->m.flag() == CASTLING);
 
 			// reduction decision
 			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
@@ -301,7 +301,7 @@ namespace
 			}
 
 			// SEE pruning near the leaves
-			if (new_depth <= 1 && see < 0 && !capture && !dangerous)
+			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
 			{
 				best_score = std::max(best_score, ss->eval + see);
 				continue;
