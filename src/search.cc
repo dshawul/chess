@@ -47,23 +47,11 @@ namespace
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
-	bool is_mate_score(int score)
-	{
-		return std::abs(score) >= MATE-MAX_PLY;
-	}
-	int mated_in(int ply)
-	{
-		return ply-MATE;
-	}
-	int mate_in(int ply)
-	{
-		return MATE-ply;
-	}
+	bool is_mate_score(int score) { return std::abs(score) >= MATE-MAX_PLY; }
+	int mated_in(int ply) { return ply-MATE; }
+	int mate_in(int ply) { return MATE-ply; }
 
-	int null_reduction(int depth)
-	{
-		return 3 + depth/4;
-	}
+	int null_reduction(int depth) { return 3 + depth/4; }
 
 	const int IIDDepth[2] = {7, 4};
 	const int IIDMargin = vOP;
