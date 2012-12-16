@@ -574,8 +574,9 @@ int eval(const Board& B)
 
 	if (!B.st().last_move)
 	{
-		// The last move played is a null move. So we should have an entry for the same position,
-		// with the turn of play revesed. And the eval is symetric, so we take advantage of it.
+		// The last move played is a null move. So in the vast majority of cases, we will have an
+		// entry for the same position, with the turn of play revesed. So long as the eval remains
+		// symetric, we can take advanage of this optimization
 		Key key_rev = key ^ zob_turn;
 		EvalCache::Entry *ce_rev = EC.probe(key_rev), tmp_rev = {key_rev};
 		if (ce_rev->key48 == tmp_rev.key48)
