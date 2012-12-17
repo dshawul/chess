@@ -34,6 +34,7 @@ namespace
 	const int QS_LIMIT = -8;
 
 	struct AbortSearch {};
+	struct ForcedMove {};
 
 	uint64_t node_count, node_limit;
 	int time_limit;
@@ -116,6 +117,10 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			{
 				return best;
 			}
+			catch (ForcedMove e)
+			{
+				return best = ss->best;
+			}
 
 			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
 				<< " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
@@ -168,11 +173,11 @@ namespace
 		assert(depth > 0);
 		node_poll(B);
 
-		const bool in_check = B.is_check();
+		const bool root = !ss->ply, in_check = B.is_check();
 		int best_score = -INF, old_alpha = alpha;
 		ss->best = 0;
 
-		if (ss->ply > 0 && B.is_draw())
+		if (!root && B.is_draw())
 			return 0;
 
 		// mate distance pruning
@@ -180,7 +185,7 @@ namespace
 		beta = std::min(beta, mate_in(ss->ply+1));
 		if (alpha >= beta)
 		{
-			assert(ss->ply > 0);
+			assert(!root);
 			return alpha;
 		}
 
@@ -192,7 +197,7 @@ namespace
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
-			if (ss->ply > 0 && can_return_tt(is_pv, tte, depth, beta, ss->ply))
+			if (!root && can_return_tt(is_pv, tte, depth, beta, ss->ply))
 			{
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
@@ -332,12 +337,15 @@ namespace
 			}
 		}
 
-		// mated or stalemated
 		if (!MS.get_count())
 		{
-			assert(ss->ply > 0);
+			// mated or stalemated
+			assert(!root);
 			return in_check ? mated_in(ss->ply) : 0;
 		}
+		else if (root && MS.get_count() == 1)
+			// forced move at the root node, play instantly and prevent further iterative deepening
+			throw ForcedMove();
 
 		// update TT
 		uint8_t bound = best_score <= old_alpha ? BOUND_UPPER : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
