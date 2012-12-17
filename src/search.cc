@@ -297,16 +297,7 @@ namespace
 				reduction += (bad_quiet && LMR >= 3+8/depth);
 			}
 
-			const int us = B.get_turn(), them = opp_color(us);
-			const bool queen_was_attacked = B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE];
-
 			B.play(ss->m);
-
-			// do not reduce credible queen threats at low depth
-			if ( reduction && new_depth <= 6 && see >= 0 && !queen_was_attacked
-			        && B.get_piece_on(ss->m.tsq()) != QUEEN		// Q exchange is not a threat
-			        && (B.get_pieces(them, QUEEN) & B.st().attacks[us][NO_PIECE]) )
-				reduction = 0;
 
 			// PVS
 			int score;
