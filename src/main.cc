@@ -22,9 +22,9 @@ int main (int argc, char **argv)
 	init_psq();
 	init_eval();
 
-	if (argc == 2) {
+	if (argc == 3) {
 		if (std::string(argv[1]) == "bench")
-			bench();
+			bench(atoi(argv[2]));
 		else if (std::string(argv[1]) == "perft")
 			test_perft();
 	} else

@@ -26,4 +26,4 @@ struct SearchLimits {
 extern TTable TT;
 
 move_t bestmove(Board& B, const SearchLimits& sl);
-void bench();
+void bench(int depth);
