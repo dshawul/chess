@@ -16,7 +16,7 @@
 #include "movegen.h"
 
 class History {
-	int h[NB_PIECE][NB_SQUARE];
+	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
 public:
 	static const int Max = 2000;
 	

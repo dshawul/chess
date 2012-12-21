@@ -25,20 +25,22 @@ int History::get(const Board& B, move_t m) const
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
-	assert(std::abs(h[piece][tsq]) < History::Max);
 
-	return h[piece][tsq];
+	return h[B.get_turn()][piece][tsq];
 }
 
 void History::add(const Board& B, move_t m, int bonus)
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
-	h[piece][tsq] += bonus;
+	
+	int &v = h[B.get_turn()][piece][tsq];
+	v += bonus;
 
-	if (std::abs(h[piece][tsq]) >= History::Max)
-		for (int p = PAWN; p <= KING; ++p)
-			for (int s = A1; s <= H8; h[p][s++] /= 2);
+	if (std::abs(v) >= History::Max)
+		for (int c = WHITE; c <= BLACK; ++c)
+			for (int p = PAWN; p <= KING; ++p)
+				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
 MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H)
