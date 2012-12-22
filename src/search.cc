@@ -27,7 +27,7 @@ namespace
 	struct SearchInfo
 	{
 		move_t m, best, killer[2];
-		int ply;
+		int ply, reduction;
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -90,7 +90,10 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	SearchInfo ss[MAX_PLY + 1-QS_LIMIT];
 	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply)
+	{
 		ss[ply].ply = ply;
+		ss[ply].reduction = 0;
+	}
 
 	node_count = 0;
 	node_limit = sl.nodes;
@@ -228,6 +231,7 @@ namespace
 			return current_eval - eval_margin(depth);
 
 		// Null move pruning
+		bool mateThreat = false;
 		if (!is_pv && !in_check && !is_mate_score(beta)
 		        && current_eval >= beta
 		        && B.st().piece_psq[B.get_turn()])
@@ -242,6 +246,10 @@ namespace
 				return score < mate_in(MAX_PLY)
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
+			else if (score <= mated_in(MAX_PLY) && (ss-1)->reduction)
+				// If the null move fails low on a mate threat, and the parent node was reduced, then
+				// we extend at this node.
+				mateThreat = true;
 		}
 
 		// Internal Iterative Deepening
@@ -264,6 +272,9 @@ namespace
 				new_depth = depth;
 			else if (MS.get_count() == 1)
 				// extend forced replies
+				new_depth = depth;
+			else if (mateThreat)
+				// null mate threat extension
 				new_depth = depth;
 			else
 				new_depth = depth-1;
@@ -290,11 +301,11 @@ namespace
 			}
 
 			// reduction decision
-			int reduction = !first && (bad_capture || bad_quiet) && !dangerous;
-			if (reduction)
+			ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
+			if (ss->reduction)
 			{
 				LMR += !capture;
-				reduction += (bad_quiet && LMR >= 3+8/depth);
+				ss->reduction += (bad_quiet && LMR >= 3+8/depth);
 			}
 
 			B.play(ss->m);
@@ -307,14 +318,14 @@ namespace
 			else
 			{
 				// zero window search (reduced)
-				score = -search(B, -alpha-1, -alpha, new_depth-reduction, false, ss+1);
+				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction, false, ss+1);
 
 				// doesn't fail low: re-search full window (reduced)
 				if (is_pv && score > alpha)
-					score = -search(B, -beta, -alpha, new_depth-reduction, is_pv, ss+1);
+					score = -search(B, -beta, -alpha, new_depth - ss->reduction, is_pv, ss+1);
 
 				// fails high: verify the beta cutoff with a non reduced search
-				if (score > alpha && reduction)
+				if (score > alpha && ss->reduction)
 					score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
 			}
 
