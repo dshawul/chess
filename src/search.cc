@@ -314,19 +314,19 @@ namespace
 			int score;
 			if (is_pv && first)
 				// search full window
-				score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
+				score = -search(B, -beta, -alpha, new_depth, true, ss+1);
 			else
 			{
 				// zero window search (reduced)
 				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction, false, ss+1);
 
-				// doesn't fail low: re-search full window (reduced)
-				if (is_pv && score > alpha)
-					score = -search(B, -beta, -alpha, new_depth - ss->reduction, is_pv, ss+1);
-
-				// fails high: verify the beta cutoff with a non reduced search
+				// doesn't fail low: verify at full depth, with zero window
 				if (score > alpha && ss->reduction)
-					score = -search(B, -beta, -alpha, new_depth, is_pv, ss+1);
+					score = -search(B, -alpha-1, -alpha, new_depth, false, ss+1);
+
+				// still doesn't fail low at PV node: full depth and full window
+				if (is_pv && score > alpha)
+					score = -search(B, -beta, -alpha, new_depth , true, ss+1);
 			}
 
 			B.undo();
