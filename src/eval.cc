@@ -460,27 +460,19 @@ void EvalInfo::eval_pieces()
 		const Bitboard our_pawns = B->get_pieces(us, PAWN);
 		Bitboard fss, tss;
 
-		// Rook or Queen on 7th rank
-		fss = B->get_RQ(us);
+		// Rook on 7th rank
+		fss = B->get_pieces(us, ROOK);
 		tss = PInitialRank[them];
 		// If we have are rooks and/or queens on the 7th rank, and the enemy king is on the 8th, or
 		// there are enemy pawns on the 7th
 		if ((fss & tss) && ((PPromotionRank[us] & B->get_pieces(them, KING)) || (tss & B->get_pieces(them, PAWN))))
 		{
-			int count;
-
-			// Rook(s) on 7th rank
-			if ((count = count_bit(B->get_pieces(us, ROOK) & tss)))
+			fss &= tss;
+			while (fss)
 			{
-				e[us].op += count * Rook7th/2;
-				e[us].eg += count * Rook7th;
-			}
-
-			// Queen(s) on 7th rank
-			if ((count = count_bit(B->get_pieces(us, QUEEN) & tss)))
-			{
-				e[us].op += count * Rook7th/4;
-				e[us].eg += count * Rook7th/2;
+				fss &= fss-1;
+				e[us].op += Rook7th/2;
+				e[us].eg += Rook7th;
 			}
 		}
 
