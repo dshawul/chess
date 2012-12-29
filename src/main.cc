@@ -16,6 +16,8 @@
 #include "eval.h"
 #include "uci.h"
 
+uint64_t dbg_cnt1=0, dbg_cnt2=0;
+
 int main (int argc, char **argv)
 {
 	init_bitboard();
@@ -23,8 +25,10 @@ int main (int argc, char **argv)
 	init_eval();
 
 	if (argc == 3) {
-		if (std::string(argv[1]) == "bench")
+		if (std::string(argv[1]) == "bench") {
 			bench(atoi(argv[2]));
+			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
+		}
 		else if (std::string(argv[1]) == "perft")
 			test_perft();
 	} else

@@ -54,20 +54,11 @@ namespace
 
 	int null_reduction(int depth) { return 3 + depth/4; }
 
+	const int RazorMargin[4] = {0, 2*vEP, 2*vEP+vEP/2, 3*vEP};
+	const int EvalMargin[4]	 = {0, vEP, vN, vQ};
+
 	const int IIDDepth[2] = {7, 4};
 	const int IIDMargin = vOP;
-
-	int razor_margin(int depth)
-	{
-		assert(1 <= depth && depth <= 3);
-		return 2*vEP + (depth-1)*(vEP/4);
-	}
-
-	int eval_margin(int depth)
-	{
-		assert(1 <= depth && depth <= 3);
-		return depth * vEP;
-	}
 
 	Bitboard threats(const Board& B)
 	{
@@ -208,12 +199,12 @@ namespace
 			if (tte->depth > 0)		// do not use qsearch results
 				ss->best = tte->move;
 		}
-
+		
 		// Razoring
 		if (depth <= 3 && !is_pv
 		        && !in_check && !is_mate_score(beta))
 		{
-			const int threshold = beta - razor_margin(depth);
+			const int threshold = beta - RazorMargin[depth];
 			if (current_eval < threshold)
 			{
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
@@ -225,10 +216,10 @@ namespace
 		// Eval pruning
 		if ( depth <= 3 && !is_pv
 		        && !in_check && !is_mate_score(beta)
-		        && current_eval - eval_margin(depth) >= beta
+		        && current_eval - EvalMargin[depth] >= beta
 		        && B.st().piece_psq[B.get_turn()]
 		        && !several_bits(threats(B)) )
-			return current_eval - eval_margin(depth);
+			return current_eval - EvalMargin[depth];
 
 		// Null move pruning
 		bool mateThreat = false;

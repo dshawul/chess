@@ -100,3 +100,5 @@ typedef uint64_t Key;
 typedef uint64_t Bitboard;
 
 #define INF		32767
+
+extern uint64_t dbg_cnt1, dbg_cnt2;
