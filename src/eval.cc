@@ -442,7 +442,6 @@ Bitboard EvalInfo::do_eval_pawns()
 
 void EvalInfo::eval_pieces()
 {
-	static const int Rook7th = 8;
 	static const uint64_t BishopTrap[NB_COLOR] =
 	{
 		(1ULL << A7) | (1ULL << H7),
@@ -459,22 +458,6 @@ void EvalInfo::eval_pieces()
 		const int us = color, them = opp_color(us);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN);
 		Bitboard fss, tss;
-
-		// Rook on 7th rank
-		fss = B->get_pieces(us, ROOK);
-		tss = PInitialRank[them];
-		// If we have are rooks and/or queens on the 7th rank, and the enemy king is on the 8th, or
-		// there are enemy pawns on the 7th
-		if ((fss & tss) && ((PPromotionRank[us] & B->get_pieces(them, KING)) || (tss & B->get_pieces(them, PAWN))))
-		{
-			fss &= tss;
-			while (fss)
-			{
-				fss &= fss-1;
-				e[us].op += Rook7th/2;
-				e[us].eg += Rook7th;
-			}
-		}
 
 		// Knight trapped
 		fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
