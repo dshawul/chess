@@ -442,6 +442,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 void EvalInfo::eval_pieces()
 {
+	static const int TrappedRook = 40;
 	static const uint64_t BishopTrap[NB_COLOR] =
 	{
 		(1ULL << A7) | (1ULL << H7),
@@ -469,9 +470,9 @@ void EvalInfo::eval_pieces()
 			if (test_bit(Between[rsq][us ? E8 : E1], ksq))
 			{
 				if (our_pawns & SquaresInFront[us][rsq] & HalfBoard[us])
-					e[us].op -= 50 >> can_castle;
+					e[us].op -= TrappedRook >> can_castle;
 				else
-					e[us].op -= 25 >> can_castle;
+					e[us].op -= (TrappedRook/2) >> can_castle;
 
 				break;  // King can only trap one Rook
 			}
