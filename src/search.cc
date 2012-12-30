@@ -183,16 +183,6 @@ namespace
 			return alpha;
 		}
 
-		// Evaluate the position
-		if (in_check)
-			ss->eval = -INF;
-		else if (!is_pv && !B.st().last_move)
-			// We are coming from a null move. Note null moves are only done at non PV nodes, and the
-			// !is_pv also excludes the root, where B.st().last_move should be assumed undefined
-			ss->eval = -(ss-1)->eval;
-		else
-			ss->eval = eval(B);
-
 		// TT lookup
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
@@ -203,8 +193,21 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
+			ss->eval = tte->eval;
 			if (tte->depth > 0)		// do not use qsearch results
 				ss->best = tte->move;
+		}
+		else
+		{
+			// Evaluate the position
+			if (in_check)
+				ss->eval = -INF;
+			else if (!is_pv && !B.st().last_move)
+				// We are coming from a null move. Note null moves are only done at non PV nodes, and the
+				// !is_pv also excludes the root, where B.st().last_move should be assumed undefined
+				ss->eval = -(ss-1)->eval;
+			else
+				ss->eval = eval(B);
 		}
 		
 		// Razoring
@@ -349,7 +352,7 @@ namespace
 
 		// update TT
 		uint8_t bound = best_score <= old_alpha ? BOUND_UPPER : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-		TT.store(key, bound, depth, best_score, ss->best);
+		TT.store(key, bound, depth, best_score, ss->eval, ss->best);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -387,12 +390,6 @@ namespace
 		if (B.is_draw())
 			return 0;
 		
-		// Evaluate the position
-		if (in_check)
-			ss->eval = -INF;
-		else
-			ss->eval = eval(B);
-
 		// TT lookup
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
@@ -403,8 +400,12 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
+			ss->eval = tte->eval;
 			ss->best = tte->move;
 		}
+		else
+			// Evaluate the position
+			ss->eval = in_check ? -INF : eval(B);
 
 		// stand pat
 		if (!in_check)
@@ -476,7 +477,7 @@ namespace
 		// update TT
 		int8_t bound = best_score <= old_alpha ? BOUND_UPPER
 		               : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-		TT.store(key, bound, depth, best_score, ss->best);
+		TT.store(key, bound, depth, best_score, ss->eval, ss->best);
 
 		return best_score;
 	}

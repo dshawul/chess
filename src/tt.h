@@ -24,7 +24,7 @@ public:
 		Key key_bound;	// 2 bits for bound, and 62 bits for key (62 MSB)
 		mutable uint8_t generation;
 		int8_t depth;
-		int16_t score;
+		int16_t score, eval;
 		move_t move;
 		
 		int bound() const
@@ -37,12 +37,13 @@ public:
 			return (key_bound & ~3ULL) == (k & ~3ULL);
 		}
 		
-		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, move_t m)
+		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, int16_t e, move_t m)
 		{
 			key_bound = (k & ~3ULL) ^ b;
 			generation = g;
 			depth = d;
 			score = s;
+			eval = e;
 			move = m;
 		}
 	};
@@ -60,7 +61,7 @@ public:
 	void new_search();
 	void refresh(const Entry *e) const { e->generation = generation; }
 	
-	void store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t move);
+	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
 	const Entry *probe(Key key) const;
 	
 private:
