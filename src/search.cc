@@ -519,15 +519,15 @@ namespace
 		const bool depth_ok = tte->depth >= depth;
 
 		if (is_pv)
-			return depth_ok && tte->bound() == BOUND_EXACT;
+			return depth_ok && tte->bound == BOUND_EXACT;
 		else
 		{
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
 			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
 			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
-			       &&	((tte->bound() == BOUND_LOWER && tt_score >= beta)
-			            ||(tte->bound() == BOUND_UPPER && tt_score < beta));
+			       &&	((tte->bound == BOUND_LOWER && tt_score >= beta)
+			            ||(tte->bound == BOUND_UPPER && tt_score < beta));
 		}
 	}
 
@@ -553,7 +553,7 @@ namespace
 		{
 			const TTable::Entry *tte = TT.probe(B.get_key());
 
-			if (tte && tte->bound() == BOUND_EXACT && tte->move && !B.is_draw())
+			if (tte && tte->bound == BOUND_EXACT && tte->move && !B.is_draw())
 			{
 				std::cout << ' ' << move_to_string(tte->move);
 				B.play(tte->move);

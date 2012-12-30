@@ -21,26 +21,18 @@ class TTable
 {
 public:
 	struct Entry {
-		Key key_bound;	// 2 bits for bound, and 62 bits for key (62 MSB)
+		Key key;
 		mutable uint8_t generation;
+		uint8_t bound;
 		int8_t depth;
 		int16_t score;
 		move_t move;
 		
-		int bound() const
-		{
-			return key_bound & 3;
-		}
-		
-		bool key_match(Key k) const
-		{
-			return (key_bound & ~3ULL) == (k & ~3ULL);
-		}
-		
 		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, move_t m)
 		{
-			key_bound = (k & ~3ULL) ^ b;
+			key = k;
 			generation = g;
+			bound = b;
 			depth = d;
 			score = s;
 			move = m;

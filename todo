@@ -1,5 +1,3 @@
-- Key+Bound must fit in 64 bits for TT
-- eval in TT
 - implement proper PV extraction
 - recognize some common draws
 - KPK bitbase
