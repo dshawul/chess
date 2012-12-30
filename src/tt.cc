@@ -60,7 +60,7 @@ const TTable::Entry *TTable::probe(Key key) const
 	return NULL;
 }
 
-void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move)
+void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t move)
 {
 	Entry *e = cluster[key & (count-1)].entry, *replace = e;
 	
@@ -82,5 +82,5 @@ void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t 
 			replace = e;
 	}
 	
-	replace->save(key, generation, bound, depth, score, eval, move);
+	replace->save(key, generation, bound, depth, score, move);
 }
