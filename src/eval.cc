@@ -456,8 +456,26 @@ void EvalInfo::eval_pieces()
 	for (int color = WHITE; color <= BLACK; ++color)
 	{
 		const int us = color, them = opp_color(us);
+		const int ksq = B->get_king_pos(us);
+		const bool can_castle = B->st().crights & (3 << (2*us));
 		const Bitboard our_pawns = B->get_pieces(us, PAWN);
 		Bitboard fss, tss;
+
+		// Rook blocked by uncastled King
+		fss = B->get_pieces(us, ROOK) & PPromotionRank[them];
+		while (fss)
+		{
+			const int rsq = pop_lsb(&fss);
+			if (test_bit(Between[rsq][us ? E8 : E1], ksq))
+			{
+				if (our_pawns & SquaresInFront[us][rsq] & HalfBoard[us])
+					e[us].op -= 50 >> can_castle;
+				else
+					e[us].op -= 25 >> can_castle;
+
+				break;  // King can only trap one Rook
+			}
+		}
 
 		// Knight trapped
 		fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
