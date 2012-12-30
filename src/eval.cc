@@ -535,47 +535,9 @@ int EvalInfo::interpolate() const
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
 
-class EvalCache
-{
-public:
-	struct Entry
-	{
-		Key key48: 48;
-		int16_t e;
-	};
-
-	EvalCache() { memset(data, 0, sizeof(data)); }
-	Entry *probe(Key k) { return &data[k & (size-1)]; }
-
-private:
-	static const size_t size = 0x100000;
-	Entry data[size];
-};
-
-EvalCache EC;
-
 int eval(const Board& B)
 {
 	assert(!B.is_check());
-
-	// en-passant square and castling rights do not affect the eval. so we can use the "unrefined"
-	// key directly, and get (a little bit) more cache hits
-	Key key = B.st().key;
-	EvalCache::Entry *ce = EC.probe(key), tmp = {key};
-
-	if (ce->key48 == tmp.key48)
-		return ce->e;
-
-	if (!B.st().last_move)
-	{
-		// The last move played is a null move. So in the vast majority of cases, we will have an
-		// entry for the same position, with the turn of play revesed. So long as the eval remains
-		// symetric, we can take advanage of this optimization
-		Key key_rev = key ^ zob_turn;
-		EvalCache::Entry *ce_rev = EC.probe(key_rev), tmp_rev = {key_rev};
-		if (ce_rev->key48 == tmp_rev.key48)
-			return -ce_rev->e;
-	}
 
 	EvalInfo ei(&B);
 	ei.eval_material();
@@ -583,7 +545,6 @@ int eval(const Board& B)
 	ei.eval_pawns();
 	ei.eval_safety();
 	ei.eval_pieces();
-
-	ce->key48 = key;
-	return ce->e = ei.interpolate();
+	
+	return ei.interpolate();
 }
