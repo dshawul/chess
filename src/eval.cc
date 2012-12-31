@@ -558,9 +558,8 @@ int eval(const Board& B)
 {
 	assert(!B.is_check());
 
-	// en-passant square and castling rights do not affect the eval. so we can use the "unrefined"
-	// key directly, and get (a little bit) more cache hits
-	Key key = B.st().key;
+	// zobrist key for everything, excapt the en-passant capture
+	Key key = B.st().key ^ zob_castle[B.st().crights];
 	EvalCache::Entry *ce = EC.probe(key), tmp = {key};
 
 	if (ce->key48 == tmp.key48)
