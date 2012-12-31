@@ -222,7 +222,6 @@ namespace
 			return current_eval - EvalMargin[depth];
 
 		// Null move pruning
-		bool mateThreat = false;
 		if (!is_pv && !in_check && !is_mate_score(beta)
 		        && current_eval >= beta
 		        && B.st().piece_psq[B.get_turn()])
@@ -238,9 +237,7 @@ namespace
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
 			else if (score <= mated_in(MAX_PLY) && (ss-1)->reduction)
-				// If the null move fails low on a mate threat, and the parent node was reduced, then
-				// we extend at this node.
-				mateThreat = true;
+				++depth;
 		}
 
 		// Internal Iterative Deepening
@@ -263,9 +260,6 @@ namespace
 				new_depth = depth;
 			else if (MS.get_count() == 1)
 				// extend forced replies
-				new_depth = depth;
-			else if (mateThreat)
-				// null mate threat extension
 				new_depth = depth;
 			else
 				new_depth = depth-1;
