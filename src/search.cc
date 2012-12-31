@@ -202,8 +202,7 @@ namespace
 		
 		// Razoring
 		if (depth <= 3 && !is_pv
-			&& B.st().last_move
-			&& !in_check && !is_mate_score(beta))
+		        && !in_check && !is_mate_score(beta))
 		{
 			const int threshold = beta - RazorMargin[depth];
 			if (current_eval < threshold)
