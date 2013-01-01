@@ -11,6 +11,10 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
+ *
+ * Credits:
+ * - Magic bitboard generation code from Unko, by Borko Boskovic.
+ * - count_bit_max15() from Stockfish, by Marco Costalba.
 */
 #include <cstring>
 #include "bitboard.h"
