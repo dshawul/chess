@@ -204,9 +204,21 @@ namespace
 				ss->best = tte->move;
 		}
 		
+		// Eval pruning
+		if ( !is_pv
+			&& depth <= 3
+			&& !in_check
+			&& !is_mate_score(beta)
+			&& current_eval - EvalMargin[depth] >= beta
+			&& B.st().piece_psq[B.get_turn()]
+			&& !several_bits(threats(B)) )
+			return current_eval - EvalMargin[depth];
+
 		// Razoring
-		if (depth <= 3 && !is_pv
-		        && !in_check && !is_mate_score(beta))
+		if ( !is_pv
+			&& depth <= 3
+			&& !in_check
+			&& !is_mate_score(beta) )
 		{
 			const int threshold = beta - RazorMargin[depth];
 			if (current_eval < threshold)
@@ -217,18 +229,12 @@ namespace
 			}
 		}
 
-		// Eval pruning
-		if ( depth <= 3 && !is_pv
-		        && !in_check && !is_mate_score(beta)
-		        && current_eval - EvalMargin[depth] >= beta
-		        && B.st().piece_psq[B.get_turn()]
-		        && !several_bits(threats(B)) )
-			return current_eval - EvalMargin[depth];
-
 		// Null move pruning
-		if (!is_pv && !in_check && !is_mate_score(beta)
-		        && current_eval >= beta
-		        && B.st().piece_psq[B.get_turn()])
+		if ( !is_pv
+			&& !in_check
+			&& !is_mate_score(beta)
+			&& current_eval >= beta
+			&& B.st().piece_psq[B.get_turn()] )
 		{
 			const int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
 
