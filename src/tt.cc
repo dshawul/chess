@@ -11,6 +11,10 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
+ *
+ * Credits:
+ * - TT entry replacement scheme replicates what Stockfish does. Thanks to Tord Romstad and Marco
+ * Costalba.
 */
 #include <cstring>
 #include "tt.h"
