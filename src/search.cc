@@ -200,7 +200,7 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
-			if (tte->depth > 0)		// do not use qsearch results
+			if (tte->depth >= 0)		// do not use deep qsearch results
 				ss->best = tte->move;
 		}
 		
