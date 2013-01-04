@@ -68,9 +68,15 @@ namespace
 	{
 		assert(!B.is_check());
 		const int us = B.get_turn(), them = opp_color(us);
-
-		return (B.st().attacks[them][PAWN] & B.get_pieces(us) & ~B.get_pieces(us, PAWN))
-		       | (B.get_RQ(us) & B.st().attacks[them][KNIGHT]);
+		
+		const Bitboard our_pawns = B.get_pieces(us, PAWN);
+		const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;
+		
+		const Bitboard attacked = B.st().attacks[them][NO_PIECE];
+		const Bitboard defended = B.st().attacks[us][NO_PIECE];
+		
+		return ((our_pawns ^ our_pieces) & attacked & ~defended)
+			| (our_pieces & B.st().attacks[them][PAWN]);
 	}
 	
 	void print_pv(Board& B);
