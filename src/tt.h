@@ -21,20 +21,29 @@ class TTable
 {
 public:
 	struct Entry {
-		Key key;
+		Key key_bound;	// bit 0..1 for bounr2 bits for bound, and 2..63 for key's 62 MSB
 		mutable uint8_t generation;
-		uint8_t bound;
 		int8_t depth;
-		int16_t score;
+		int16_t score, eval;
 		move_t move;
 		
-		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, move_t m)
+		int bound() const
 		{
-			key = k;
+			return key_bound & 3;
+		}
+
+		bool key_match(Key k) const
+		{
+			return (key_bound & ~3ULL) == (k & ~3ULL);
+		}
+		
+		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, int16_t e, move_t m)
+		{
+			key_bound = (k & ~3ULL) ^ b;
 			generation = g;
-			bound = b;
 			depth = d;
 			score = s;
+			eval = e;
 			move = m;
 		}
 	};
@@ -52,7 +61,7 @@ public:
 	void new_search();
 	void refresh(const Entry *e) const { e->generation = generation; }
 	
-	void store(Key key, uint8_t bound, int8_t depth, int16_t score, move_t move);
+	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
 	const Entry *probe(Key key) const;
 	
 private:

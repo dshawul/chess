@@ -191,11 +191,8 @@ namespace
 			return alpha;
 		}
 
-		// Eval cache
-		const Key key = B.get_key();
-		ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
-
 		// TT lookup
+		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
@@ -204,9 +201,11 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
+			ss->eval = tte->eval;
 			if (tte->depth >= 0)		// do not use deep qsearch results
 				ss->best = tte->move;
-		}
+		} else
+			ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
 		
 		// Eval pruning
 		if ( !is_pv
@@ -358,7 +357,7 @@ namespace
 
 		// update TT
 		uint8_t bound = best_score <= old_alpha ? BOUND_UPPER : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-		TT.store(key, bound, depth, best_score, ss->best);
+		TT.store(key, bound, depth, best_score, ss->eval, ss->best);
 
 		// best move is quiet: update killers and history
 		if (ss->best && !move_is_cop(B, ss->best))
@@ -396,11 +395,8 @@ namespace
 		if (B.is_draw())
 			return 0;
 
-		// Eval cache
-		const Key key = B.get_key();
-		ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
-
 		// TT lookup
+		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
@@ -409,8 +405,10 @@ namespace
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
+			ss->eval = tte->eval;
 			ss->best = tte->move;
-		}
+		} else
+			ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
 
 		// stand pat
 		if (!in_check)
@@ -482,7 +480,7 @@ namespace
 		// update TT
 		int8_t bound = best_score <= old_alpha ? BOUND_UPPER
 		               : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-		TT.store(key, bound, depth, best_score, ss->best);
+		TT.store(key, bound, depth, best_score, ss->eval, ss->best);
 
 		return best_score;
 	}
@@ -525,15 +523,15 @@ namespace
 		const bool depth_ok = tte->depth >= depth;
 
 		if (is_pv)
-			return depth_ok && tte->bound == BOUND_EXACT;
+			return depth_ok && tte->bound() == BOUND_EXACT;
 		else
 		{
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
 			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
 			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
-			       &&	((tte->bound == BOUND_LOWER && tt_score >= beta)
-			            ||(tte->bound == BOUND_UPPER && tt_score < beta));
+			       &&	((tte->bound() == BOUND_LOWER && tt_score >= beta)
+			            ||(tte->bound() == BOUND_UPPER && tt_score < beta));
 		}
 	}
 
@@ -559,7 +557,7 @@ namespace
 		{
 			const TTable::Entry *tte = TT.probe(B.get_key());
 
-			if (tte && tte->bound == BOUND_EXACT && tte->move && !B.is_draw())
+			if (tte && tte->bound() == BOUND_EXACT && tte->move && !B.is_draw())
 			{
 				std::cout << ' ' << move_to_string(tte->move);
 				B.play(tte->move);
