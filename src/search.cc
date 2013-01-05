@@ -244,9 +244,9 @@ namespace
 			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
 			B.play(0);
-			(ss+1)->skipNull = (ss+1)->nullChild = true;
+			(ss+1)->nullChild = true;
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
-			(ss+1)->skipNull = (ss+1)->nullChild = false;
+			(ss+1)->nullChild = false;
 			B.undo();
 
 			if (score >= beta)		// null search fails high
