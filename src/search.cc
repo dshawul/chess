@@ -32,6 +32,7 @@ namespace
 	{
 		move_t m, best, killer[2];
 		int ply, reduction;
+		bool skipNull;
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -60,9 +61,6 @@ namespace
 
 	const int RazorMargin[4] = {0, 2*vEP, 2*vEP+vEP/2, 3*vEP};
 	const int EvalMargin[4]	 = {0, vEP, vN, vQ};
-
-	const int IIDDepth[2] = {7, 4};
-	const int IIDMargin = vOP;
 
 	Bitboard threats(const Board& B)
 	{
@@ -94,6 +92,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	{
 		ss[ply].ply = ply;
 		ss[ply].reduction = 0;
+		ss[ply].skipNull = false;
 	}
 
 	node_count = 0;
@@ -237,6 +236,7 @@ namespace
 
 		// Null move pruning
 		if ( !is_pv
+			&& !ss->skipNull
 			&& !in_check
 			&& !is_mate_score(beta)
 			&& current_eval >= beta
@@ -245,7 +245,9 @@ namespace
 			const int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
 
 			B.play(0);
+			(ss+1)->skipNull = true;	// only useful if eval is not symetric
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
+			(ss+1)->skipNull = false;
 			B.undo();
 
 			if (score >= beta)		// null search fails high
@@ -257,9 +259,14 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( depth >= IIDDepth[is_pv] && !ss->best
-		        && (is_pv || (!in_check && current_eval + IIDMargin >= beta)) )
+		if ( depth >= (is_pv ? 4 : 7)
+			&& !ss->best
+			&& (is_pv || (current_eval + vOP >= beta)) )
+		{
+			ss->skipNull = true;
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
+			ss->skipNull = false;
+		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, &H);
 		int cnt = 0, LMR = 0, see;
