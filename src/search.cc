@@ -37,6 +37,7 @@ namespace
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
 	const int QS_LIMIT = -8;
+	const int TEMPO = 4;
 
 	struct AbortSearch {};
 	struct ForcedMove {};
@@ -212,10 +213,10 @@ namespace
 			&& depth <= 3
 			&& !in_check
 			&& !is_mate_score(beta)
-			&& ss->eval - EvalMargin[depth] >= beta
+			&& ss->eval + TEMPO >= beta + EvalMargin[depth]
 			&& B.st().piece_psq[B.get_turn()]
 			&& !several_bits(threats(B)) )
-			return ss->eval - EvalMargin[depth];
+			return ss->eval + TEMPO - EvalMargin[depth];
 
 		// Razoring
 		if ( !is_pv
@@ -228,7 +229,7 @@ namespace
 			{
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
-					return score;
+					return score + TEMPO;
 			}
 		}
 
@@ -413,7 +414,7 @@ namespace
 		// stand pat
 		if (!in_check)
 		{
-			best_score = ss->eval;
+			best_score = ss->eval + TEMPO;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;
