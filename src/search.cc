@@ -32,7 +32,7 @@ namespace
 	{
 		move_t m, best, killer[2];
 		int ply, reduction, eval;
-		bool skipNull, nullChild;
+		bool skip_null, null_child;
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -92,7 +92,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply, ++sp)
 	{
 		sp->ply = ply;
-		sp->skipNull = sp->nullChild = false;
+		sp->skip_null = sp->null_child = false;
 	}
 
 	node_count = 0;
@@ -206,7 +206,7 @@ namespace
 			if (tte->depth >= 0)		// do not use deep qsearch results
 				ss->best = tte->move;
 		} else
-			ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
+			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 		
 		// Eval pruning
 		if ( !is_pv
@@ -235,7 +235,7 @@ namespace
 
 		// Null move pruning
 		if ( !is_pv
-			&& !ss->skipNull
+			&& !ss->skip_null
 			&& !in_check
 			&& !is_mate_score(beta)
 			&& ss->eval >= beta
@@ -244,9 +244,9 @@ namespace
 			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
 			B.play(0);
-			(ss+1)->nullChild = true;
+			(ss+1)->null_child = true;
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
-			(ss+1)->nullChild = false;
+			(ss+1)->null_child = false;
 			B.undo();
 
 			if (score >= beta)		// null search fails high
@@ -262,9 +262,9 @@ namespace
 			&& !ss->best
 			&& (is_pv || (ss->eval + vOP >= beta)) )
 		{
-			ss->skipNull = true;
+			ss->skip_null = true;
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
-			ss->skipNull = false;
+			ss->skip_null = false;
 		}
 
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, &H);
@@ -409,7 +409,7 @@ namespace
 			ss->eval = tte->eval;
 			ss->best = tte->move;
 		} else
-			ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
+			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
 		// stand pat
 		if (!in_check)
