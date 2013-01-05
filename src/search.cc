@@ -31,8 +31,8 @@ namespace
 	struct SearchInfo
 	{
 		move_t m, best, killer[2];
-		int ply, reduction;
-		bool skipNull;
+		int ply, reduction, eval;
+		bool skipNull, nullChild;
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -87,12 +87,11 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 {
 	start = high_resolution_clock::now();
 
-	SearchInfo ss[MAX_PLY + 1-QS_LIMIT];
-	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply)
+	SearchInfo ss[MAX_PLY + 1-QS_LIMIT], *sp = ss;
+	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply, ++sp)
 	{
-		ss[ply].ply = ply;
-		ss[ply].reduction = 0;
-		ss[ply].skipNull = false;
+		sp->ply = ply;
+		sp->skipNull = sp->nullChild = false;
 	}
 
 	node_count = 0;
@@ -194,7 +193,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		int current_eval = in_check ? -INF : eval(B);
+		ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
@@ -214,10 +213,10 @@ namespace
 			&& depth <= 3
 			&& !in_check
 			&& !is_mate_score(beta)
-			&& current_eval - EvalMargin[depth] >= beta
+			&& ss->eval - EvalMargin[depth] >= beta
 			&& B.st().piece_psq[B.get_turn()]
 			&& !several_bits(threats(B)) )
-			return current_eval - EvalMargin[depth];
+			return ss->eval - EvalMargin[depth];
 
 		// Razoring
 		if ( !is_pv
@@ -226,7 +225,7 @@ namespace
 			&& !is_mate_score(beta) )
 		{
 			const int threshold = beta - RazorMargin[depth];
-			if (current_eval < threshold)
+			if (ss->eval < threshold)
 			{
 				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
@@ -239,15 +238,15 @@ namespace
 			&& !ss->skipNull
 			&& !in_check
 			&& !is_mate_score(beta)
-			&& current_eval >= beta
+			&& ss->eval >= beta
 			&& B.st().piece_psq[B.get_turn()] )
 		{
-			const int reduction = null_reduction(depth) + (current_eval - vOP >= beta);
+			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
 			B.play(0);
-			(ss+1)->skipNull = true;	// only useful if eval is not symetric
+			(ss+1)->skipNull = (ss+1)->nullChild = true;
 			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
-			(ss+1)->skipNull = false;
+			(ss+1)->skipNull = (ss+1)->nullChild = false;
 			B.undo();
 
 			if (score >= beta)		// null search fails high
@@ -261,7 +260,7 @@ namespace
 		// Internal Iterative Deepening
 		if ( depth >= (is_pv ? 4 : 7)
 			&& !ss->best
-			&& (is_pv || (current_eval + vOP >= beta)) )
+			&& (is_pv || (ss->eval + vOP >= beta)) )
 		{
 			ss->skipNull = true;
 			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
@@ -304,7 +303,7 @@ namespace
 			// SEE pruning near the leaves
 			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
 			{
-				best_score = std::max(best_score, std::min(alpha, current_eval + see));
+				best_score = std::max(best_score, std::min(alpha, ss->eval + see));
 				continue;
 			}
 
@@ -399,7 +398,7 @@ namespace
 
 		// Eval cache
 		const Key key = B.get_key();
-		int current_eval = in_check ? -INF : eval(B);
+		ss->eval = in_check ? -INF : (ss->nullChild ? -(ss-1)->eval : eval(B));
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
@@ -416,7 +415,7 @@ namespace
 		// stand pat
 		if (!in_check)
 		{
-			best_score = current_eval;
+			best_score = ss->eval;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;
@@ -424,7 +423,7 @@ namespace
 
 		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, &H);
 		int see;
-		const int fut_base = current_eval + vEP/2;
+		const int fut_base = ss->eval + vEP/2;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) )
 		{
@@ -461,7 +460,7 @@ namespace
 			// recursion
 			int score;
 			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
-				score = current_eval + see;
+				score = ss->eval + see;
 			else
 			{
 				B.play(ss->m);
