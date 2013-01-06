@@ -1,4 +1,4 @@
 - implement proper PV extraction
 - recognize some common draws
 - KPK bitbase
-- make Eval Cache and Pawn Cache size UCI parameters
+- make Pawn Cache size UCI parameters

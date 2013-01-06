@@ -300,11 +300,24 @@ namespace
 				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
 				|| (ss->m.flag() == CASTLING);
 
-			// SEE pruning near the leaves
-			if (new_depth <= 1 && see < 0 && !capture && !dangerous && !in_check)
+			
+			if (!capture && !dangerous && !in_check)
 			{
-				best_score = std::max(best_score, std::min(alpha, ss->eval + see));
-				continue;
+				// Move count pruning
+				if ( depth <= 8 && !is_pv
+					&& LMR >= 3 + depth*depth
+					&& best_score > mated_in(MAX_PLY) )
+				{
+					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
+					continue;
+				}
+				
+				// SEE pruning near the leaves
+				if (new_depth <= 1 && see < 0)
+				{
+					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
+					continue;
+				}
 			}
 
 			// reduction decision
