@@ -29,3 +29,5 @@ extern int calc_see(const Board& B, move_t m);
 extern bool test_see();
 
 extern int mvv_lva(const Board& B, move_t m);
+
+extern bool refute(const Board& B, move_t m1, move_t m2);

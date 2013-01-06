@@ -234,6 +234,7 @@ namespace
 		}
 
 		// Null move pruning
+		move_t threat_move = 0;
 		if ( !is_pv
 			&& !ss->skip_null
 			&& !in_check
@@ -253,8 +254,12 @@ namespace
 				return score < mate_in(MAX_PLY)
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
-			else if (score <= mated_in(MAX_PLY) && (ss-1)->reduction)
-				++depth;
+			else
+			{
+				threat_move = (ss+1)->best;
+				if (score <= mated_in(MAX_PLY) && (ss-1)->reduction)
+					++depth;
+			}
 		}
 
 		// Internal Iterative Deepening
@@ -306,7 +311,8 @@ namespace
 				// Move count pruning
 				if ( depth <= 8 && !is_pv
 					&& LMR >= 3 + depth*depth
-					&& best_score > mated_in(MAX_PLY) )
+					&& best_score > mated_in(MAX_PLY)
+					&& (see < 0 || !refute(B, ss->m, threat_move)) )
 				{
 					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
 					continue;

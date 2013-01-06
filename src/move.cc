@@ -332,3 +332,33 @@ int mvv_lva(const Board& B, move_t m)
 
 	return victim_value * 8 + attacker_value;
 }
+
+bool refute(const Board& B, move_t m1, move_t m2)
+{
+	if (!m2)
+		return false;
+
+	const int m1fsq = m1.fsq(), m1tsq = m1.tsq();
+	const int m2fsq = m2.fsq(), m2tsq = m2.tsq();
+	
+	// move the threatened piece
+	if (m1fsq == m2tsq)
+		return true;
+	
+	// block the threat path
+	if (test_bit(Between[m2fsq][m2tsq], m1tsq))
+		return true;
+	
+	// defend the threatened square
+	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op)
+	{		
+		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
+		const Bitboard b = m1piece == PAWN ? PAttacks[B.get_turn()][m1tsq]
+			: piece_attack(m1piece, m1tsq, B.st().occ);
+		
+		if (test_bit(b, m2tsq))
+			return true;
+	}
+	
+	return false;
+}
