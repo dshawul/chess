@@ -311,7 +311,7 @@ namespace
 				// Move count pruning
 				if ( depth <= 8 && !is_pv
 					&& LMR >= 3 + depth*depth
-					&& best_score > mated_in(MAX_PLY)
+					&& alpha > mated_in(MAX_PLY)
 					&& (see < 0 || !refute(B, ss->m, threat_move)) )
 				{
 					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
