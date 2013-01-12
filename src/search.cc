@@ -79,11 +79,9 @@ namespace
 	}
 	
 	void print_pv(Board& B);
-	
-	enum { All = -1, PV = 0, Cut = +1 };
 
 	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
-	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -173,7 +171,7 @@ namespace
 		assert(alpha < beta && (is_pv || alpha+1 == beta));
 
 		if (depth <= 0 || ss->ply >= MAX_PLY)
-			return qsearch(B, alpha, beta, depth, is_pv ? PV : Cut, ss);
+			return qsearch(B, alpha, beta, depth, is_pv, ss);
 
 		assert(depth > 0);
 		node_poll(B);
@@ -229,7 +227,7 @@ namespace
 			const int threshold = beta - RazorMargin[depth];
 			if (ss->eval < threshold)
 			{
-				const int score = qsearch(B, threshold-1, threshold, 0, is_pv ? PV : Cut, ss+1);
+				const int score = qsearch(B, threshold-1, threshold, 0, is_pv, ss+1);
 				if (score < threshold)
 					return score + TEMPO;
 			}
@@ -404,10 +402,10 @@ namespace
 		return best_score;
 	}
 
-	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+	int qsearch(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
 		assert(depth <= 0);
-		assert(alpha < beta && (node_type == PV || alpha+1 == beta));
+		assert(alpha < beta && (is_pv || alpha+1 == beta));
 		node_poll(B);
 
 		const bool in_check = B.is_check();
@@ -422,7 +420,7 @@ namespace
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
-			if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply))
+			if (can_return_tt(is_pv, tte, depth, beta, ss->ply))
 			{
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
@@ -450,7 +448,7 @@ namespace
 			int check = move_is_check(B, ss->m);
 
 			// Futility pruning
-			if (!check && !in_check && node_type != PV)
+			if (!check && !in_check && !is_pv)
 			{
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
@@ -484,7 +482,7 @@ namespace
 			else
 			{
 				B.play(ss->m);
-				score = -qsearch(B, -beta, -alpha, depth-1, -node_type, ss+1);
+				score = -qsearch(B, -beta, -alpha, depth-1, is_pv, ss+1);
 				B.undo();
 			}
 
@@ -628,7 +626,7 @@ void bench(int depth)
 	for (int i = 0; test[i]; ++i)
 	{
 		B.set_fen(test[i]);
-		std::cout << B.get_fen() << std::endl;
+		std::cout << B.get_fen() << std::endl;		
 		bestmove(B, sl);
 		std::cout << std::endl;
 		signature += node_count;
