@@ -323,7 +323,7 @@ Bitboard EvalInfo::do_eval_pawns()
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
 	static const int ShelterPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
-	static const int StormPenalty[8] = {10, 0, 50, 20, 10, 0, 0, 0};
+	static const int StormPenalty[8] = {10, 0, 40, 20, 10, 0, 0, 0};
 
 	Bitboard passers = 0;
 
