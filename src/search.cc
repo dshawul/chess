@@ -82,7 +82,7 @@ namespace
 	
 	enum { All = -1, PV = 0, Cut = +1 };
 
-	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 }
 
@@ -116,7 +116,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 		{
 			try
 			{
-				score = search(B, alpha, beta, depth, PV, ss);
+				score = search(B, alpha, beta, depth, true, ss);
 			}
 			catch (AbortSearch e)
 			{
@@ -168,12 +168,12 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 namespace
 {
-	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+	int search(Board& B, int alpha, int beta, int depth, bool is_pv, SearchInfo *ss)
 	{
-		assert(alpha < beta && (node_type == PV || alpha+1 == beta));
+		assert(alpha < beta && (is_pv || alpha+1 == beta));
 
 		if (depth <= 0 || ss->ply >= MAX_PLY)
-			return qsearch(B, alpha, beta, depth, node_type, ss);
+			return qsearch(B, alpha, beta, depth, is_pv ? PV : Cut, ss);
 
 		assert(depth > 0);
 		node_poll(B);
@@ -199,7 +199,7 @@ namespace
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte)
 		{
-			if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply))
+			if (!root && can_return_tt(is_pv, tte, depth, beta, ss->ply))
 			{
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
@@ -211,7 +211,7 @@ namespace
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 		
 		// Eval pruning
-		if ( node_type != PV
+		if ( !is_pv
 			&& depth <= 3
 			&& !in_check
 			&& !is_mate_score(beta)
@@ -221,7 +221,7 @@ namespace
 			return ss->eval + TEMPO - EvalMargin[depth];
 
 		// Razoring
-		if ( node_type != PV
+		if ( !is_pv
 			&& depth <= 3
 			&& !in_check
 			&& !is_mate_score(beta) )
@@ -229,7 +229,7 @@ namespace
 			const int threshold = beta - RazorMargin[depth];
 			if (ss->eval < threshold)
 			{
-				const int score = qsearch(B, threshold-1, threshold, 0, node_type, ss+1);
+				const int score = qsearch(B, threshold-1, threshold, 0, is_pv ? PV : Cut, ss+1);
 				if (score < threshold)
 					return score + TEMPO;
 			}
@@ -237,7 +237,7 @@ namespace
 
 		// Null move pruning
 		move_t threat_move = 0;
-		if ( node_type != PV
+		if ( !is_pv
 			&& !ss->skip_null
 			&& !in_check
 			&& !is_mate_score(beta)
@@ -248,7 +248,7 @@ namespace
 
 			B.play(0);
 			(ss+1)->null_child = true;
-			int score = -search(B, -beta, -alpha, depth - reduction, node_type, ss+1);
+			int score = -search(B, -beta, -alpha, depth - reduction, false, ss+1);
 			(ss+1)->null_child = false;
 			B.undo();
 
@@ -265,12 +265,12 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( depth >= (node_type == PV ? 4 : 7)
+		if ( depth >= (is_pv ? 4 : 7)
 			&& !ss->best
-			&& (node_type == PV || (ss->eval + vOP >= beta)) )
+			&& (is_pv || (ss->eval + vOP >= beta)) )
 		{
 			ss->skip_null = true;
-			search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
+			search(B, alpha, beta, is_pv ? depth-2 : depth/2, is_pv, ss);
 			ss->skip_null = false;
 		}
 
@@ -311,7 +311,7 @@ namespace
 			if (!capture && !dangerous && !in_check)
 			{
 				// Move count pruning
-				if ( depth <= 8 && node_type != PV
+				if ( depth <= 8 && !is_pv
 					&& LMR >= 3 + depth*depth
 					&& alpha > mated_in(MAX_PLY)
 					&& (see < 0 || !refute(B, ss->m, threat_move)) )
@@ -340,21 +340,21 @@ namespace
 
 			// PVS
 			int score;
-			if (node_type == PV && first)
+			if (is_pv && first)
 				// search full window
-				score = -search(B, -beta, -alpha, new_depth, PV, ss+1);
+				score = -search(B, -beta, -alpha, new_depth, true, ss+1);
 			else
 			{
 				// zero window search (reduced)
-				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction, Cut, ss+1);
+				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction, false, ss+1);
 
 				// doesn't fail low: verify at full depth, with zero window
 				if (score > alpha && ss->reduction)
-					score = -search(B, -alpha-1, -alpha, new_depth, Cut, ss+1);
+					score = -search(B, -alpha-1, -alpha, new_depth, false, ss+1);
 
 				// still doesn't fail low at PV node: full depth and full window
-				if (node_type == PV && score > alpha)
-					score = -search(B, -beta, -alpha, new_depth , PV, ss+1);
+				if (is_pv && score > alpha)
+					score = -search(B, -beta, -alpha, new_depth , true, ss+1);
 			}
 
 			B.undo();
