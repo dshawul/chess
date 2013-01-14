@@ -345,6 +345,11 @@ namespace
 				score = -search(B, -beta, -alpha, new_depth, PV, ss+1);
 			else
 			{
+				// Candidate moves have been searched, and failed to produce a cutoff. Cut node
+				// becomes All node, as it is less likely that later moves will produce a cutoff
+				if (node_type == Cut && ss->reduction)
+					node_type = All;
+					
 				// zero window search (reduced)
 				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction,
 					node_type == PV ? Cut : -node_type, ss+1);
