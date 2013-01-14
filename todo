@@ -1,4 +1,3 @@
-- fix bug in won endgames, with scores umping from mate to finite and back
 - implement stop command
 - implement proper PV extraction
 - recognize some common draws

@@ -265,9 +265,9 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( depth >= (node_type == PV ? 4 : 7)
-			&& !ss->best
-			&& (node_type == PV || (ss->eval + vOP >= beta)) )
+		if ( !ss->best
+			&& depth >= (node_type == PV ? 4 : 7)
+			&& (node_type != All || ss->eval+vOP >= beta) )
 		{
 			ss->skip_null = true;
 			search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
