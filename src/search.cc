@@ -340,14 +340,17 @@ namespace
 
 			// PVS
 			int score;
-			if (node_type == PV && first)
-				// search full window
-				score = -search(B, -beta, -alpha, new_depth, PV, ss+1);
+			if (first)
+				// search full window full depth
+				// Note that the full window is a zero window at non PV nodes
+				// "-node_type" effectively does PV->PV Cut<->All
+				score = -search(B, -beta, -alpha, new_depth, -node_type, ss+1);
 			else
 			{
-				// Candidate moves have been searched, and failed to produce a cutoff. Cut node
-				// becomes All node, as it is less likely that later moves will produce a cutoff
-				if (node_type == Cut && ss->reduction)
+				// Cut node: If the first move didn't produce the expected cutoff, then we are
+				// unlikely to get a cutoff at this node, which becomes an All node, so that its
+				// children are Cut nodes
+				if (node_type == Cut)
 					node_type = All;
 					
 				// zero window search (reduced)
