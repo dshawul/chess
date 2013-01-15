@@ -80,8 +80,6 @@ namespace
 	
 	void print_pv(Board& B);
 	
-	enum { PV = 0, All = -1, Cut = +1 };
-
 	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 }
@@ -274,7 +272,7 @@ namespace
 			ss->skip_null = false;
 		}
 
-		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, &H);
+		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, node_type, &H);
 		int cnt = 0, LMR = 0, see;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) )
@@ -450,7 +448,7 @@ namespace
 				return alpha;
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, &H);
+		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, node_type, &H);
 		int see;
 		const int fut_base = ss->eval + vEP/2;
 

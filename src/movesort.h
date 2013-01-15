@@ -40,7 +40,8 @@ public:
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H);
+	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, int _node_type,
+		const History *_H);
 	
 	move_t next(int *see);
 	move_t previous();
@@ -52,6 +53,7 @@ private:
 	GenType type;
 	const move_t *killer;
 	move_t tt_move;
+	int node_type;
 	const History *H;
 
 	Token list[MAX_MOVES];

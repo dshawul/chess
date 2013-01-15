@@ -15,6 +15,7 @@
 #include <algorithm>
 #include <cstring>
 #include "movesort.h"
+#include "search.h"
 
 void History::clear()
 {
@@ -43,8 +44,9 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, const History *_H)
-	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), H(_H), idx(0)
+MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move,
+	int _node_type, const History *_H)
+	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), node_type(_node_type), H(_H), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
 
@@ -95,12 +97,16 @@ void MoveSort::score(MoveSort::Token *t)
 		t->score = INF;
 	else if (move_is_cop(*B, t->m))
 		if (type == ALL) {
-			// equal and winning captures, by SEE, in front of quiet moves
-			// losing captures, after all quiet moves
-			t->see = calc_see(*B, t->m);
-			t->score = t->see >= 0
-			           ? t->see + History::Max
-			           : t->see - History::Max;
+			if (node_type == All)
+				t->score = mvv_lva(*B, t->m) + History::Max;
+			else
+			{
+				// equal and winning captures, by SEE, in front of quiet moves
+				// losing captures, after all quiet moves
+				t->see = calc_see(*B, t->m);
+				t->score = t->see >= 0 ? t->see + History::Max : t->see - History::Max;
+			}
+
 		} else
 			t->score = mvv_lva(*B, t->m);
 	else {

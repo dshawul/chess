@@ -22,8 +22,11 @@ struct SearchLimits {
 	uint64_t nodes;
 };
 
+enum { PV = 0, All = -1, Cut = +1 };
+
 // Transposition Table
 extern TTable TT;
 
 move_t bestmove(Board& B, const SearchLimits& sl);
 void bench(int depth);
+
