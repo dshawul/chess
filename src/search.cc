@@ -43,11 +43,11 @@ namespace
 	struct ForcedMove {};
 
 	uint64_t node_count, node_limit;
-	int time_limit;
+	int time_limit[2], time_allowed;
 	time_point<high_resolution_clock> start;
 	void node_poll(Board& B);
 
-	int time_alloc(const SearchLimits& sl);
+	void time_alloc(const SearchLimits& sl, int result[2]);
 
 	History H;
 
@@ -97,7 +97,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	node_count = 0;
 	node_limit = sl.nodes;
-	time_limit = time_alloc(sl);
+	time_alloc(sl, time_limit);
 	move_t best = 0;
 
 	H.clear();
@@ -105,55 +105,49 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	B.set_unwind();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
-	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++)
-	{
+	
+	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
+		// iterative deepening loop
+		
 		int score, delta = 16;
+		time_allowed = time_limit[0];
 
-		// Aspiration loop
-		for (;;)
-		{
-			try
-			{
+		for (;;) {
+			// Aspiration loop
+			
+			try {
 				score = search(B, alpha, beta, depth, PV, ss);
-			}
-			catch (AbortSearch e)
-			{
+			} catch (AbortSearch e) {
 				return best;
-			}
-			catch (ForcedMove e)
-			{
+			} catch (ForcedMove e) {
 				return best = ss->best;
 			}
 
 			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
 				<< " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
 
-			if (alpha < score && score < beta)
-			{
+			if (alpha < score && score < beta) {
 				// score is within bounds
-				if (depth >= 4 && !is_mate_score(score))
-				{
+				if (depth >= 4 && !is_mate_score(score)) {
 					// set aspiration window for the next depth (so aspiration starts at depth 5)
 					alpha = score - delta;
 					beta = score + delta;
 				}
 				// stop the aspiration loop
 				break;
-			}
-			else
-			{
+			} else {
 				// score is outside bounds: resize window and double delta
-				if (score <= alpha)
-				{
+				if (score <= alpha) {
 					alpha -= delta;
 					std::cout << " upperbound" << std::endl;
-				}
-				else if (score >= beta)
-				{
+				} else if (score >= beta) {
 					beta += delta;
 					std::cout << " lowerbound" << std::endl;
 				}
 				delta *= 2;
+				
+				// increase time_allowed, to try to finish the current depth iteration
+				time_allowed = time_limit[1];
 			}
 		}
 
@@ -517,15 +511,20 @@ namespace
 	void node_poll(Board &B)
 	{
 		++node_count;
-		if (0 == (node_count % 1024))
-		{
+		if (0 == (node_count % 1024)) {
+			bool abort = false;
+			
+			// abort search because node limit exceeded
 			if (node_limit && node_count >= node_limit)
-			{
-				B.unwind();
-				throw AbortSearch();
-			}
-			if (time_limit && duration_cast<milliseconds>(high_resolution_clock::now()-start).count() > time_limit)
-			{
+				abort = true;
+			// abort search because time limit exceeded
+			else if (time_allowed && duration_cast<milliseconds>
+				(high_resolution_clock::now()-start).count() > time_allowed)
+				abort = true;
+			
+			// abort search by throwing an exception, caught in bestmove()
+			// B.unwind() restores the board state from its initial state
+			if (abort) {
 				B.unwind();
 				throw AbortSearch();
 			}
@@ -553,41 +552,36 @@ namespace
 
 		if (is_pv)
 			return depth_ok && tte->bound() == BOUND_EXACT;
-		else
-		{
+		else {
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
-			        ||	tt_score >= std::max(mate_in(MAX_PLY), beta)
-			        ||	tt_score < std::min(mated_in(MAX_PLY), beta))
-			       &&	((tte->bound() == BOUND_LOWER && tt_score >= beta)
-			            ||(tte->bound() == BOUND_UPPER && tt_score < beta));
+				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
+				|| tt_score < std::min(mated_in(MAX_PLY), beta))
+				&& ((tte->bound() == BOUND_LOWER && tt_score >= beta)
+					||(tte->bound() == BOUND_UPPER && tt_score < beta));
 		}
 	}
 
-	int time_alloc(const SearchLimits& sl)
+	void time_alloc(const SearchLimits& sl, int result[2])
 	{
 		if (sl.movetime > 0)
-			return sl.movetime;
-		else if (sl.time > 0 || sl.inc > 0)
-		{
+			result[0] = result[1] = sl.movetime;
+		else if (sl.time > 0 || sl.inc > 0) {
 			static const int time_buffer = 100;
 			int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
-			return std::max(std::min(sl.time / movestogo + sl.inc, sl.time-time_buffer), 1);
+			result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time-time_buffer), 1);
+			result[1] = std::max(std::min(sl.time / (1+movestogo/2) + sl.inc, sl.time-time_buffer), 1);
 		}
-		else
-			return 0;
 	}
 
 	void print_pv(Board& B)
 	{
 		std::cout << " pv";
 
-		for (int i = 0; i < MAX_PLY; i++)
-		{
+		for (int i = 0; i < MAX_PLY; i++) {
 			const TTable::Entry *tte = TT.probe(B.get_key());
 
-			if (tte && tte->bound() == BOUND_EXACT && tte->move && !B.is_draw())
-			{
+			if (tte && tte->bound() == BOUND_EXACT && tte->move && !B.is_draw()) {
 				std::cout << ' ' << move_to_string(tte->move);
 				B.play(tte->move);
 			}
@@ -637,8 +631,7 @@ void bench(int depth)
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
 
-	for (int i = 0; test[i]; ++i)
-	{
+	for (int i = 0; test[i]; ++i) {
 		B.set_fen(test[i]);
 		std::cout << B.get_fen() << std::endl;		
 		bestmove(B, sl);
