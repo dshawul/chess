@@ -110,7 +110,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 		// iterative deepening loop
 		
 		int score, delta = 16;
-		time_allowed = time_limit[0];
+		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
+		time_allowed = time_limit[0] >> (best && calc_see(B, best) > 0);
 
 		for (;;) {
 			// Aspiration loop
