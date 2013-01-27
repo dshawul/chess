@@ -47,8 +47,8 @@ void loop()
 				<< "option name Hash type spin default 32 min 1 max 8192\n"
 				<< "option name Clear Hash type button\n"
 				<< "uciok" << std::endl;
-		/*else if (token == "ucinewgame")
-			TT.clear();*/
+		else if (token == "ucinewgame")
+			TT.clear();
 		else if (token == "position")
 			position(B, is);
 		else if (token == "go")

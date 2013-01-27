@@ -55,6 +55,7 @@ namespace
 	const int BDiagonalOpening = 4;
 	const int BBackRankOpening = 10;
 	const int QBackRankOpening = 5;
+	const int RSeventhRank = 8;
 
 	Eval psq_bonus(int piece, int sq)
 	{
@@ -83,6 +84,10 @@ namespace
 			break;
 		case ROOK:
 			e.op += Center[f] * RFileOpening;
+			if (r == RANK_7) {
+				e.op += RSeventhRank;
+				e.eg += RSeventhRank;
+			}
 			break;
 		case QUEEN:
 			e.eg += (Center[r] + Center[f]) * QCentreEndgame;
