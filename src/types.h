@@ -16,6 +16,7 @@
 #include <cinttypes>
 #include <cassert>
 #include <iostream>
+#include <cmath>
 
 /* Square, Rank, File */
 

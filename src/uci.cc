@@ -42,13 +42,13 @@ void loop()
 		is >> std::skipws >> token;
 
 		if (token == "uci")
-			std::cout << "id name DiscoCheck\n"
-			          << "id author Lucas Braesch\n"
-					  << "option name Hash type spin default 32 min 1 max 8192\n"
-					  << "option name Clear Hash type button\n"
-			          << "uciok" << std::endl;
-		else if (token == "ucinewgame")
-			TT.clear();	// FIXME
+			std::cout << "id name DiscoCheck 4.0.0\n"
+				<< "id author Lucas Braesch\n"
+				<< "option name Hash type spin default 32 min 1 max 8192\n"
+				<< "option name Clear Hash type button\n"
+				<< "uciok" << std::endl;
+		/*else if (token == "ucinewgame")
+			TT.clear();*/
 		else if (token == "position")
 			position(B, is);
 		else if (token == "go")

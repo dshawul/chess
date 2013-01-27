@@ -11,9 +11,6 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
- *
- * Credits:
- * - lsb() and msb() from Stockfish, by Marco Costalba.
 */
 #pragma once
 #include "types.h"
@@ -74,10 +71,12 @@ inline bool several_bits(Bitboard b) { return b & (b - 1); }
 inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
 inline Bitboard file_bb(int f) { assert(rank_file_ok(0,f)); return FileA_bb << f; }
 
-/* lsb: assembly for x86_64, GCC or ICC */
+/* bitscan and reverse bitscan, better known as lsb and msb. Using x86-64 BSFQ assembly instruction
+ * http://chessprogramming.wikispaces.com/BitScan */
 
 inline int lsb(Bitboard b)
 {
+	assert(b);
 	Bitboard index;
 	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
 	return index;
@@ -85,6 +84,7 @@ inline int lsb(Bitboard b)
 
 inline int msb(Bitboard b)
 {
+	assert(b);
 	Bitboard index;
 	__asm__("bsrq %1, %0": "=r"(index): "rm"(b) );
 	return index;

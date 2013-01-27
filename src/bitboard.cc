@@ -14,7 +14,6 @@
  *
  * Credits:
  * - Magic bitboard generation code from Unko, by Borko Boskovic.
- * - count_bit_max15() from Stockfish, by Marco Costalba.
 */
 #include <cstring>
 #include "bitboard.h"
@@ -555,7 +554,8 @@ int count_bit(Bitboard b)
 }
 
 int count_bit_max15(Bitboard b)
-/* From Stockfish: count bits up to 15, without a loop */
+/* Counts the '1' in a bitboard, using the so-called SWAR approach:
+ * http://chessprogramming.wikispaces.com/Population+Count */
 {
 	assert(count_bit(b) <= 15);
 	b -= (b>>1) & 0x5555555555555555ULL;
