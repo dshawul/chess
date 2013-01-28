@@ -1,29 +1,8 @@
 DiscoCheck
-==========
+----------
 
 DiscoCheck is a free UCI chess engine. It is not a complete chess program, but requires an UCI
 compatible GUI in order to be used comfortably.
-
-Installing
-----------
-
-Read the documentation for your GUI of choice for information about how to use DiscoCheck with your
-GUI.
-
-If you're using 64-bit Windows or Linux, you should use the official compiles provided. Those are in
-the root directory and named `DCxyz_lin64` (Linux) or `DCxyz_win64` for Windows, where `xyz` is the
-version number `x.y.z`.
-
-Otherwise, you'll have to compile it yourself (see below).
-
-Compiling
----------
-
-POSIX, with g++ installed:
-
-	$ ./make.sh
-
-Windows: unfortunately, you'll have to figure it out for yourself, as I don't use Windows.
 
 Terms of use
 ------------
