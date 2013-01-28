@@ -71,23 +71,18 @@ inline bool several_bits(Bitboard b) { return b & (b - 1); }
 inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
 inline Bitboard file_bb(int f) { assert(rank_file_ok(0,f)); return FileA_bb << f; }
 
-/* bitscan and reverse bitscan, better known as lsb and msb. Using x86-64 BSFQ assembly instruction
- * http://chessprogramming.wikispaces.com/BitScan */
+/* "portable assembly" lsb() and msb(). Thanks to Jim Ablett for helping me there */
 
 inline int lsb(Bitboard b)
 {
 	assert(b);
-	Bitboard index;
-	__asm__("bsfq %1, %0": "=r"(index): "rm"(b) );
-	return index;
+	return __builtin_ffsll(b) - 1;
 }
 
 inline int msb(Bitboard b)
 {
 	assert(b);
-	Bitboard index;
-	__asm__("bsrq %1, %0": "=r"(index): "rm"(b) );
-	return index;
+	return 63 - __builtin_clzll(b);
 }
 
 inline int pop_lsb(Bitboard *b)
