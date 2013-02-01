@@ -40,8 +40,7 @@ void init_eval()
 class PawnCache
 {
 public:
-	struct Entry
-	{
+	struct Entry {
 		Key key;
 		Eval eval_white;
 		Bitboard passers;
@@ -60,8 +59,7 @@ PawnCache PC;
 class EvalInfo
 {
 public:
-	EvalInfo(const Board *_B): B(_B)
-	{
+	EvalInfo(const Board *_B): B(_B) {
 		e[WHITE].clear();
 		e[BLACK].clear();
 	}
@@ -81,8 +79,7 @@ private:
 	void eval_passer(int sq);
 
 	int calc_phase() const;
-	Eval eval_white() const
-	{
+	Eval eval_white() const {
 		Eval tmp = e[WHITE];
 		return tmp -= e[BLACK];
 	}
@@ -90,14 +87,12 @@ private:
 
 void EvalInfo::eval_material()
 {
-	for (int color = WHITE; color <= BLACK; ++color)
-	{
+	for (int color = WHITE; color <= BLACK; ++color) {
 		// material (PSQ)
 		e[color] += B->st().psq[color];
 
 		// bishop pair
-		if (several_bits(B->get_pieces(color, BISHOP)))
-		{
+		if (several_bits(B->get_pieces(color, BISHOP))) {
 			e[color].op += 40;
 			e[color].eg += 50;
 		}
@@ -117,21 +112,18 @@ void EvalInfo::eval_material()
 
 void EvalInfo::eval_mobility()
 {
-	static const int mob_count[ROOK+1][15] =
-	{
+	static const int mob_count[ROOK+1][15] = {
 		{},
 		{-3, -2, -1, 0, 1, 2, 3, 4, 4},
 		{-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
 		{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
 	};
-	static const unsigned mob_unit[NB_PHASE][NB_PIECE] =
-	{
+	static const unsigned mob_unit[NB_PHASE][NB_PIECE] = {
 		{0, 4, 5, 2, 1, 0},		// Opening
 		{0, 4, 5, 4, 2, 0}		// EndGame
 	};
 
-	for (int color = WHITE; color <= BLACK; color++)
-	{
+	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us);
 		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING)
 		                               | B->st().attacks[them][PAWN]);
@@ -141,8 +133,7 @@ void EvalInfo::eval_mobility()
 
 		// Knight mobility
 		fss = B->get_pieces(us, KNIGHT);
-		while (fss)
-		{
+		while (fss) {
 			tss = NAttacks[pop_lsb(&fss)];
 			MOBILITY(KNIGHT, KNIGHT);
 		}
@@ -150,8 +141,7 @@ void EvalInfo::eval_mobility()
 		// Lateral mobility
 		fss = B->get_RQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
-		while (fss)
-		{
+		while (fss) {
 			fsq = pop_lsb(&fss);
 			piece = B->get_piece_on(fsq);
 			tss = rook_attack(fsq, occ);
@@ -161,8 +151,7 @@ void EvalInfo::eval_mobility()
 		// Diagonal mobility
 		fss = B->get_BQ(us);
 		occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
-		while (fss)
-		{
+		while (fss) {
 			fsq = pop_lsb(&fss);
 			piece = B->get_piece_on(fsq);
 			tss = bishop_attack(fsq, occ);
@@ -184,8 +173,7 @@ void EvalInfo::eval_safety()
 {
 	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
 
-	for (int color = WHITE; color <= BLACK; color++)
-	{
+	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us), ksq = B->get_king_pos(us);
 		const Bitboard their_pawns = B->get_pieces(them, PAWN);
 
@@ -203,11 +191,9 @@ void EvalInfo::eval_safety()
 
 		// Knight attacks
 		attacked = B->st().attacks[them][KNIGHT] & (KAttacks[ksq] | NAttacks[ksq]) & ~solid;
-		if (attacked)
-		{
+		if (attacked) {
 			fss = B->get_pieces(them, KNIGHT);
-			while (attacked)
-			{
+			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = NAttacks[sq] & fss;
 				ADD_ATTACK(KNIGHT);
@@ -216,12 +202,10 @@ void EvalInfo::eval_safety()
 
 		// Lateral attacks
 		attacked = B->st().attacks[them][ROOK] & KAttacks[ksq] & ~solid;
-		if (attacked)
-		{
+		if (attacked) {
 			fss = B->get_RQ(them);
 			occ = B->st().occ & ~fss;	// rooks and queens see through each other
-			while (attacked)
-			{
+			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & rook_attack(sq, occ);
 				ADD_ATTACK(ROOK);
@@ -230,12 +214,10 @@ void EvalInfo::eval_safety()
 
 		// Diagonal attacks
 		attacked = B->st().attacks[them][BISHOP] & KAttacks[ksq] & ~solid;
-		if (attacked)
-		{
+		if (attacked) {
 			fss = B->get_BQ(them);
 			occ = B->st().occ & ~fss;	// bishops and queens see through each other
-			while (attacked)
-			{
+			while (attacked) {
 				sq = pop_lsb(&attacked);
 				sq_attackers = fss & bishop_attack(sq, occ);
 				ADD_ATTACK(BISHOP);
@@ -254,15 +236,13 @@ void EvalInfo::eval_passer(int sq)
 {
 	const int us = B->get_color_on(sq), them = opp_color(us);
 
-	if (!B->st().piece_psq[them])
-	{
+	if (!B->st().piece_psq[them]) {
 		// opponent has no pieces
 		const int psq = square(us ? RANK_1 : RANK_8, file(sq));
 		const int pd = kdist(sq, psq);
 		const int kd = kdist(B->get_king_pos(them), psq) - (them == B->get_turn());
 
-		if (kd > pd)  	// unstoppable passer
-		{
+		if (kd > pd) {	// unstoppable passer
 			e[us].eg += vR;	// on top of the bonus from do_eval_pawns()
 			return;
 		}
@@ -272,19 +252,15 @@ void EvalInfo::eval_passer(int sq)
 	const int L = (us ? 7-r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L*(L-1);					// Quadratic part	0..20
 
-	if (Q && !test_bit(B->st().occ, pawn_push(us, sq)))
-	{
+	if (Q && !test_bit(B->st().occ, pawn_push(us, sq))) {
 		const Bitboard path = SquaresInFront[us][sq];
 		const Bitboard b = file_bb(file(sq)) & rook_attack(sq, B->st().occ);
 
 		uint64_t defended, attacked;
-		if (B->get_RQ(them) & b)
-		{
+		if (B->get_RQ(them) & b) {
 			defended = path & B->st().attacks[us][NO_PIECE];
 			attacked = path;
-		}
-		else
-		{
+		} else {
 			defended = (B->get_RQ(us) & b) ? path : path & B->st().attacks[us][NO_PIECE];
 			attacked = path & (B->st().attacks[them][NO_PIECE] | B->get_pieces(them));
 		}
@@ -303,8 +279,7 @@ void EvalInfo::eval_pawns()
 
 	if (h.key == key)
 		e[WHITE] += h.eval_white;
-	else
-	{
+	else {
 		const Eval ew0 = eval_white();
 		h.key = key;
 		h.passers = do_eval_pawns();
@@ -327,16 +302,14 @@ Bitboard EvalInfo::do_eval_pawns()
 
 	Bitboard passers = 0;
 
-	for (int color = WHITE; color <= BLACK; color++)
-	{
+	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us);
 		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard sqs = our_pawns;
 
 		int kf = file(our_ksq);
-		for (int f = kf-1; f <= kf+1; ++f)
-		{
+		for (int f = kf-1; f <= kf+1; ++f) {
 			if (f < FILE_A || f > FILE_H)
 				continue;
 
@@ -352,22 +325,18 @@ Bitboard EvalInfo::do_eval_pawns()
 
 			// Pawn storm
 			b = their_pawns & file_bb(f);
-			if (b)
-			{
+			if (b) {
 				sq = us ? msb(b) : lsb(b);
 				r = us ? 7-rank(sq) : rank(sq);
 				half = test_bit(our_pawns, pawn_push(them, sq));
-			}
-			else
-			{
+			} else {
 				r = RANK_1;		// actually we penalize for the semi open file here
 				half = false;
 			}
 			e[us].op -= StormPenalty[r] >> half;
 		}
 
-		while (sqs)
-		{
+		while (sqs) {
 			const int sq = pop_lsb(&sqs), next_sq = pawn_push(us, sq);
 			const int r = rank(sq), f = file(sq);
 			const Bitboard besides = our_pawns & AdjacentFiles[f];
@@ -384,19 +353,15 @@ Bitboard EvalInfo::do_eval_pawns()
 
 			if (chained)
 				e[us].op += Chained;
-			else if (hole)
-			{
+			else if (hole) {
 				e[us].op -= open ? Hole.op : Hole.op/2;
 				e[us].eg -= Hole.eg;
-			}
-			else if (isolated)
-			{
+			} else if (isolated) {
 				e[us].op -= open ? Isolated : Isolated/2;
 				e[us].eg -= Isolated;
 			}
 
-			if (candidate)
-			{
+			if (candidate) {
 				int n = us ? 7-r : r;
 				const int d1 = kdist(sq, our_ksq), d2 = kdist(sq, their_ksq);
 
@@ -405,9 +370,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 				if (n > 0)			// quadratic score
 					e[us].eg += n*n;
-			}
-			else if (passed)
-			{
+			} else if (passed) {
 				set_bit(&passers, sq);
 
 				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
@@ -417,8 +380,7 @@ Bitboard EvalInfo::do_eval_pawns()
 				e[us].op += 8 * Q;
 				e[us].eg += 4 * (Q + L + 1);
 
-				if (Q)
-				{
+				if (Q) {
 					//  adjustment for king distance
 					e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
 					e[us].eg -= kdist(next_sq, our_ksq) * Q;
@@ -427,8 +389,7 @@ Bitboard EvalInfo::do_eval_pawns()
 				}
 
 				// support by friendly pawn
-				if (besides & PawnSpan[them][next_sq])
-				{
+				if (besides & PawnSpan[them][next_sq]) {
 					if (PAttacks[them][next_sq] & our_pawns)
 						e[us].eg += 8 * L;	// besides is good, as it allows a further push
 					else if (PAttacks[them][sq] & our_pawns)
@@ -446,19 +407,16 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int TrappedRook = 40;
-	static const uint64_t BishopTrap[NB_COLOR] =
-	{
+	static const uint64_t BishopTrap[NB_COLOR] = {
 		(1ULL << A7) | (1ULL << H7),
 		(1ULL << A2) | (1ULL << H2)
 	};
-	static const Bitboard KnightTrap[NB_COLOR] =
-	{
+	static const Bitboard KnightTrap[NB_COLOR] = {
 		(1ULL << A8) | (1ULL << H8) | (1ULL << A7) | (1ULL << H7),
 		(1ULL << A1) | (1ULL << H1) | (1ULL << A2) | (1ULL << H2)
 	};
 
-	for (int color = WHITE; color <= BLACK; ++color)
-	{
+	for (int color = WHITE; color <= BLACK; ++color) {
 		const int us = color, them = opp_color(us);
 		const int ksq = B->get_king_pos(us);
 		const bool can_castle = B->st().crights & (3 << (2*us));
@@ -467,11 +425,9 @@ void EvalInfo::eval_pieces()
 
 		// Rook blocked by uncastled King
 		fss = B->get_pieces(us, ROOK) & PPromotionRank[them];
-		while (fss)
-		{
+		while (fss) {
 			const int rsq = pop_lsb(&fss);
-			if (test_bit(Between[rsq][us ? E8 : E1], ksq))
-			{
+			if (test_bit(Between[rsq][us ? E8 : E1], ksq)) {
 				if (our_pawns & SquaresInFront[us][rsq] & HalfBoard[us])
 					e[us].op -= TrappedRook >> can_castle;
 				else
@@ -483,8 +439,7 @@ void EvalInfo::eval_pieces()
 
 		// Knight trapped
 		fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
-		while (fss)
-		{
+		while (fss) {
 			// escape squares = not defended by enemy pawns
 			tss = NAttacks[pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];
 			// If escape square(s) are attacked and not defended by a pawn, then the knight is likely
@@ -499,23 +454,21 @@ void EvalInfo::eval_pieces()
 
 		// Bishop trapped
 		fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
-		while (fss)
-		{
+		while (fss) {
 			const int fsq = pop_lsb(&fss);
 			// See if the retreat path of the bishop is blocked by a defended pawn
-			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][fsq])
-			{
+			if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & PAttacks[them][fsq]) {
 				e[us].op -= vOP;
 				// in the endgame, we only penalize if there's no escape via the 8th rank
 				if (PAttacks[us][fsq] & B->st().attacks[them][KING])
 					e[us].eg -= vEP;
 			}
 		}
-	
+
 		// Hanging pieces
 		Bitboard loose_pawns = our_pawns & ~B->st().attacks[us][NO_PIECE];
 		Bitboard loose_pieces = (B->get_pieces(us) & ~our_pawns)
-			& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
+		                        & (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
 		Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 		while (hanging) {
 			const int victim = B->get_piece_on(pop_lsb(&hanging));
