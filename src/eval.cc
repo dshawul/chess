@@ -106,7 +106,7 @@ void EvalInfo::eval_material()
 
 // Generic linear mobility
 #define MOBILITY(p0, p)											\
-	count = mob_count[p0][count_bit_max15(tss & mob_targets)];	\
+	count = mob_count[p0][count_bit(tss & mob_targets)];	\
 	e[us].op += count * mob_unit[OPENING][p];					\
 	e[us].eg += count * mob_unit[ENDGAME][p]
 

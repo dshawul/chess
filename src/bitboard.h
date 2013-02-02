@@ -92,9 +92,7 @@ inline int pop_lsb(Bitboard *b)
 	return s;
 }
 
-/* Counts the number of bits set in b, using a loop. Performs best on sparsly populated bitboards */
-int count_bit(Bitboard b);
-
-/* Counts the number of bits set in b, up to a maximum of 15. Faster than count_bit for not so
- * sparsly populated bitboards */
-int count_bit_max15(Bitboard b);
+inline int count_bit(Bitboard b)
+{
+	return __builtin_popcountll(b);
+}

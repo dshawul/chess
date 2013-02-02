@@ -541,25 +541,3 @@ Bitboard rook_attack(int sq, Bitboard occ)
 	return *(magic_bb_r_indices[sq]
 	         + (((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq]));
 }
-
-int count_bit(Bitboard b)
-/* General purpose bit counting, using a simple loop */
-{
-	int cnt = 0;
-	while (b) {
-		b &= b - 1;
-		++cnt;
-	}
-	return cnt;
-}
-
-int count_bit_max15(Bitboard b)
-/* Counts the '1' in a bitboard, using the so-called SWAR approach:
- * http://chessprogramming.wikispaces.com/Population+Count */
-{
-	assert(count_bit(b) <= 15);
-	b -= (b>>1) & 0x5555555555555555ULL;
-	b = ((b>>2) & 0x3333333333333333ULL) + (b & 0x3333333333333333ULL);
-	b *= 0x1111111111111111ULL;
-	return b >> 60;
-}
