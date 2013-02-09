@@ -75,6 +75,8 @@ private:
 	const Board *B;
 	Eval e[NB_COLOR];
 
+	void score_mobility(int us, int p0, int p, Bitboard tss);
+	
 	Bitboard do_eval_pawns();
 	void eval_passer(int sq);
 
@@ -104,13 +106,7 @@ void EvalInfo::eval_material()
 		e[strong_side].eg -= std::abs(e[WHITE].eg - e[BLACK].eg)/2;
 }
 
-// Generic linear mobility
-#define MOBILITY(p0, p)											\
-	count = mob_count[p0][count_bit(tss & mob_targets)];	\
-	e[us].op += count * mob_unit[OPENING][p];					\
-	e[us].eg += count * mob_unit[ENDGAME][p]
-
-void EvalInfo::eval_mobility()
+void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 {
 	static const int mob_count[ROOK+1][15] = {
 		{},
@@ -123,19 +119,26 @@ void EvalInfo::eval_mobility()
 		{0, 4, 5, 4, 2, 0}		// EndGame
 	};
 
+	const int count = mob_count[p0][count_bit(tss)];
+	e[us].op += count * mob_unit[OPENING][p];
+	e[us].eg += count * mob_unit[ENDGAME][p];
+}
+
+void EvalInfo::eval_mobility()
+{
 	for (int color = WHITE; color <= BLACK; color++) {
 		const int us = color, them = opp_color(us);
 		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING)
 		                               | B->st().attacks[them][PAWN]);
 
 		Bitboard fss, tss, occ;
-		int fsq, piece, count;
+		int fsq, piece;
 
 		// Knight mobility
 		fss = B->get_pieces(us, KNIGHT);
 		while (fss) {
-			tss = NAttacks[pop_lsb(&fss)];
-			MOBILITY(KNIGHT, KNIGHT);
+			tss = NAttacks[pop_lsb(&fss)] & mob_targets;
+			score_mobility(us, KNIGHT, KNIGHT, tss);
 		}
 
 		// Lateral mobility
@@ -144,8 +147,8 @@ void EvalInfo::eval_mobility()
 		while (fss) {
 			fsq = pop_lsb(&fss);
 			piece = B->get_piece_on(fsq);
-			tss = rook_attack(fsq, occ);
-			MOBILITY(ROOK, piece);
+			tss = rook_attack(fsq, occ) & mob_targets;
+			score_mobility(us, ROOK, piece, tss);
 		}
 
 		// Diagonal mobility
@@ -154,8 +157,8 @@ void EvalInfo::eval_mobility()
 		while (fss) {
 			fsq = pop_lsb(&fss);
 			piece = B->get_piece_on(fsq);
-			tss = bishop_attack(fsq, occ);
-			MOBILITY(BISHOP, piece);
+			tss = bishop_attack(fsq, occ) & mob_targets;
+			score_mobility(us, BISHOP, piece, tss);
 		}
 	}
 }
