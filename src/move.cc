@@ -280,45 +280,6 @@ int calc_see(const Board& B, move_t m)
 	return swap_list[0];
 }
 
-bool test_see()
-{
-	struct TestSEE {
-		const char *fen, *move;
-		int value;
-	};
-
-	TestSEE test[] = {
-		{"k6K/8/4b3/8/3N4/8/8/8 w - -", "d4e6", vB},
-		{"k6K/3p4/4b3/8/3N4/8/8/8 w - -", "d4e6", 0},
-		{"k6K/3p4/4b3/8/3N4/8/8/4R3 w - -", "d4e6", vB-vN+vOP},
-		{"k3r2K/3p4/4b3/8/3N4/8/4R3/4R3 w - -", "d4e6", vB-vN+vOP},
-		{"k6K/3P4/8/8/8/8/8/8 w - -", "d7d8q", vQ-vOP},
-		{"k6K/3P4/2n5/8/8/8/8/8 w - -", "d7d8q", -vOP},
-		{"k6K/3P4/2n1N3/8/8/8/8/8 w - -", "d7d8q", -vOP+vN},
-		{"k6K/3PP3/2n5/b7/7B/8/8/3R4 w - -", "d7d8q", vN+vB-2*vOP},
-		{"3R3K/k3P3/8/b7/8/8/8/8 b - -", "a5d8", vR-vB+vOP-vQ},
-		{NULL, NULL, 0}
-	};
-
-	Board B;
-
-	for (int i = 0; test[i].fen; ++i) {
-		B.set_fen(test[i].fen);
-		std::cout << test[i].fen << '\t' << test[i].move << std::endl;
-		move_t m = string_to_move(B, test[i].move);
-
-		const int s = calc_see(B, m);
-
-		if (s != test[i].value) {
-			std::cout << B << "SEE = " << s << std::endl;
-			std::cout << "should be " << test[i].value << std::endl;
-			return false;
-		}
-	}
-
-	return true;
-}
-
 int mvv_lva(const Board& B, move_t m)
 {
 	// Queen is the best capture available (King can't be captured since move is legal)

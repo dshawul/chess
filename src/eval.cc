@@ -81,23 +81,18 @@ private:
 	void eval_passer(int sq);
 
 	int calc_phase() const;
-	Eval eval_white() const {
-		Eval tmp = e[WHITE];
-		return tmp -= e[BLACK];
-	}
+	Eval eval_white() const { return e[WHITE] - e[BLACK]; }
 };
 
 void EvalInfo::eval_material()
 {
-	for (int color = WHITE; color <= BLACK; ++color) {
+	for (int us = WHITE; us <= BLACK; ++us) {
 		// material (PSQ)
-		e[color] += B->st().psq[color];
+		e[us] += B->st().psq[us];
 
 		// bishop pair
-		if (several_bits(B->get_pieces(color, BISHOP))) {
-			e[color].op += 40;
-			e[color].eg += 50;
-		}
+		if (several_bits(B->get_pieces(us, BISHOP)))
+			e[us] += {40, 50};
 	}
 
 	// If the stronger side has no pawns, half the material difference in the endgame
@@ -286,8 +281,7 @@ void EvalInfo::eval_pawns()
 		const Eval ew0 = eval_white();
 		h.key = key;
 		h.passers = do_eval_pawns();
-		h.eval_white = eval_white();
-		h.eval_white -= ew0;
+		h.eval_white = eval_white() - ew0;
 	}
 
 	// piece-dependant passed pawn scoring

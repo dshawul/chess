@@ -44,6 +44,8 @@ struct Eval {
 	const Eval& operator-= (const Eval& e) { op -= e.op; eg -= e.eg; return *this; }
 };
 
+inline const Eval& operator- (const Eval& e1, const Eval& e2) { Eval e(e1); return e -= e2; }
+
 extern const Eval Material[NB_PIECE];
 
 // PSQ table for WHITE
