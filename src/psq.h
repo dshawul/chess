@@ -25,9 +25,9 @@ enum {
 // material values
 #define vOP 85
 #define vEP 100
-#define vN 325
-#define vB 325
-#define vR 549
+#define vN 330
+#define vB 330
+#define vR 550
 #define vQ 1000
 #define vK 20000 // only for SEE
 
