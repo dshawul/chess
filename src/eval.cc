@@ -59,10 +59,7 @@ PawnCache PC;
 class EvalInfo
 {
 public:
-	EvalInfo(const Board *_B): B(_B) {
-		e[WHITE].clear();
-		e[BLACK].clear();
-	}
+	EvalInfo(const Board *_B): B(_B) { e[WHITE].clear(); e[BLACK].clear(); }
 
 	void eval_material();
 	void eval_mobility();
