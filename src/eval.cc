@@ -353,7 +353,8 @@ Bitboard EvalInfo::do_eval_pawns()
 			} else if (isolated) {
 				e[us].op -= open ? Isolated : Isolated/2;
 				e[us].eg -= Isolated;
-			}
+			} else if (test_bit(their_pawns, next_sq))
+				e[us] -= {2,4};
 
 			if (candidate) {
 				int n = us ? 7-r : r;
