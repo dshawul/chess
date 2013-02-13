@@ -29,4 +29,3 @@ extern TTable TT;
 
 move_t bestmove(Board& B, const SearchLimits& sl);
 void bench(int depth);
-

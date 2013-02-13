@@ -28,8 +28,7 @@ using namespace std::chrono;
 
 namespace
 {
-	struct SearchInfo
-	{
+	struct SearchInfo {
 		move_t m, best, killer[2];
 		int ply, reduction, eval;
 		bool skip_null, null_child;
@@ -67,19 +66,19 @@ namespace
 	{
 		assert(!B.is_check());
 		const int us = B.get_turn(), them = opp_color(us);
-		
+
 		const Bitboard our_pawns = B.get_pieces(us, PAWN);
 		const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;
-		
+
 		const Bitboard attacked = B.st().attacks[them][NO_PIECE];
 		const Bitboard defended = B.st().attacks[us][NO_PIECE];
-		
+
 		return ((our_pawns ^ our_pieces) & attacked & ~defended)
-			| (our_pieces & B.st().attacks[them][PAWN]);
+		       | (our_pieces & B.st().attacks[them][PAWN]);
 	}
-	
+
 	void print_pv(Board& B);
-	
+
 	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 }
@@ -89,8 +88,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	start = high_resolution_clock::now();
 
 	SearchInfo ss[MAX_PLY + 1-QS_LIMIT], *sp = ss;
-	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply, ++sp)
-	{
+	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply, ++sp) {
 		sp->ply = ply;
 		sp->skip_null = sp->null_child = false;
 	}
@@ -105,17 +103,17 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	B.set_unwind();
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
-	
+
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
 		// iterative deepening loop
-		
+
 		int score, delta = 16;
 		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
 		time_allowed = time_limit[0] >> (best && calc_see(B, best) > 0);
 
 		for (;;) {
 			// Aspiration loop
-			
+
 			try {
 				score = search(B, alpha, beta, depth, PV, ss);
 			} catch (AbortSearch e) {
@@ -125,7 +123,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			}
 
 			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
-				<< " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
+			          << " time " << duration_cast<milliseconds>(high_resolution_clock::now()-start).count();
 
 			if (alpha < score && score < beta) {
 				// score is within bounds
@@ -146,7 +144,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 					std::cout << " lowerbound" << std::endl;
 				}
 				delta *= 2;
-				
+
 				// increase time_allowed, to try to finish the current depth iteration
 				time_allowed = time_limit[1];
 			}
@@ -181,8 +179,7 @@ namespace
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
 		beta = std::min(beta, mate_in(ss->ply+1));
-		if (alpha >= beta)
-		{
+		if (alpha >= beta) {
 			assert(!root);
 			return alpha;
 		}
@@ -190,10 +187,8 @@ namespace
 		// TT lookup
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
-		if (tte)
-		{
-			if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply))
-			{
+		if (tte) {
+			if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
@@ -202,26 +197,24 @@ namespace
 				ss->best = tte->move;
 		} else
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
-		
+
 		// Eval pruning
 		if ( node_type != PV
-			&& depth <= 3
-			&& !in_check
-			&& !is_mate_score(beta)
-			&& ss->eval + TEMPO >= beta + EvalMargin[depth]
-			&& B.st().piece_psq[B.get_turn()]
-			&& !several_bits(threats(B)) )
+		        && depth <= 3
+		        && !in_check
+		        && !is_mate_score(beta)
+		        && ss->eval + TEMPO >= beta + EvalMargin[depth]
+		        && B.st().piece_psq[B.get_turn()]
+		        && !several_bits(threats(B)) )
 			return ss->eval + TEMPO - EvalMargin[depth];
 
 		// Razoring
 		if ( node_type != PV
-			&& depth <= 3
-			&& !in_check
-			&& !is_mate_score(beta) )
-		{
+		        && depth <= 3
+		        && !in_check
+		        && !is_mate_score(beta) ) {
 			const int threshold = beta - RazorMargin[depth];
-			if (ss->eval < threshold)
-			{
+			if (ss->eval < threshold) {
 				const int score = qsearch(B, threshold-1, threshold, 0, All, ss+1);
 				if (score < threshold)
 					return score + TEMPO;
@@ -231,12 +224,11 @@ namespace
 		// Null move pruning
 		move_t threat_move = 0;
 		if ( node_type != PV
-			&& !ss->skip_null
-			&& !in_check
-			&& !is_mate_score(beta)
-			&& ss->eval >= beta
-			&& B.st().piece_psq[B.get_turn()] )
-		{
+		        && !ss->skip_null
+		        && !in_check
+		        && !is_mate_score(beta)
+		        && ss->eval >= beta
+		        && B.st().piece_psq[B.get_turn()] ) {
 			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
 			B.play(0);
@@ -249,8 +241,7 @@ namespace
 				return score < mate_in(MAX_PLY)
 				       ? score		// fail soft
 				       : beta;		// *but* do not return an unproven mate
-			else
-			{
+			else {
 				threat_move = (ss+1)->best;
 				if (score <= mated_in(MAX_PLY) && (ss-1)->reduction)
 					++depth;
@@ -259,9 +250,8 @@ namespace
 
 		// Internal Iterative Deepening
 		if ( !ss->best
-			&& depth >= (node_type == PV ? 4 : 7)
-			&& (node_type != All || ss->eval+vOP >= beta) )
-		{
+		        && depth >= (node_type == PV ? 4 : 7)
+		        && (node_type != All || ss->eval+vOP >= beta) ) {
 			ss->skip_null = true;
 			search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
 			ss->skip_null = false;
@@ -270,8 +260,7 @@ namespace
 		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, node_type, &H);
 		int cnt = 0, LMR = 0, see;
 
-		while ( alpha < beta && (ss->m = MS.next(&see)) )
-		{
+		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 			++cnt;
 			bool check = move_is_check(B, ss->m);
 
@@ -294,28 +283,25 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-				|| new_depth == depth
-				|| ss->m == ss->killer[0]
-				|| ss->m == ss->killer[1]
-				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
-				|| (ss->m.flag() == CASTLING);
+			                       || new_depth == depth
+			                       || ss->m == ss->killer[0]
+			                       || ss->m == ss->killer[1]
+			                       || (move_is_pawn_threat(B, ss->m) && see >= 0)
+			                       || (ss->m.flag() == CASTLING);
 
-			
-			if (!capture && !dangerous && !in_check)
-			{
+
+			if (!capture && !dangerous && !in_check) {
 				// Move count pruning
 				if ( depth <= 8 && node_type != PV
-					&& LMR >= 3 + depth*depth
-					&& alpha > mated_in(MAX_PLY)
-					&& (see < 0 || !refute(B, ss->m, threat_move)) )
-				{
+				        && LMR >= 3 + depth*depth
+				        && alpha > mated_in(MAX_PLY)
+				        && (see < 0 || !refute(B, ss->m, threat_move)) ) {
 					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
 					continue;
 				}
-				
+
 				// SEE pruning near the leaves
-				if (new_depth <= 1 && see < 0)
-				{
+				if (new_depth <= 1 && see < 0) {
 					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
 					continue;
 				}
@@ -323,8 +309,7 @@ namespace
 
 			// reduction decision
 			ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
-			if (ss->reduction)
-			{
+			if (ss->reduction) {
 				LMR += !capture;
 				ss->reduction += (bad_quiet && LMR >= 3+8/depth);
 			}
@@ -338,17 +323,16 @@ namespace
 				// Note that the full window is a zero window at non PV nodes
 				// "-node_type" effectively does PV->PV Cut<->All
 				score = -search(B, -beta, -alpha, new_depth, -node_type, ss+1);
-			else
-			{
+			else {
 				// Cut node: If the first move didn't produce the expected cutoff, then we are
 				// unlikely to get a cutoff at this node, which becomes an All node, so that its
 				// children are Cut nodes
 				if (node_type == Cut)
 					node_type = All;
-					
+
 				// zero window search (reduced)
 				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction,
-					node_type == PV ? Cut : -node_type, ss+1);
+				                node_type == PV ? Cut : -node_type, ss+1);
 
 				// doesn't fail low: verify at full depth, with zero window
 				if (score > alpha && ss->reduction)
@@ -361,21 +345,18 @@ namespace
 
 			B.undo();
 
-			if (score > best_score)
-			{
+			if (score > best_score) {
 				best_score = score;
 				alpha = std::max(alpha, score);
 				ss->best = ss->m;
 			}
 		}
 
-		if (!MS.get_count())
-		{
+		if (!MS.get_count()) {
 			// mated or stalemated
 			assert(!root);
 			return in_check ? mated_in(ss->ply) : 0;
-		}
-		else if (root && MS.get_count() == 1)
+		} else if (root && MS.get_count() == 1)
 			// forced move at the root node, play instantly and prevent further iterative deepening
 			throw ForcedMove();
 
@@ -384,11 +365,9 @@ namespace
 		TT.store(key, bound, depth, best_score, ss->eval, ss->best);
 
 		// best move is quiet: update killers and history
-		if (ss->best && !move_is_cop(B, ss->best))
-		{
+		if (ss->best && !move_is_cop(B, ss->best)) {
 			// update killers on a LIFO basis
-			if (ss->killer[0] != ss->best)
-			{
+			if (ss->killer[0] != ss->best) {
 				ss->killer[1] = ss->killer[0];
 				ss->killer[0] = ss->best;
 			}
@@ -396,8 +375,7 @@ namespace
 			// mark ss->best as good, and all other moves searched as bad
 			move_t m;
 			while ( (m = MS.previous()) )
-				if (!move_is_cop(B, m))
-				{
+				if (!move_is_cop(B, m)) {
 					int bonus = m == ss->best ? depth*depth : -depth*depth;
 					H.add(B, m, bonus);
 				}
@@ -422,10 +400,8 @@ namespace
 		// TT lookup
 		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
-		if (tte)
-		{
-			if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply))
-			{
+		if (tte) {
+			if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
 				TT.refresh(tte);
 				return adjust_tt_score(tte->score, ss->ply);
 			}
@@ -435,8 +411,7 @@ namespace
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
 		// stand pat
-		if (!in_check)
-		{
+		if (!in_check) {
 			best_score = ss->eval + TEMPO;
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
@@ -447,13 +422,11 @@ namespace
 		int see;
 		const int fut_base = ss->eval + vEP/2;
 
-		while ( alpha < beta && (ss->m = MS.next(&see)) )
-		{
+		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 			int check = move_is_check(B, ss->m);
 
 			// Futility pruning
-			if (!check && !in_check && node_type != PV)
-			{
+			if (!check && !in_check && node_type != PV) {
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
 				                      + Material[B.get_piece_on(ss->m.tsq())].eg
@@ -461,15 +434,13 @@ namespace
 				                      + (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 				// still can't raise alpha, skip
-				if (opt_score <= alpha)
-				{
+				if (opt_score <= alpha) {
 					best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
 					continue;
 				}
 
 				// the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
-				if (fut_base <= alpha && depth < 0 && see <= 0)
-				{
+				if (fut_base <= alpha && depth < 0 && see <= 0) {
 					best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
 					continue;
 				}
@@ -483,15 +454,13 @@ namespace
 			int score;
 			if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
 				score = ss->eval + see;
-			else
-			{
+			else {
 				B.play(ss->m);
 				score = -qsearch(B, -beta, -alpha, depth-1, -node_type, ss+1);
 				B.undo();
 			}
 
-			if (score > best_score)
-			{
+			if (score > best_score) {
 				best_score = score;
 				alpha = std::max(alpha, score);
 				ss->best = ss->m;
@@ -514,15 +483,15 @@ namespace
 		++node_count;
 		if (0 == (node_count % 1024)) {
 			bool abort = false;
-			
+
 			// abort search because node limit exceeded
 			if (node_limit && node_count >= node_limit)
 				abort = true;
 			// abort search because time limit exceeded
 			else if (time_allowed && duration_cast<milliseconds>
-				(high_resolution_clock::now()-start).count() > time_allowed)
+			         (high_resolution_clock::now()-start).count() > time_allowed)
 				abort = true;
-			
+
 			// abort search by throwing an exception, caught in bestmove()
 			// B.unwind() restores the board state from its initial state
 			if (abort) {
@@ -556,10 +525,10 @@ namespace
 		else {
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
-				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
-				|| tt_score < std::min(mated_in(MAX_PLY), beta))
-				&& ((tte->bound() == BOUND_LOWER && tt_score >= beta)
-					||(tte->bound() == BOUND_UPPER && tt_score < beta));
+			        || tt_score >= std::max(mate_in(MAX_PLY), beta)
+			        || tt_score < std::min(mated_in(MAX_PLY), beta))
+			       && ((tte->bound() == BOUND_LOWER && tt_score >= beta)
+			           ||(tte->bound() == BOUND_UPPER && tt_score < beta));
 		}
 	}
 
@@ -587,17 +556,16 @@ namespace
 				B.play(tte->move);
 			}
 		}
-		
-		std::cout << std::endl;		
-		B.unwind();		
+
+		std::cout << std::endl;
+		B.unwind();
 	}
 
 }
 
 void bench(int depth)
 {
-	static const char *test[] =
-	{
+	static const char *test[] = {
 		"r1bqkbnr/pp1ppppp/2n5/2p5/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq -",
 		"r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -",
 		"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -",
@@ -634,7 +602,7 @@ void bench(int depth)
 
 	for (int i = 0; test[i]; ++i) {
 		B.set_fen(test[i]);
-		std::cout << B.get_fen() << std::endl;		
+		std::cout << B.get_fen() << std::endl;
 		bestmove(B, sl);
 		std::cout << std::endl;
 		signature += node_count;

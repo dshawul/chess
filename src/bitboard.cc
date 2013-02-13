@@ -117,7 +117,7 @@ namespace
 			RPseudoAttacks[sq] = rook_attack(sq, 0);
 		}
 	}
-	
+
 	void init_mask()
 	{
 		for (int f = FILE_A; f <= FILE_H; f++) {
@@ -125,16 +125,16 @@ namespace
 			if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
 			if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
 		}
-		
+
 		InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
 		for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
 			InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
 			InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
 		}
-		
+
 		for (int us = WHITE; us <= BLACK; ++us) {
 			for (int sq = A1; sq <= H8; ++sq) {
-				const int r = rank(sq), f = file(sq);				
+				const int r = rank(sq), f = file(sq);
 				SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
 				PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
 				PassedPawnMask[us][sq] = PawnSpan[us][sq] ^ SquaresInFront[us][sq];

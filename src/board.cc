@@ -92,10 +92,10 @@ void Board::set_fen(const std::string& _fen)
 	const int us = turn, them = opp_color(us);
 	sp->pinned = hidden_checkers(1, us);
 	sp->dcheckers = hidden_checkers(0, us);
-	
+
 	calc_attacks(us);
 	sp->attacked = calc_attacks(them);
-	
+
 	sp->checkers = test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(verify_keys());
@@ -187,14 +187,14 @@ void Board::play(move_t m)
 	const int us = turn, them = opp_color(us);
 	const int fsq = m.fsq(), tsq = m.tsq();
 	const int piece = piece_on[fsq], capture = piece_on[tsq];
-	
+
 	// Null move
 	if (!m) {
 		assert(!is_check());
 		sp->epsq = NO_SQUARE;
 		goto move_played;
 	}
-	
+
 	// normal capture: remove captured piece
 	if (piece_ok(capture)) {
 		sp->rule50 = 0;
@@ -254,15 +254,15 @@ move_played:
 		++move_count;
 
 	sp->key ^= zob_turn;
-	sp->kpkey ^= zob_turn;	
-	
+	sp->kpkey ^= zob_turn;
+
 	sp->capture = capture;
 	sp->pinned = hidden_checkers(1, them);
 	sp->dcheckers = hidden_checkers(0, them);
-	
+
 	sp->attacked = calc_attacks(us);
 	calc_attacks(them);
-	
+
 	sp->checkers = test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
 	assert(verify_keys());
@@ -321,10 +321,10 @@ Bitboard Board::calc_attacks(int color) const
 {
 	assert(initialized);
 	Bitboard fss, r = 0;
-	
+
 	// Pawn
 	r |= sp->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
-		| shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
+	                                | shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
@@ -346,9 +346,9 @@ Bitboard Board::calc_attacks(int color) const
 
 	// King
 	r |= sp->attacks[color][KING] = KAttacks[get_king_pos(color)];
-	
+
 	//All
-	return sp->attacks[color][NO_PIECE] = r;	
+	return sp->attacks[color][NO_PIECE] = r;
 }
 
 Bitboard Board::hidden_checkers(bool find_pins, int color) const
@@ -408,7 +408,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 			sp->piece_psq[color] += e.op;
 		else
 			sp->kpkey ^= zob[color][piece][sq];
-		
+
 		sp->key ^= zob[color][piece][sq];
 	}
 }
@@ -432,7 +432,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 			sp->piece_psq[color] -= e.op;
 		else
 			sp->kpkey ^= zob[color][piece][sq];
-	
+
 		sp->key ^= zob[color][piece][sq];
 	}
 }
@@ -495,10 +495,10 @@ bool Board::is_draw() const
 
 	// insufficient material
 	if (	get_pieces(WHITE) == (get_NB(WHITE) ^ get_pieces(WHITE, KING))
-		&&	get_pieces(BLACK) == (get_NB(BLACK) ^ get_pieces(BLACK, KING))
-		&&	!several_bits(get_NB(WHITE)) &&	!several_bits(get_NB(BLACK))	)
+	        &&	get_pieces(BLACK) == (get_NB(BLACK) ^ get_pieces(BLACK, KING))
+	        &&	!several_bits(get_NB(WHITE)) &&	!several_bits(get_NB(BLACK))	)
 		return true;
-	
+
 	return false;
 }
 

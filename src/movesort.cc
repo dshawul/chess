@@ -34,7 +34,7 @@ void History::add(const Board& B, move_t m, int bonus)
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
-	
+
 	int &v = h[B.get_turn()][piece][tsq];
 	v += bonus;
 
@@ -45,7 +45,7 @@ void History::add(const Board& B, move_t m, int bonus)
 }
 
 MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move,
-	int _node_type, const History *_H)
+                   int _node_type, const History *_H)
 	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), node_type(_node_type), H(_H), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
@@ -99,8 +99,7 @@ void MoveSort::score(MoveSort::Token *t)
 		if (type == ALL) {
 			if (node_type == All)
 				t->score = mvv_lva(*B, t->m) + History::Max;
-			else
-			{
+			else {
 				// equal and winning captures, by SEE, in front of quiet moves
 				// losing captures, after all quiet moves
 				t->see = calc_see(*B, t->m);
@@ -126,8 +125,8 @@ move_t MoveSort::next(int *see)
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
 		const Token& t = list[idx++];
 		*see = t.see == -INF
-			? calc_see(*B, t.m)	// compute SEE
-			: t.see;			// use SEE cache
+		       ? calc_see(*B, t.m)	// compute SEE
+		       : t.see;			// use SEE cache
 		return t.m;
 	} else
 		return 0;

@@ -90,14 +90,14 @@ bool move_is_pawn_threat(const Board& B, move_t m)
 {
 	if (B.get_piece_on(m.fsq()) == PAWN) {
 		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
-		
+
 		if (test_bit(HalfBoard[them], sq)) {
 			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
 			return !(PawnSpan[us][sq] & their_pawns)
-				&& !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
+			       && !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		}
 	}
-	
+
 	return false;
 }
 
@@ -301,25 +301,24 @@ bool refute(const Board& B, move_t m1, move_t m2)
 
 	const int m1fsq = m1.fsq(), m1tsq = m1.tsq();
 	const int m2fsq = m2.fsq(), m2tsq = m2.tsq();
-	
+
 	// move the threatened piece
 	if (m1fsq == m2tsq)
 		return true;
-	
+
 	// block the threat path
 	if (test_bit(Between[m2fsq][m2tsq], m1tsq))
 		return true;
-	
+
 	// defend the threatened square
-	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op)
-	{		
+	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op) {
 		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
 		const Bitboard b = m1piece == PAWN ? PAttacks[B.get_turn()][m1tsq]
-			: piece_attack(m1piece, m1tsq, B.st().occ);
-		
+		                   : piece_attack(m1piece, m1tsq, B.st().occ);
+
 		if (test_bit(b, m2tsq))
 			return true;
 	}
-	
+
 	return false;
 }

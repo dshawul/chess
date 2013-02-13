@@ -43,10 +43,10 @@ void loop()
 
 		if (token == "uci")
 			std::cout << "id name DiscoCheck 4.0.2\n"
-				<< "id author Lucas Braesch\n"
-				<< "option name Hash type spin default 32 min 1 max 8192\n"
-				<< "option name Clear Hash type button\n"
-				<< "uciok" << std::endl;
+			          << "id author Lucas Braesch\n"
+			          << "option name Hash type spin default 32 min 1 max 8192\n"
+			          << "option name Clear Hash type button\n"
+			          << "uciok" << std::endl;
 		else if (token == "ucinewgame")
 			TT.clear();
 		else if (token == "position")
@@ -111,16 +111,16 @@ namespace
 		move_t m = bestmove(B, sl);
 		std::cout << "bestmove " << move_to_string(m) << std::endl;
 	}
-	
+
 	void setoption(std::istringstream& is)
 	{
 		std::string token, name;
 		if (!(is >> token) || token != "name")
 			return;
-		
+
 		while (is >> token && token != "value")
 			name += token;
-		
+
 		if (name == "Hash") {
 			uint64_t size_mb;
 			is >> size_mb;

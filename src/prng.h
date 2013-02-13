@@ -11,7 +11,7 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
- * 
+ *
  * Credits: Bob Jenkins' 64-bit PRNG from the Marsaglia "KISS family". Seeds from Heinz Van Saanen.
 */
 #pragma once
@@ -22,14 +22,12 @@ class PRNG
 	// generator state
 	uint64_t a, b, c, d;
 
-	uint64_t rotate(uint64_t x, uint64_t k) const
-	{
+	uint64_t rotate(uint64_t x, uint64_t k) const {
 		return (x << k) | (x >> (64 - k));
 	}
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
-	uint64_t rand64()
-	{
+	uint64_t rand64() {
 		const uint64_t
 		e = a - rotate(b,  7);
 		a = b ^ rotate(c, 13);
@@ -39,8 +37,7 @@ class PRNG
 	}
 
 	// Init seed and scramble a few rounds
-	void raninit()
-	{
+	void raninit() {
 		a = 0x46dd577ff603b540;
 		b = 0xc4077bddfacf987b;
 		c = 0xbbf4d93b7200e858;

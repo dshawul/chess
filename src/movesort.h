@@ -15,11 +15,12 @@
 #pragma once
 #include "movegen.h"
 
-class History {
+class History
+{
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
 public:
 	static const int Max = 2000;
-	
+
 	void clear();
 	void add(const Board& B, move_t m, int bonus);
 	int get(const Board& B, move_t m) const;
@@ -41,11 +42,11 @@ public:
 	};
 
 	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, int _node_type,
-		const History *_H);
-	
+	         const History *_H);
+
 	move_t next(int *see);
 	move_t previous();
-	
+
 	int get_count() const { return count; }
 
 private:

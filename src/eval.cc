@@ -73,7 +73,7 @@ private:
 	Eval e[NB_COLOR];
 
 	void score_mobility(int us, int p0, int p, Bitboard tss);
-	
+
 	Bitboard do_eval_pawns();
 	void eval_passer(int sq);
 

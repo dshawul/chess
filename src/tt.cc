@@ -31,14 +31,14 @@ void TTable::alloc(uint64_t size)
 {
 	if (cluster)
 		delete[] cluster;
-	
+
 	// calculate the number of clusters allocate
 	count = 1ULL << msb(size / sizeof(Cluster));
-	
+
 	// Allocate the cluster array. On failure, std::bad_alloc is thrown and not caught, which
 	// terminates the program. It's not a bug, it's a "feature" ;-)
 	cluster = new Cluster[count];
-	
+
 	clear();
 }
 
@@ -56,28 +56,27 @@ void TTable::new_search()
 const TTable::Entry *TTable::probe(Key key) const
 {
 	const Entry *e = cluster[key & (count-1)].entry;
-	
+
 	for (size_t i = 0; i < 4; ++i, ++e)
 		if (e->key_match(key))
 			return e;
-	
+
 	return NULL;
 }
 
 void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move)
 {
 	Entry *e = cluster[key & (count-1)].entry, *replace = e;
-	
-	for (size_t i = 0; i < 4; ++i, ++e)
-	{
+
+	for (size_t i = 0; i < 4; ++i, ++e) {
 		// overwrite empty or old
 		if (!e->key_bound || e->key_match(key)) {
 			replace = e;
 			if (!move)
 				move = e->move;
-			break;				
+			break;
 		}
-		
+
 		// Stockfish replacement strategy
 		int c1 = generation == replace->generation ? 2 : 0;
 		int c2 = e->generation == generation || e->bound() == BOUND_EXACT ? -2 : 0;
@@ -85,6 +84,6 @@ void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t 
 		if (c1 + c2 + c3 > 0)
 			replace = e;
 	}
-	
+
 	replace->save(key, generation, bound, depth, score, eval, move);
 }

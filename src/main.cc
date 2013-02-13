@@ -28,8 +28,7 @@ int main (int argc, char **argv)
 		if (std::string(argv[1]) == "bench") {
 			bench(atoi(argv[2]));
 			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
-		}
-		else if (std::string(argv[1]) == "perft")
+		} else if (std::string(argv[1]) == "perft")
 			test_perft();
 	} else
 		loop();

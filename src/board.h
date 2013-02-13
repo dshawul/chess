@@ -49,7 +49,7 @@ public:
 	move_t(): b(0) {}	// silence compiler warnings
 	move_t(short _b): b(_b) {}
 	operator bool() const { return b; }
-	
+
 	bool operator== (move_t m) const { return b == m.b; }
 	bool operator!= (move_t m) const { return b != m.b; }
 
@@ -98,11 +98,11 @@ class Board
 	void clear();
 	void set_square(int color, int piece, int sq, bool play = true);
 	void clear_square(int color, int piece, int sq, bool play = true);
-	
+
 	Bitboard calc_attacks(int color) const;
 	Bitboard calc_checkers(int kcolor) const;
 	Bitboard hidden_checkers(bool find_pins, int color) const;
-	
+
 	bool verify_keys() const;
 	bool verify_psq() const;
 
@@ -117,14 +117,14 @@ public:
 
 	Bitboard get_pieces(int color) const;
 	Bitboard get_pieces(int color, int piece) const;
-	
+
 	Bitboard get_N() const { return get_pieces(WHITE, KNIGHT) ^ get_pieces(BLACK, KNIGHT); }
 	Bitboard get_K() const { return get_pieces(WHITE, KING) ^ get_pieces(BLACK, KING); }
-	
+
 	Bitboard get_RQ(int color) const { return get_pieces(color, ROOK) ^ get_pieces(color, QUEEN); }
 	Bitboard get_BQ(int color) const { return get_pieces(color, BISHOP) ^ get_pieces(color, QUEEN); }
 	Bitboard get_NB(int color) const { return get_pieces(color, KNIGHT) ^ get_pieces(color, BISHOP); }
-	
+
 	Bitboard get_RQ() const { return get_RQ(WHITE) ^ get_RQ(BLACK); }
 	Bitboard get_BQ() const { return get_BQ(WHITE) ^ get_BQ(BLACK); }
 
@@ -133,13 +133,13 @@ public:
 
 	void play(move_t m);
 	void undo();
-	
+
 	void set_unwind()	{ sp0 = sp; }
 	void unwind()		{ while (sp > sp0) undo(); }
-	
+
 	bool is_check() const { return st().checkers; }
 	bool is_draw() const;
-	
+
 	Key get_key() const;
 };
 
