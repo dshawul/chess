@@ -118,8 +118,8 @@ void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 
 void EvalInfo::eval_mobility()
 {
-	for (int color = WHITE; color <= BLACK; color++) {
-		const int us = color, them = opp_color(us);
+	for (int us = WHITE; us <= BLACK; ++us) {
+		const int them = opp_color(us);
 		const Bitboard mob_targets = ~(B->get_pieces(us, PAWN) | B->get_pieces(us, KING)
 		                               | B->st().attacks[them][PAWN]);
 
@@ -168,8 +168,8 @@ void EvalInfo::eval_safety()
 {
 	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
 
-	for (int color = WHITE; color <= BLACK; color++) {
-		const int us = color, them = opp_color(us), ksq = B->get_king_pos(us);
+	for (int us = WHITE; us <= BLACK; ++us) {
+		const int them = opp_color(us), ksq = B->get_king_pos(us);
 		const Bitboard their_pawns = B->get_pieces(them, PAWN);
 
 		// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
@@ -296,8 +296,8 @@ Bitboard EvalInfo::do_eval_pawns()
 
 	Bitboard passers = 0;
 
-	for (int color = WHITE; color <= BLACK; color++) {
-		const int us = color, them = opp_color(us);
+	for (int us = WHITE; us <= BLACK; ++us) {
+		const int them = opp_color(us);
 		const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 		const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);
 		Bitboard sqs = our_pawns;
@@ -410,9 +410,8 @@ void EvalInfo::eval_pieces()
 		(1ULL << A1) | (1ULL << H1) | (1ULL << A2) | (1ULL << H2)
 	};
 
-	for (int color = WHITE; color <= BLACK; ++color) {
-		const int us = color, them = opp_color(us);
-		const int ksq = B->get_king_pos(us);
+	for (int us = WHITE; us <= BLACK; ++us) {
+		const int them = opp_color(us), ksq = B->get_king_pos(us);
 		const bool can_castle = B->st().crights & (3 << (2*us));
 		const Bitboard our_pawns = B->get_pieces(us, PAWN);
 		Bitboard fss, tss;
