@@ -551,7 +551,7 @@ namespace
 		for (int i = 0; i < MAX_PLY; i++) {
 			const TTable::Entry *tte = TT.probe(B.get_key());
 
-			if (tte && tte->bound() == BOUND_EXACT && tte->move && !B.is_draw()) {
+			if (tte && tte->move && !B.is_draw()) {
 				std::cout << ' ' << move_to_string(tte->move);
 				B.play(tte->move);
 			}
