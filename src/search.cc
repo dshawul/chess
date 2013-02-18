@@ -81,6 +81,8 @@ namespace
 
 	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+	
+	move_t best;
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -96,7 +98,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
-	move_t best = 0;
+	best = 0;
 
 	H.clear();
 	TT.new_search();
@@ -150,7 +152,6 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			}
 		}
 
-		best = ss->best;
 		print_pv(B);
 	}
 
@@ -349,6 +350,8 @@ namespace
 				best_score = score;
 				alpha = std::max(alpha, score);
 				ss->best = ss->m;
+				if (root)
+					best = ss->m;
 			}
 		}
 
