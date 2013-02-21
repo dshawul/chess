@@ -69,10 +69,8 @@ namespace
 
 			for (int i = 0; i < 8; i++) {
 				Bitboard mask = 0;
-				int dr = dir[i][0], df = dir[i][1];
-				int _r;
-				int _f;
-				int _sq;
+				const int dr = dir[i][0], df = dir[i][1];
+				int _r, _f, _sq;
 
 				for (_r = r + dr, _f = f + df;
 				        rank_file_ok(_r, _f); _r += dr,_f += df) {

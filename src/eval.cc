@@ -468,6 +468,17 @@ void EvalInfo::eval_pieces()
 			e[us].op -= 4 + Material[victim].op/32;
 			e[us].eg -= 8 + Material[victim].eg/32;
 		}
+		
+		// Bishop X-ray threats:
+		// If there is only one piece between our king and an enemy bishop, then it means the enemy
+		// bishop either pins a piece of ours, or threatens a disco check
+		fss = B->get_pieces(them, BISHOP) & BPseudoAttacks[ksq];
+		while (fss) {
+			const int bsq = pop_lsb(&fss);
+			const Bitboard b = Between[ksq][bsq] & B->st().occ & ~(1ULL << bsq);
+			if (!several_bits(b))
+				e[us] -= {30, 10};
+		}
 	}
 }
 
