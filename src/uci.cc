@@ -42,7 +42,7 @@ void loop()
 		is >> std::skipws >> token;
 
 		if (token == "uci")
-			std::cout << "id name DiscoCheck 4.0.2\n"
+			std::cout << "id name DiscoCheck 4.0.3\n"
 			          << "id author Lucas Braesch\n"
 			          << "option name Hash type spin default 32 min 1 max 8192\n"
 			          << "option name Clear Hash type button\n"
