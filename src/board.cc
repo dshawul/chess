@@ -484,10 +484,14 @@ bool Board::verify_psq() const
 
 bool Board::is_draw() const
 {
-	// 3 move rule
-	for (int i = 4; i <= st().rule50; i += 2)
-		if (sp[-i].key == st().key)
+	// 3-fold repetition
+	for (int i = 4, rep = 1; i <= st().rule50; i += 2) {
+		rep += sp[-i].key == st().key;
+		// In the search 2-fold repetition should be declared as a draw (because of TT)
+		// But once we start to reach the game history, then we must wait for 3-fold
+		if (rep >= 2 + (sp-i < sp0))
 			return true;
+	}
 
 	// 50 move
 	if (st().rule50 >= 100)
