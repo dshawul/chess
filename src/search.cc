@@ -284,12 +284,11 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-			                       || new_depth == depth
-			                       || ss->m == ss->killer[0]
-			                       || ss->m == ss->killer[1]
-			                       || (move_is_pawn_threat(B, ss->m) && see >= 0)
-			                       || (ss->m.flag() == CASTLING);
-
+				|| new_depth == depth
+				|| ss->m == ss->killer[0]
+				|| ss->m == ss->killer[1]
+				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
+				|| (ss->m.flag() == CASTLING);
 
 			if (!capture && !dangerous && !in_check) {
 				// Move count pruning
@@ -432,9 +431,9 @@ namespace
 			if (!check && !in_check && node_type != PV) {
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
-				                      + Material[B.get_piece_on(ss->m.tsq())].eg
-				                      + (ss->m.flag() == EN_PASSANT ? vEP : 0)
-				                      + (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+					+ Material[B.get_piece_on(ss->m.tsq())].eg
+					+ (ss->m.flag() == EN_PASSANT ? vEP : 0)
+					+ (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 				// still can't raise alpha, skip
 				if (opt_score <= alpha) {
@@ -528,10 +527,10 @@ namespace
 		else {
 			const int tt_score = adjust_tt_score(tte->score, ply);
 			return (depth_ok
-			        || tt_score >= std::max(mate_in(MAX_PLY), beta)
-			        || tt_score < std::min(mated_in(MAX_PLY), beta))
-			       && ((tte->bound() == BOUND_LOWER && tt_score >= beta)
-			           ||(tte->bound() == BOUND_UPPER && tt_score < beta));
+				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
+				|| tt_score < std::min(mated_in(MAX_PLY), beta))
+				&& ((tte->bound() == BOUND_LOWER && tt_score >= beta)
+					|| (tte->bound() == BOUND_UPPER && tt_score < beta));
 		}
 	}
 

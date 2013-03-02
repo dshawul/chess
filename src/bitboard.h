@@ -19,7 +19,7 @@
 #define FileH_bb	(0x0101010101010101ULL << FILE_H)
 #define Rank1_bb	0x00000000000000FFULL
 
-/* PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color */
+// PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color
 const Bitboard PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
 const Bitboard PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000000FFULL };
 
@@ -27,38 +27,38 @@ const Bitboard HalfBoard[NB_COLOR] = { 0x00000000FFFFFFFFULL, 0xFFFFFFFF00000000
 
 extern bool BitboardInitialized;
 
-/* Zobrist keys */
+// Zobrist keys
 extern Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
 
-/* Between[s1][s2] is the segment ]s1,s2] when the angle (s1,s2) is a multiple of 45 degrees, 0
- * otherwise. Direction[s1][s2] is the the half-line from s1 to s2 going all the way to the edge of
- * the board*/
+// Between[s1][s2] is the segment ]s1,s2] when the angle (s1,s2) is a multiple of 45 degrees, 0
+// otherwise. Direction[s1][s2] is the the half-line from s1 to s2 going all the way to the edge of
+// the board
 extern Bitboard Between[NB_SQUARE][NB_SQUARE];
 extern Bitboard Direction[NB_SQUARE][NB_SQUARE];
 
-/* Bitboards to detect passed pawns */
+// Bitboards to detect passed pawns
 extern Bitboard InFront[NB_COLOR][NB_RANK_FILE];
 extern Bitboard AdjacentFiles[NB_RANK_FILE];
 extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
 extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE], PassedPawnMask[NB_COLOR][NB_SQUARE];
 extern Bitboard Shield[NB_COLOR][NB_SQUARE];
 
-/* Occupancy independant attacks */
+// Occupancy independant attacks
 extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 extern Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 extern Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
-/* Initialize: bitboards, zobrist, magics */
+// Initialize: bitboards, zobrist, magics
 extern void init_bitboard();
 
-/* Squares attacked by a bishop/rook for a given board occupancy */
+// Squares attacked by a bishop/rook for a given board occupancy
 extern Bitboard bishop_attack(int sq, Bitboard occ);
 extern Bitboard rook_attack(int sq, Bitboard occ);
 
-/* squares attacked by piece on sq, for a given occupancy */
+// squares attacked by piece on sq, for a given occupancy
 extern Bitboard piece_attack(int piece, int sq, Bitboard occ);
 
-/* Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise */
+// Displays a bitboard on stdout: 'X' when a square is occupied and '.' otherwise
 extern void print_bitboard(std::ostream& ostrm, Bitboard b);
 
 inline void set_bit(Bitboard *b, unsigned sq)	{ assert(square_ok(sq)); *b |= 1ULL << sq; }
@@ -71,28 +71,17 @@ inline bool several_bits(Bitboard b) { return b & (b - 1); }
 inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
 inline Bitboard file_bb(int f) { assert(rank_file_ok(0,f)); return FileA_bb << f; }
 
-/* "portable assembly" lsb() and msb(). Thanks to Jim Ablett for helping me there */
+// King distance between squares
+int kdist(int s1, int s2);
 
-inline int lsb(Bitboard b)
-{
-	assert(b);
-	return __builtin_ffsll(b) - 1;
-}
-
-inline int msb(Bitboard b)
-{
-	assert(b);
-	return 63 - __builtin_clzll(b);
-}
+// GCC intrinscs for bitscan, reverse bitscan and popcount
+inline int lsb(Bitboard b) { assert(b); return __builtin_ffsll(b) - 1; }
+inline int msb(Bitboard b) { assert(b); return 63 - __builtin_clzll(b); }
+inline int count_bit(Bitboard b) { return __builtin_popcountll(b); }
 
 inline int pop_lsb(Bitboard *b)
 {
 	const int s = lsb(*b);
 	*b &= *b - 1;
 	return s;
-}
-
-inline int count_bit(Bitboard b)
-{
-	return __builtin_popcountll(b);
 }

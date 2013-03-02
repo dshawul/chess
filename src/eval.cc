@@ -19,19 +19,14 @@
 #include "eval.h"
 
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
-int KingDistance[NB_SQUARE][NB_SQUARE];
 
-int kdist(int s1, int s2)
-{
-	return KingDistance[s1][s2];
-}
+extern void init_kpk();
+extern bool probe_kpk(int wksq, int wpsq, int bksq, int us);
 
 void init_eval()
 {
-	for (int s1 = A1; s1 <= H8; ++s1)
-		for (int s2 = A1; s2 <= H8; ++s2)
-			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
-
+	init_kpk();
+	
 	for (int us = WHITE; us <= BLACK; ++us)
 		for (int sq = A1; sq <= H8; ++sq)
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
