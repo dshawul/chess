@@ -64,9 +64,7 @@ uint8_t classify(uint8_t res[], unsigned idx)
 	// king moves
 	while (b) {
 		const int sq = pop_lsb(&b);
-		r |= stm
-			? res[encode(wk, sq, WHITE, wp)]
-			: res[encode(sq, bk, BLACK, wp)];
+		r |= res[stm ? encode(wk, sq, WHITE, wp) : encode(sq, bk, BLACK, wp)];
 	}
 	
 	// pawn moves
@@ -79,10 +77,6 @@ uint8_t classify(uint8_t res[], unsigned idx)
 		if (rank(wp) == RANK_2 && sq != wk && sq != bk)
 			r |= res[encode(wk, bk, BLACK, sq+8)];
 	}
-	
-	// If all moves are illegal iwe are stalemated
-	if (r == ILLEGAL)
-		return res[idx] = UNKNOWN;
 	
 	if (stm == WHITE)
 		return res[idx] = r & WIN ? WIN : (r & UNKNOWN ? UNKNOWN : DRAW);
