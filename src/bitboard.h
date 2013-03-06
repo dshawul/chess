@@ -71,6 +71,8 @@ inline bool several_bits(Bitboard b) { return b & (b - 1); }
 inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
 inline Bitboard file_bb(int f) { assert(rank_file_ok(0,f)); return FileA_bb << f; }
 
+extern int kdist(int s1, int s2);
+
 /* "portable assembly" lsb() and msb(). Thanks to Jim Ablett for helping me there */
 
 inline int lsb(Bitboard b)

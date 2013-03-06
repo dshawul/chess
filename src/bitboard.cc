@@ -36,6 +36,9 @@ Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
+int KingDistance[NB_SQUARE][NB_SQUARE];
+int kdist(int s1, int s2) { return KingDistance[s1][s2]; }
+
 namespace
 {
 	void init_zobrist()
@@ -139,6 +142,13 @@ namespace
 				Shield[us][sq] = KAttacks[sq] & InFront[us][r];
 			}
 		}
+	}
+
+	void init_kdist()
+	{
+		for (int s1 = A1; s1 <= H8; ++s1)
+			for (int s2 = A1; s2 <= H8; ++s2)
+				KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
 	}
 
 	const int magic_bb_r_shift[NB_SQUARE] = {
@@ -486,7 +496,8 @@ void init_bitboard()
 	init_attacks();
 	init_rays();
 	init_mask();
-
+	init_kdist();
+	
 	BitboardInitialized = true;
 }
 
