@@ -90,16 +90,18 @@ int classify(int res[], unsigned idx)
 		return res[idx] = r & DRAW ? DRAW : (r & UNKNOWN ? UNKNOWN : WIN);
 }
 
-void count(int res[])
+bool kpk_ok(int res[])
 {
-	unsigned count[5] = {0,0,0,0,0};
-	for (unsigned idx = 0; idx < IndexMax; ++idx)
-		++count[res[idx]];
+	unsigned illegal = 0, win = 0;
 	
-	std::cout << "ILLEGAL: " << count[ILLEGAL] << '\n'
-		<< "UNKNOWN: " << count[UNKNOWN] << '\n'
-		<< "DRAW: " << count[DRAW] << '\n'
-		<< "WIN: " << count[WIN] << '\n' << std::endl;
+	for (unsigned idx = 0; idx < IndexMax; ++idx) {
+		if (res[idx] == ILLEGAL)
+			++illegal;
+		else if (res[idx] == WIN)
+			++win;
+	}	
+	
+	return illegal == 30932 && win == 111282;
 }
 
 void init_kpk()
@@ -117,8 +119,10 @@ void init_kpk()
 		for (unsigned idx = 0; idx < IndexMax; ++idx)
 			if (res[idx] == UNKNOWN && classify(res, idx) != UNKNOWN)
 				repeat = true;
-		count(res);
 	}
+	
+	// it's so easy to screw up the KPK that I don't even trust myself with it...
+	assert(kpk_ok(res));
 	
 	// Pack into 64-bit entries
 	for (unsigned idx = 0; idx < IndexMax; ++idx)
