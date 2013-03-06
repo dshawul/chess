@@ -27,7 +27,7 @@ void decode(unsigned idx, int *wk, int *bk, int *stm, int *wp)
 
 enum {ILLEGAL=0, UNKNOWN=1, DRAW=2, WIN=4};
 
-int rules(unsigned idx)
+uint8_t rules(unsigned idx)
 {
 	assert(idx < IndexMax);
 	int wk, bk, stm, wp;
@@ -52,13 +52,13 @@ int rules(unsigned idx)
 	return UNKNOWN;
 }
 
-int classify(int res[], unsigned idx)
+uint8_t classify(uint8_t res[], unsigned idx)
 {
 	assert(idx < IndexMax && res[idx] == UNKNOWN);
 	int wk, bk, stm, wp;
 	decode(idx, &wk, &bk, &stm, &wp);
 
-	int r = ILLEGAL;
+	uint8_t r = ILLEGAL;
 	Bitboard b = KAttacks[stm ? bk : wk];
 	
 	// king moves
@@ -90,7 +90,7 @@ int classify(int res[], unsigned idx)
 		return res[idx] = r & DRAW ? DRAW : (r & UNKNOWN ? UNKNOWN : WIN);
 }
 
-bool kpk_ok(int res[])
+bool kpk_ok(uint8_t res[])
 {
 	unsigned illegal = 0, win = 0;
 	
@@ -106,7 +106,8 @@ bool kpk_ok(int res[])
 
 void init_kpk()
 {
-	int res[IndexMax];
+	// 192 KB on the stack
+	uint8_t res[IndexMax];
 	
 	// first pass: apply static rules
 	for (unsigned idx = 0; idx < IndexMax; ++idx)
