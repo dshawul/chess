@@ -43,6 +43,9 @@ inline int rank(int sq) { assert(square_ok(sq)); return int(int(sq) / 8); }
 inline int file(int sq) { assert(square_ok(sq)); return int(int(sq) % 8); }
 inline int square(int r, int f) { assert(rank_file_ok(r, f)); return int(8 * int(r) + int(f)); }
 
+inline int rank_mirror(int sq) { assert(square_ok(sq)); return sq ^ 070; }
+inline int file_mirror(int sq) { assert(square_ok(sq)); return sq ^ 7; }
+
 /* Piece */
 
 #define NB_PIECE 6

@@ -485,10 +485,37 @@ int EvalInfo::interpolate() const
 	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
 }
 
+bool kpk_draw(const Board& B)
+{
+	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
+	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
+	int wp = lsb(B.get_pieces(us, PAWN));
+	int stm = B.get_turn();
+	
+	if (us == BLACK) {
+		wk = rank_mirror(wk);
+		bk = rank_mirror(bk);
+		wp = rank_mirror(wp);
+		stm = opp_color(stm);
+	}
+	if (file(wp) > FILE_D) {
+		wk = file_mirror(wk);
+		bk = file_mirror(bk);
+		wp = file_mirror(wp);
+	}
+	
+	return !probe_kpk(wk, bk, stm, wp);
+}
+
 int eval(const Board& B)
 {
 	assert(!B.is_check());
 
+	if ( count_bit(B.st().occ) == 3
+		&& (B.get_pieces(WHITE, PAWN) | B.get_pieces(BLACK, PAWN))
+		&& kpk_draw(B) )
+		return 0;
+	
 	EvalInfo ei(&B);
 	ei.eval_material();
 	ei.eval_mobility();

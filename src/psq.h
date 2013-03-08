@@ -55,5 +55,5 @@ extern void init_psq();
 
 inline const Eval& get_psq(int color, int piece, int sq)
 {
-	return PsqTable[piece][color ? sq ^ 070 : sq];
+	return PsqTable[piece][color ? rank_mirror(sq) : sq];
 }
