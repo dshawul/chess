@@ -510,28 +510,15 @@ bool kpk_draw(const Board& B)
 bool kbpk_draw(const Board& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
-	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
-	int wp = lsb(B.get_pieces(us, PAWN)), wb = lsb(B.get_pieces(us, BISHOP));
+	int our_king = B.get_king_pos(us), their_king = B.get_king_pos(opp_color(us));
+	int pawn = lsb(B.get_pieces(us, PAWN)), bishop = lsb(B.get_pieces(us, BISHOP));
+	int prom_sq = square(us ? RANK_1 : RANK_8, file(pawn));
 	int stm = B.get_turn();
 	
-	if (us == BLACK) {
-		wk = rank_mirror(wk);
-		bk = rank_mirror(bk);
-		wp = rank_mirror(wp);
-		wb = rank_mirror(wb);
-		stm = opp_color(stm);
-	}
-	if (file(wp) > FILE_D) {
-		wk = file_mirror(wk);
-		bk = file_mirror(bk);
-		wp = file_mirror(wp);
-		wb = file_mirror(wp);
-	}
-	
-	return file(wp) == FILE_A
-		&& color_of(wb) != color_of(A8)
-		&& kdist(bk, A8) < kdist(wk, A8) - (stm == WHITE)
-		&& kdist(bk, A8) - (stm == BLACK) <= kdist(wp, A8);
+	return (file(pawn) == FILE_A || file(pawn) == FILE_H)
+		&& color_of(bishop) != color_of(prom_sq)
+		&& kdist(their_king, prom_sq) < kdist(our_king, prom_sq) - (stm == us)
+		&& kdist(their_king, prom_sq) - (stm != us) <= kdist(pawn, prom_sq);
 }
 
 int eval(const Board& B)
