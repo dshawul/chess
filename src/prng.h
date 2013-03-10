@@ -19,21 +19,25 @@
 
 class PRNG
 {
-	// generator state
-	uint64_t a, b, c, d;
-
-	uint64_t rotate(uint64_t x, uint64_t k) const {
-		return (x << k) | (x >> (64 - k));
-	}
+public:
+	PRNG() { raninit(); }
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
-	uint64_t rand64() {
+	uint64_t rand() {
 		const uint64_t
 		e = a - rotate(b,  7);
 		a = b ^ rotate(c, 13);
 		b = c + rotate(d, 37);
 		c = d + e;
 		return d = e + a;
+	}
+
+private:
+	// generator state
+	uint64_t a, b, c, d;
+
+	uint64_t rotate(uint64_t x, uint64_t k) const {
+		return (x << k) | (x >> (64 - k));
 	}
 
 	// Init seed and scramble a few rounds
@@ -43,8 +47,4 @@ class PRNG
 		c = 0xbbf4d93b7200e858;
 		d = 0xd3e075cfd449bb1e;
 	}
-
-public:
-	PRNG() { raninit(); }
-	template<typename T> T rand() { return T(rand64()); }
 };

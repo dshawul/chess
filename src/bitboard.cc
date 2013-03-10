@@ -47,11 +47,11 @@ namespace
 
 		for (int c = WHITE; c <= BLACK; c++)
 			for (int p = PAWN; p <= KING; p++)
-				for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand<Key>());
+				for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand());
 
-		zob_turn = prng.rand<Key>();
-		for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand<Key>());
-		for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand<Key>());
+		zob_turn = prng.rand();
+		for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand());
+		for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand());
 	}
 
 	void safe_add_bit(Bitboard *b, int r, int f)
