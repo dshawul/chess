@@ -51,32 +51,17 @@ inline int file_mirror(int sq) { assert(square_ok(sq)); return sq ^ 7; }
 #define NB_PIECE 6
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE };
 
-inline bool piece_ok(int piece)
-{
-	return PAWN <= piece && piece < NO_PIECE;
-}
-
-inline bool is_slider(int piece)
-{
-	assert(piece_ok(piece));
-	return BISHOP <= piece && piece <= QUEEN;
-}
+inline bool piece_ok(int piece) { return PAWN <= piece && piece < NO_PIECE; }
+inline bool is_slider(int piece) { assert(piece_ok(piece)); return BISHOP <= piece && piece <= QUEEN; }
 
 /* Color */
 
 #define NB_COLOR 2
 enum { WHITE, BLACK, NO_COLOR };
 
-inline bool color_ok(int color)
-{
-	return color == WHITE || color == BLACK;
-}
-
-inline int opp_color(int color)
-{
-	assert(color_ok(color));
-	return color ^ BLACK;
-}
+inline bool color_ok(int color) { return color == WHITE || color == BLACK; }
+inline int opp_color(int color) { assert(color_ok(color)); return color ^ BLACK; }
+inline int color_of(int sq) { assert(square_ok(sq)); return (sq & 1) ^ BLACK; }
 
 typedef uint64_t Key;
 typedef uint64_t Bitboard;
