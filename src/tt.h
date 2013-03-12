@@ -17,9 +17,8 @@
 
 enum { BOUND_EXACT, BOUND_UPPER, BOUND_LOWER };
 
-class TTable
+struct TTable
 {
-public:
 	struct Entry {
 		Key key_bound;	// bit 0..1 for bounr2 bits for bound, and 2..63 for key's 62 MSB
 		mutable uint8_t generation;

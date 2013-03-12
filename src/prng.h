@@ -15,12 +15,11 @@
  * Credits: Bob Jenkins' 64-bit PRNG from the Marsaglia "KISS family". Seeds from Heinz Van Saanen.
 */
 #pragma once
-#include <inttypes.h>
+#include <cinttypes>
 
-class PRNG
+struct PRNG
 {
-public:
-	PRNG() { raninit(); }
+	PRNG() { init(); }
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
 	uint64_t rand() {
@@ -41,7 +40,7 @@ private:
 	}
 
 	// Init seed and scramble a few rounds
-	void raninit() {
+	void init() {
 		a = 0x46dd577ff603b540;
 		b = 0xc4077bddfacf987b;
 		c = 0xbbf4d93b7200e858;

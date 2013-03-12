@@ -35,17 +35,8 @@ enum {
     CASTLING
 };
 
-class move_t
+struct move_t
 {
-	/* 16 bit field:
-	 * fsq = 0..5
-	 * tsq = 6..11
-	 * prom = 12,13 (0=Knight..3=Queen)
-	 * flag = 14,15 (0=NORMAL...3=CASTLING)
-	 * */
-	uint16_t b;
-
-public:
 	move_t(): b(0) {}	// silence compiler warnings
 	move_t(short _b): b(_b) {}
 	operator bool() const { return b; }
@@ -64,9 +55,13 @@ public:
 	void tsq(int tsq) { assert(square_ok(tsq)); b &= 0xf03f; b ^= (tsq << 6); }
 	void flag(int flag) { assert(flag < 4); b &= 0x3fff; b ^= (flag << 14); }
 	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
+
+private:
+	uint16_t b;	// fsq = 0..5, tsq = 6..11, prom = 12,13 (0=Knight..3=Queen), flag = 14,15 (0=NORMAL...3=CASTLING)
 };
 
-struct GameInfo {
+struct GameInfo
+{
 	int capture;				// piece just captured
 	int epsq;					// en passant square
 	int crights;				// castling rights, 4 bits in FEN order KQkq
@@ -84,29 +79,8 @@ struct GameInfo {
 	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };
 
-class Board
+struct Board
 {
-	Bitboard b[NB_COLOR][NB_PIECE];
-	Bitboard all[NB_COLOR];
-	int piece_on[NB_SQUARE];
-	GameInfo game_stack[MAX_GAME_PLY], *sp, *sp0;
-	int turn;
-	int king_pos[NB_COLOR];
-	int move_count;				// full move count, as per FEN standard
-	bool initialized;
-
-	void clear();
-	void set_square(int color, int piece, int sq, bool play = true);
-	void clear_square(int color, int piece, int sq, bool play = true);
-
-	Bitboard calc_attacks(int color) const;
-	Bitboard calc_checkers(int kcolor) const;
-	Bitboard hidden_checkers(bool find_pins, int color) const;
-
-	bool verify_keys() const;
-	bool verify_psq() const;
-
-public:
 	const GameInfo& st() const;
 
 	int get_turn() const;
@@ -141,6 +115,27 @@ public:
 	bool is_draw() const;
 
 	Key get_key() const;
+
+private:
+	Bitboard b[NB_COLOR][NB_PIECE];
+	Bitboard all[NB_COLOR];
+	int piece_on[NB_SQUARE];
+	GameInfo game_stack[MAX_GAME_PLY], *sp, *sp0;
+	int turn;
+	int king_pos[NB_COLOR];
+	int move_count;				// full move count, as per FEN standard
+	bool initialized;
+
+	void clear();
+	void set_square(int color, int piece, int sq, bool play = true);
+	void clear_square(int color, int piece, int sq, bool play = true);
+
+	Bitboard calc_attacks(int color) const;
+	Bitboard calc_checkers(int kcolor) const;
+	Bitboard hidden_checkers(bool find_pins, int color) const;
+
+	bool verify_keys() const;
+	bool verify_psq() const;
 };
 
 extern const std::string PieceLabel[NB_COLOR];

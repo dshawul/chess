@@ -27,9 +27,8 @@ void init_eval()
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
 }
 
-class PawnCache
+struct PawnCache
 {
-public:
 	struct Entry {
 		Key key;
 		Eval eval_white;
@@ -46,9 +45,8 @@ private:
 
 PawnCache PC;
 
-class EvalInfo
+struct EvalInfo
 {
-public:
 	EvalInfo(const Board *_B): B(_B) { e[WHITE].clear(); e[BLACK].clear(); }
 
 	void eval_material();

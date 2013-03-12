@@ -15,20 +15,20 @@
 #pragma once
 #include "movegen.h"
 
-class History
+struct History
 {
-	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
-public:
 	static const int Max = 2000;
-
+	
 	void clear();
 	void add(const Board& B, move_t m, int bonus);
 	int get(const Board& B, move_t m) const;
+	
+private:
+	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
 };
 
-class MoveSort
+struct MoveSort
 {
-public:
 	enum GenType {
 	    ALL,				// all legal moves
 	    CAPTURES_CHECKS,	// captures and quiet checks
