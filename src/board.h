@@ -71,7 +71,7 @@ struct GameInfo {
 	int epsq;					// en passant square
 	int crights;				// castling rights, 4 bits in FEN order KQkq
 	move_t last_move;			// last move played (for undo)
-	Key key, kpkey;				// zobrist key, king+pawn key
+	Key key, kpkey, mat_key;	// zobrist key, king+pawn key, material key
 	Bitboard pinned, dcheckers;	// pinned and discovery checkers for turn
 	Bitboard attacked;			// squares attacked by opp_color(turn)
 	Bitboard checkers;			// pieces checking turn's King

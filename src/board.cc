@@ -410,6 +410,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 			sp->kpkey ^= zob[color][piece][sq];
 
 		sp->key ^= zob[color][piece][sq];
+		sp->mat_key += 1ULL << (8*piece + 4*color);
 	}
 }
 
@@ -434,17 +435,19 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 			sp->kpkey ^= zob[color][piece][sq];
 
 		sp->key ^= zob[color][piece][sq];
+		sp->mat_key -= 1ULL << (8*piece + 4*color);
 	}
 }
 
 bool Board::verify_keys() const
 {
 	const Key base = get_turn() ? zob_turn : 0;
-	Key key = base, kpkey = base;
+	Key key = base, kpkey = base, mat_key = 0;
 
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = b[color][piece];
+			mat_key += (uint64_t)count_bit(sqs) << (8*piece + 4*color);			
 			while (sqs) {
 				const int sq = pop_lsb(&sqs);
 				key ^= zob[color][piece][sq];
@@ -453,7 +456,7 @@ bool Board::verify_keys() const
 			}
 		}
 
-	return key == st().key && kpkey == st().kpkey;
+	return key == st().key && kpkey == st().kpkey && mat_key == st().mat_key;
 }
 
 bool Board::verify_psq() const
