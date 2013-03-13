@@ -13,10 +13,9 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include <cinttypes>
+#include <cstdint>
 #include <cassert>
 #include <iostream>
-#include <cmath>
 
 /* Square, Rank, File */
 

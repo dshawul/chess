@@ -65,7 +65,7 @@ inline void set_bit(Bitboard *b, unsigned sq)	{ assert(square_ok(sq)); *b |= 1UL
 inline void clear_bit(Bitboard *b, unsigned sq)	{ assert(square_ok(sq)); *b &= ~(1ULL << sq); }
 inline bool test_bit(Bitboard b, unsigned sq)	{ assert(square_ok(sq)); return b & (1ULL << sq); }
 
-inline Bitboard shift_bit(Bitboard b, int i) { assert(abs(i) < 64); return i > 0 ? b << i : b >> -i; }
+inline Bitboard shift_bit(Bitboard b, int i) { assert(std::abs(i) < 64); return i > 0 ? b << i : b >> -i; }
 inline bool several_bits(Bitboard b) { return b & (b - 1); }
 
 inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
