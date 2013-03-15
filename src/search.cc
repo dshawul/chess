@@ -194,8 +194,7 @@ namespace
 				return adjust_tt_score(tte->score, ss->ply);
 			}
 			ss->eval = tte->eval;
-			if (tte->depth >= 0)		// do not use deep qsearch results
-				ss->best = tte->move;
+			ss->best = tte->move;
 		} else
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
@@ -250,7 +249,7 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( !ss->best
+		if ( (!tte || tte->depth <= 0)
 		        && depth >= (node_type == PV ? 4 : 7)
 		        && (node_type != All || ss->eval+vOP >= beta) ) {
 			ss->skip_null = true;
