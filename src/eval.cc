@@ -519,23 +519,20 @@ bool kbpk_draw(const Board& B)
 		&& kdist(their_king, prom_sq) - (stm != us) <= kdist(pawn, prom_sq);
 }
 
+#define KPK		0x110000000001
+#define KKP		0x110000000010
+#define KBPK	0x110000010001
+#define KKBP	0x110000100010
+
 int eval(const Board& B)
 {
 	assert(!B.is_check());
 
-	// recognize some EGTB draws
-	const int cnt = count_bit(B.st().occ);
-	// KPK is exact (using bitbase)
-	if ( cnt == 3
-		&& (B.get_pieces(WHITE, PAWN) | B.get_pieces(BLACK, PAWN))
-		&& kpk_draw(B) )
+	// Recognize some known draws
+	const Bitboard mk = B.st().mat_key;
+	if ((mk == KPK || mk == KKP) && kpk_draw(B))
 		return 0;
-	// KBPK uses a conservative heuristic: it misses some draws, but it never flags as a draw
-	// incorrectly, and a missed draw is always a few good moves away from a recognized draw
-	if ( cnt == 4
-		&& (B.get_pieces(WHITE, PAWN) | B.get_pieces(BLACK, PAWN))
-		&& (B.get_pieces(WHITE, BISHOP) | B.get_pieces(BLACK, BISHOP))
-		&& kbpk_draw(B) )
+	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
 		return 0;
 	
 	EvalInfo ei(&B);
