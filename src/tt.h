@@ -59,6 +59,8 @@ struct TTable
 
 	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
 	const Entry *probe(Key key) const;
+	
+	void prefetch(Key key) const { __builtin_prefetch((char *)&cluster[key & (count-1)]); }
 
 private:
 	size_t count;

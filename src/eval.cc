@@ -37,6 +37,7 @@ struct PawnCache
 
 	PawnCache() { memset(buf, 0, sizeof(buf)); }
 	Entry &probe(Key key) { return buf[key & (count-1)]; }
+	void prefetch(Key key) { __builtin_prefetch((char *)&buf[key & (count-1)]); }
 
 private:
 	static const int count = 0x10000;
@@ -47,7 +48,7 @@ PawnCache PC;
 
 struct EvalInfo
 {
-	EvalInfo(const Board *_B): B(_B) { e[WHITE].clear(); e[BLACK].clear(); }
+	EvalInfo(const Board *_B): B(_B) { e[WHITE] = e[BLACK] = {0,0}; }
 
 	void eval_material();
 	void eval_mobility();
@@ -534,6 +535,8 @@ int eval(const Board& B)
 		return 0;
 	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
 		return 0;
+	
+	PC.prefetch(B.st().kpkey);
 	
 	EvalInfo ei(&B);
 	ei.eval_material();

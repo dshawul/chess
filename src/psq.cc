@@ -60,7 +60,7 @@ namespace
 	Eval psq_bonus(int piece, int sq)
 	{
 		Eval e;
-		e.clear();
+		e = {0,0};
 		const int r = rank(sq), f = file(sq);
 
 		switch (piece) {

@@ -26,11 +26,11 @@ int main (int argc, char **argv)
 	init_kpk();
 
 	if (argc == 2) {
-		if (std::string(argv[1]) == "bench") {
+		if (std::string(argv[1]) == "bench")
 			bench(12);
-			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
-		} else if (std::string(argv[1]) == "perft")
+		else if (std::string(argv[1]) == "perft")
 			test_perft();
+		std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
 	} else
 		loop();
 }

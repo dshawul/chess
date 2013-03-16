@@ -167,7 +167,9 @@ namespace
 		if (depth <= 0 || ss->ply >= MAX_PLY)
 			return qsearch(B, alpha, beta, depth, node_type, ss);
 
-		assert(depth > 0);
+		const Key key = B.get_key();
+		TT.prefetch(key);
+		
 		node_poll(B);
 
 		const bool root = !ss->ply, in_check = B.is_check();
@@ -186,7 +188,6 @@ namespace
 		}
 
 		// TT lookup
-		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte) {
 			if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
@@ -390,6 +391,9 @@ namespace
 	{
 		assert(depth <= 0);
 		assert(alpha < beta && (node_type == PV || alpha+1 == beta));
+		
+		const Key key = B.get_key();
+		TT.prefetch(key);
 		node_poll(B);
 
 		const bool in_check = B.is_check();
@@ -400,7 +404,6 @@ namespace
 			return 0;
 
 		// TT lookup
-		const Key key = B.get_key();
 		const TTable::Entry *tte = TT.probe(key);
 		if (tte) {
 			if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {

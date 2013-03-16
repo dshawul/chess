@@ -35,8 +35,6 @@ enum {
 struct Eval {
 	int op, eg;
 
-	void clear() { op = eg = 0; }
-
 	bool operator== (const Eval& e) { return op == e.op && eg == e.eg; }
 	bool operator!= (const Eval& e) { return !(*this == e); }
 

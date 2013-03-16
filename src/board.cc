@@ -465,7 +465,7 @@ bool Board::verify_psq() const
 	int piece_psq[NB_COLOR];
 
 	for (int color = WHITE; color <= BLACK; ++color) {
-		psq[color].clear();
+		psq[color] = {0,0};
 		piece_psq[color] = 0;
 
 		for (int piece = PAWN; piece <= KING; ++piece) {

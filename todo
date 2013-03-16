@@ -1,3 +1,1 @@
-- material key
-- mechanism for recognising draws and drawish endgames (using a score dividor like in Fruit)
-- recognize some common draws
+- recognize some common drawish positions, using a score dividor
