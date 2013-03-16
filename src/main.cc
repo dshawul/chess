@@ -25,9 +25,9 @@ int main (int argc, char **argv)
 	init_eval();
 	init_kpk();
 
-	if (argc == 3) {
+	if (argc == 2) {
 		if (std::string(argv[1]) == "bench") {
-			bench(atoi(argv[2]));
+			bench(12);
 			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
 		} else if (std::string(argv[1]) == "perft")
 			test_perft();
