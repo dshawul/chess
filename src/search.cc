@@ -250,9 +250,9 @@ namespace
 		}
 
 		// Internal Iterative Deepening
-		if ( (!tte || tte->depth <= 0)
-		        && depth >= (node_type == PV ? 4 : 7)
-		        && (node_type != All || ss->eval+vOP >= beta) ) {
+		if ( (!tte || !tte->move || tte->depth <= 0)
+			&& depth >= (node_type == PV ? 4 : 7)
+			&& (node_type != All || ss->eval+vOP >= beta) ) {
 			ss->skip_null = true;
 			search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
 			ss->skip_null = false;
@@ -284,12 +284,11 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-			                       || new_depth == depth
-			                       || ss->m == ss->killer[0]
-			                       || ss->m == ss->killer[1]
-			                       || (move_is_pawn_threat(B, ss->m) && see >= 0)
-			                       || (ss->m.flag() == CASTLING);
-
+				|| new_depth == depth
+				|| ss->m == ss->killer[0]
+				|| ss->m == ss->killer[1]
+				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
+				|| (ss->m.flag() == CASTLING);
 
 			if (!capture && !dangerous && !in_check) {
 				// Move count pruning
