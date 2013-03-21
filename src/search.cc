@@ -313,6 +313,9 @@ namespace
 				LMR += !capture;
 				ss->reduction += (bad_quiet && LMR >= 3+8/depth);
 			}
+			// do not LMR into the QS
+			if (new_depth - ss->reduction <= 0)
+				ss->reduction = 0;
 
 			B.play(ss->m);
 
