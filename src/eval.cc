@@ -256,7 +256,7 @@ void EvalInfo::eval_passer_interaction(int sq)
 		if (!attacked)
 			e[us].eg += Q * (path == defended ? 7 : 6);
 		else
-			e[us].eg += Q * ((attacked & defended) == attacked ? 5 : 3);
+			e[us].eg += Q * ((attacked & defended) == attacked ? 4 : 2);
 	}
 }
 
