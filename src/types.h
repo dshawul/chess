@@ -13,7 +13,8 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include <cstdint>
+#include <cstdint>		// for portable fixed size int types
+#include <cmath>		// for std::abs()
 #include <cassert>
 #include <iostream>
 
