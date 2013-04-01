@@ -254,7 +254,7 @@ namespace
 			&& depth >= (node_type == PV ? 4 : 7)
 			&& (node_type != All || ss->eval+vOP >= beta) ) {
 			ss->skip_null = true;
-			search(B, alpha, beta, node_type == PV ? depth-2 : depth-4, node_type, ss);
+			search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
 			ss->skip_null = false;
 		}
 
