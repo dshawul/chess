@@ -388,8 +388,14 @@ Bitboard EvalInfo::do_eval_pawns()
 						e[us].eg += 8 * L;	// besides is good, as it allows a further push
 					else if (PAttacks[them][sq] & our_pawns)
 						e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
-					else if (!(their_pawns & PawnSpan[them][sq]))
-						e[us].eg += 2 * L;	// further behind
+					else if (!(PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
+						Bitboard b = PAttacks[them][sq];
+						while (b) {
+							const int tsq = pop_lsb(&b);
+							if (test_bit(our_pawns, pawn_push(them, tsq)))
+								e[us].eg += 2 * L;	// 1 push away from defendint the passer
+						}
+					}
 				}
 			}
 		}
