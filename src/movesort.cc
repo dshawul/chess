@@ -45,7 +45,7 @@ void History::add(const Board& B, move_t m, int bonus)
 }
 
 MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move,
-                   int _node_type, const History *_H)
+	int _node_type, const History *_H)
 	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), node_type(_node_type), H(_H), idx(0)
 {
 	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);

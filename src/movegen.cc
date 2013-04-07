@@ -17,8 +17,7 @@
 
 namespace
 {
-	move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist,
-	                        bool sub_promotions)
+	move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool sub_promotions)
 	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
 	 * indirect self checks (through fsq, or through the ep captured square) */
 	{
@@ -190,8 +189,8 @@ move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub
 
 	// double pushes
 	fssd = fss & PInitialRank[us]				// pawns on their initial rank
-	       & ~shift_bit(B.st().occ, -sp_inc)	// can push once
-	       & ~shift_bit(B.st().occ, -dp_inc);	// can push twice
+		& ~shift_bit(B.st().occ, -sp_inc)		// can push once
+		& ~shift_bit(B.st().occ, -dp_inc);		// can push twice
 	tss_dp = shift_bit(fssd, dp_inc);			// double push fssd
 
 	// captures (including en passant if epsq != NO_SQUARE)
@@ -230,8 +229,8 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	const int us = B.get_turn();
 	const int kpos = B.get_king_pos(us);
 	const Bitboard checkers = B.st().checkers;
-	const int csq = lsb(checkers);	// checker square
-	const int cpiece = B.get_piece_on(csq);		// checker piece
+	const int csq = lsb(checkers);			// checker square
+	const int cpiece = B.get_piece_on(csq);	// checker piece
 	Bitboard tss;
 
 	// normal king escapes

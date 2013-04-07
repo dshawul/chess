@@ -324,7 +324,7 @@ Bitboard Board::calc_attacks(int color) const
 
 	// Pawn
 	r |= sp->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
-	                                | shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
+		| shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
@@ -384,9 +384,9 @@ Bitboard Board::calc_checkers(int kcolor) const
 	const Bitboard BQ = get_BQ(them) & BPseudoAttacks[kpos];
 
 	return (RQ & rook_attack(kpos, st().occ))
-	       | (BQ & bishop_attack(kpos, st().occ))
-	       | (b[them][KNIGHT] & NAttacks[kpos])
-	       | (b[them][PAWN] & PAttacks[kcolor][kpos]);
+		| (BQ & bishop_attack(kpos, st().occ))
+		| (b[them][KNIGHT] & NAttacks[kpos])
+		| (b[them][PAWN] & PAttacks[kcolor][kpos]);
 }
 
 void Board::set_square(int color, int piece, int sq, bool play)
@@ -501,9 +501,9 @@ bool Board::is_draw() const
 		return true;
 
 	// insufficient material
-	if (	get_pieces(WHITE) == (get_NB(WHITE) ^ get_pieces(WHITE, KING))
-	        &&	get_pieces(BLACK) == (get_NB(BLACK) ^ get_pieces(BLACK, KING))
-	        &&	!several_bits(get_NB(WHITE)) &&	!several_bits(get_NB(BLACK))	)
+	if ( get_pieces(WHITE) == (get_NB(WHITE) | get_pieces(WHITE, KING))
+		&& get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
+		&& !several_bits(get_NB(WHITE)) && !several_bits(get_NB(BLACK)) )
 		return true;
 
 	return false;
@@ -513,6 +513,6 @@ Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
-	       ^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
-	       ^ zob_castle[st().crights];
+		^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
+		^ zob_castle[st().crights];
 }
