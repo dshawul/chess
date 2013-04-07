@@ -389,7 +389,13 @@ Bitboard EvalInfo::do_eval_pawns()
 					else if (PAttacks[them][sq] & our_pawns)
 						e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
 					else if (!(PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
+						// pawns that are 1 push away
 						Bitboard b = PAttacks[them][sq];
+						// also pawns that are 1 double push away if on 5-th (relative) rank
+						// for simplicity neglect en-passant refutation of the double push
+						if (L == 3)
+							b |= PAttacks[them][pawn_push(them, sq)];
+						
 						while (b) {
 							const int tsq = pop_lsb(&b);
 							if (test_bit(our_pawns, pawn_push(them, tsq)))
