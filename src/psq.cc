@@ -66,7 +66,7 @@ namespace
 		switch (piece) {
 		case PAWN:
 			e.op += Center[f] * PFileOpening;
-			if (sq == D5 || sq == E5 || sq == D3 || sq == E3 || sq == C4 || sq == F4)
+			if (sq == D5 || sq == E5 || sq == D3 || sq == E3)
 				e.op += PCenterOpening / 2;
 			else if (sq == D4 || sq == E4)
 				e.op += PCenterOpening;
