@@ -38,7 +38,7 @@ namespace
 	const int KRank[8]	= {+1, +0, -2, -3, -4, -5, -6, -7};
 
 	/* Weight */
-	const int PFileOpening = 5;
+	const int PFileOpening = 3;
 	const int NCentreOpening = 5;
 	const int NCentreEndgame = 5;
 	const int NRankOpening = 5;

@@ -23,7 +23,7 @@ enum {
 };
 
 // material values
-#define vOP 85
+#define vOP 80
 #define vEP 100
 #define vN 330
 #define vB 330
