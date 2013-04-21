@@ -67,6 +67,7 @@ private:
 
 	Bitboard do_eval_pawns();
 	void eval_shelter_storm(int us);
+	void eval_passer(int sq);
 	void eval_passer_interaction(int sq);
 
 	int calc_phase() const;
@@ -318,6 +319,53 @@ void EvalInfo::eval_shelter_storm(int us)
 	}
 }
 
+void EvalInfo::eval_passer(int sq)
+{
+	const int us = B->get_color_on(sq), them = opp_color(us);
+	const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
+	const int r = rank(sq), f = file(sq);
+	const int next_sq = pawn_push(us, sq);
+	const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);	
+	const Bitboard besides = our_pawns & AdjacentFiles[f];
+	
+	const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
+	const int Q = L*(L-1);						// Quadratic part	0..20
+
+	// score based on rank
+	e[us].op += 8 * Q;
+	e[us].eg += 4 * (Q + L + 1);
+
+	if (Q) {
+		//  adjustment for king distance
+		e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
+		e[us].eg -= kdist(next_sq, our_ksq) * Q;
+		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
+			e[us].eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
+	}
+
+	// support by friendly pawn
+	if (besides & PawnSpan[them][next_sq]) {
+		if (PAttacks[them][next_sq] & our_pawns)
+			e[us].eg += 8 * L;	// besides is good, as it allows a further push
+		else if (PAttacks[them][sq] & our_pawns)
+			e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
+		else if (!(PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
+			// pawns that are 1 push away
+			Bitboard b = PAttacks[them][sq];
+			// also pawns that are 1 double push away if on 5-th (relative) rank
+			// for simplicity neglect en-passant refutation of the double push
+			if (L == 3)
+				b |= PAttacks[them][pawn_push(them, sq)];
+			
+			while (b) {
+				const int tsq = pop_lsb(&b);
+				if (test_bit(our_pawns, pawn_push(them, tsq)))
+					e[us].eg += 2 * L;	// 1 push away from defendint the passer
+			}
+		}
+	}
+}
+
 Bitboard EvalInfo::do_eval_pawns()
 {
 	static const int Chained = 5, Isolated = 20;
@@ -368,43 +416,7 @@ Bitboard EvalInfo::do_eval_pawns()
 					e[us].eg += n*n;
 			} else if (passed) {
 				set_bit(&passers, sq);
-				
-				const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
-				const int Q = L*(L-1);						// Quadratic part	0..20
-
-				// score based on rank
-				e[us].op += 8 * Q;
-				e[us].eg += 4 * (Q + L + 1);
-
-				if (Q) {
-					//  adjustment for king distance
-					e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
-					e[us].eg -= kdist(next_sq, our_ksq) * Q;
-					if (rank(next_sq) != (us ? RANK_1 : RANK_8))
-						e[us].eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
-				}
-
-				// support by friendly pawn
-				if (besides & PawnSpan[them][next_sq]) {
-					if (PAttacks[them][next_sq] & our_pawns)
-						e[us].eg += 8 * L;	// besides is good, as it allows a further push
-					else if (PAttacks[them][sq] & our_pawns)
-						e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
-					else if (!(PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
-						// pawns that are 1 push away
-						Bitboard b = PAttacks[them][sq];
-						// also pawns that are 1 double push away if on 5-th (relative) rank
-						// for simplicity neglect en-passant refutation of the double push
-						if (L == 3)
-							b |= PAttacks[them][pawn_push(them, sq)];
-						
-						while (b) {
-							const int tsq = pop_lsb(&b);
-							if (test_bit(our_pawns, pawn_push(them, tsq)))
-								e[us].eg += 2 * L;	// 1 push away from defendint the passer
-						}
-					}
-				}
+				eval_passer(sq);
 			}
 		}
 	}
