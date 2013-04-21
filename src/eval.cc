@@ -48,7 +48,8 @@ PawnCache PC;
 
 struct EvalInfo
 {
-	EvalInfo(const Board *_B): B(_B) { e[WHITE] = e[BLACK] = {0,0}; }
+	EvalInfo(const Board *_B): B(_B), eval_factor(16)
+	{ e[WHITE] = e[BLACK] = {0,0}; }
 
 	void eval_material();
 	void eval_mobility();
@@ -60,6 +61,7 @@ struct EvalInfo
 private:
 	const Board *B;
 	Eval e[NB_COLOR];
+	int eval_factor;	// between 0 and 16
 
 	void score_mobility(int us, int p0, int p, Bitboard tss);
 
@@ -85,7 +87,7 @@ void EvalInfo::eval_material()
 	// If the stronger side has no pawns, half the material difference in the endgame
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	if (!B->get_pieces(strong_side, PAWN))
-		e[strong_side].eg -= std::abs(e[WHITE].eg - e[BLACK].eg)/2;
+		eval_factor = 8;
 }
 
 void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
@@ -504,7 +506,8 @@ int EvalInfo::interpolate() const
 {
 	const int us = B->get_turn(), them = opp_color(us);
 	const int phase = calc_phase();
-	return (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
+	const int eval = (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
+	return eval * eval_factor / 16;
 }
 
 bool kpk_draw(const Board& B)
