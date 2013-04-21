@@ -89,6 +89,17 @@ void EvalInfo::eval_material()
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	if (!B->get_pieces(strong_side, PAWN))
 		eval_factor = 8;
+	// Opposite color bishop ending
+	else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
+		// Each side has exactly one bishop
+		const Bitboard b = B->get_pieces(WHITE, BISHOP) | B->get_pieces(BLACK, BISHOP);
+		static const Bitboard white_sqaures = 0x55AA55AA55AA55AAULL;
+		static const Bitboard black_sqaures = 0xAA55AA55AA55AA55ULL;
+		if ((b & white_sqaures) && (b & black_sqaures))
+			// We have an opposite color bishop situation. If the stronger side has no other
+			// pieces it's more drawish.
+			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4*strong_side))) ? 12 : 8;
+	}
 }
 
 void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
