@@ -323,12 +323,13 @@ Bitboard Board::calc_attacks(int color) const
 	Bitboard fss, r = 0;
 
 	// Pawn
-	r |= sp->attacks[color][PAWN] = shift_bit((b[color][PAWN] & ~FileA_bb), color ? -9 : 7)
-		| shift_bit((b[color][PAWN] & ~FileH_bb), color ? -7 : 9);
+	fss = get_pieces(color, PAWN);
+	r |= sp->attacks[color][PAWN] = shift_bit((fss & ~FileA_bb), color ? -9 : 7)
+		| shift_bit((fss & ~FileH_bb), color ? -7 : 9);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
-	fss = b[color][KNIGHT];
+	fss = get_pieces(color, KNIGHT);
 	while (fss)
 		r |= sp->attacks[color][KNIGHT] |= NAttacks[pop_lsb(&fss)];
 
@@ -385,8 +386,8 @@ Bitboard Board::calc_checkers(int kcolor) const
 
 	return (RQ & rook_attack(kpos, st().occ))
 		| (BQ & bishop_attack(kpos, st().occ))
-		| (b[them][KNIGHT] & NAttacks[kpos])
-		| (b[them][PAWN] & PAttacks[kcolor][kpos]);
+		| (get_pieces(them, KNIGHT) & NAttacks[kpos])
+		| (get_pieces(them, PAWN) & PAttacks[kcolor][kpos]);
 }
 
 void Board::set_square(int color, int piece, int sq, bool play)
@@ -446,7 +447,7 @@ bool Board::verify_keys() const
 
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
-			Bitboard sqs = b[color][piece];
+			Bitboard sqs = get_pieces(color, piece);
 			mat_key += (uint64_t)count_bit(sqs) << (8*piece + 4*color);			
 			while (sqs) {
 				const int sq = pop_lsb(&sqs);
