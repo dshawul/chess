@@ -396,7 +396,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
 	assert(get_piece_on(sq) == NO_PIECE);
 
-	set_bit(&b[color][piece], sq);
+	set_bit(&b[piece], sq);
 	set_bit(&all[color], sq);
 	piece_on[sq] = piece;
 
@@ -421,7 +421,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
 	assert(get_piece_on(sq) == piece);
 
-	clear_bit(&b[color][piece], sq);
+	clear_bit(&b[piece], sq);
 	clear_bit(&all[color], sq);
 	piece_on[sq] = NO_PIECE;
 

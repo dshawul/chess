@@ -117,8 +117,7 @@ struct Board
 	Key get_key() const;
 
 private:
-	Bitboard b[NB_COLOR][NB_PIECE];
-	Bitboard all[NB_COLOR];
+	Bitboard b[NB_PIECE], all[NB_COLOR];
 	int piece_on[NB_SQUARE];
 	GameInfo game_stack[MAX_GAME_PLY], *sp, *sp0;
 	int turn;
@@ -168,7 +167,7 @@ inline Bitboard Board::get_pieces(int color) const
 inline Bitboard Board::get_pieces(int color, int piece) const
 {
 	assert(initialized && color_ok(color) && piece_ok(piece));
-	return b[color][piece];
+	return b[piece] & all[color];
 }
 
 inline int Board::get_turn() const
