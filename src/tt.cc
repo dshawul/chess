@@ -17,11 +17,12 @@
  * Costalba.
 */
 #include <cstring>
+#include <cstdlib>
 #include "tt.h"
 
 TTable::~TTable()
 {
-	delete[] cluster;
+	free(cluster);
 	cluster = NULL;
 	generation = 0;
 	count = 0;
@@ -29,15 +30,17 @@ TTable::~TTable()
 
 void TTable::alloc(uint64_t size)
 {
-	if (cluster)
-		delete[] cluster;
+	free(cluster);
 
 	// calculate the number of clusters allocate
 	count = 1ULL << msb(size / sizeof(Cluster));
 
 	// Allocate the cluster array. On failure, std::bad_alloc is thrown and not caught, which
-	// terminates the program. It's not a bug, it's a "feature" ;-)
-	cluster = new Cluster[count];
+	// terminates the program. It's not a bug, it's a "feature".
+	void *tmp;
+	if (posix_memalign(&tmp, 64, count * sizeof(Cluster)) != 0)
+		throw std::bad_alloc();
+	cluster = (Cluster *)tmp;
 
 	clear();
 }
