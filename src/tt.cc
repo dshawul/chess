@@ -17,12 +17,28 @@
  * Costalba.
 */
 #include <cstring>
-#include <cstdlib>
 #include "tt.h"
+
+void *aligned_malloc(size_t size, size_t align)
+{
+	void *mem = malloc(size + (align-1) + sizeof(void*));
+	if (!mem) throw std::bad_alloc();
+
+	char *amem = ((char*)mem) + sizeof(void*);
+	amem += align - ((uintptr_t)amem & (align - 1));
+
+	((void**)amem)[-1] = mem;
+	return amem;
+}
+ 
+void aligned_free(void *mem)
+{
+	free(((void**)mem)[-1]);
+}
 
 TTable::~TTable()
 {
-	free(cluster);
+	aligned_free(cluster);
 	cluster = NULL;
 	generation = 0;
 	count = 0;
@@ -30,17 +46,15 @@ TTable::~TTable()
 
 void TTable::alloc(uint64_t size)
 {
-	free(cluster);
+	if (cluster)
+		aligned_free(cluster);
 
 	// calculate the number of clusters allocate
 	count = 1ULL << msb(size / sizeof(Cluster));
 
 	// Allocate the cluster array. On failure, std::bad_alloc is thrown and not caught, which
 	// terminates the program. It's not a bug, it's a "feature".
-	void *tmp;
-	if (posix_memalign(&tmp, 64, count * sizeof(Cluster)) != 0)
-		throw std::bad_alloc();
-	cluster = (Cluster *)tmp;
+	cluster = (Cluster *)aligned_malloc(count * sizeof(Cluster), 64);
 
 	clear();
 }
