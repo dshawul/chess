@@ -379,11 +379,11 @@ namespace
 
 			// mark ss->best as good, and all other moves searched as bad
 			move_t m;
+			int bonus = std::min(depth*depth, (int)History::Max);
+			if (threats(B)) bonus /= 2;
 			while ( (m = MS.previous()) )
-				if (!move_is_cop(B, m)) {
-					int bonus = m == ss->best ? depth*depth : -depth*depth;
-					H.add(B, m, bonus);
-				}
+				if (!move_is_cop(B, m))
+					H.add(B, m, m == ss->best ? bonus : -bonus);
 		}
 
 		return best_score;
