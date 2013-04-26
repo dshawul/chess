@@ -380,8 +380,10 @@ namespace
 			// mark ss->best as good, and all other moves searched as bad
 			move_t m;
 			while ( (m = MS.previous()) )
-				if (!move_is_cop(B, m))
-					H.add(B, m, m == ss->best ? depth*depth : -depth*depth);
+				if (!move_is_cop(B, m)) {
+					int bonus = m == ss->best ? depth*depth : -depth*depth;
+					H.add(B, m, bonus);
+				}
 		}
 
 		return best_score;
