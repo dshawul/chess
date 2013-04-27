@@ -69,9 +69,8 @@ namespace
 	const int RazorMargin[4] = {0, 2*vEP, 2*vEP+vEP/2, 3*vEP};
 	const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
-	Bitboard threats(const Board& B)
+	Bitboard hanging_pieces(const Board& B)
 	{
-		assert(!B.is_check());
 		const int us = B.get_turn(), them = opp_color(us);
 
 		const Bitboard our_pawns = B.get_pieces(us, PAWN);
@@ -191,6 +190,8 @@ namespace
 			assert(!root);
 			return alpha;
 		}
+		
+		const Bitboard hanging = hanging_pieces(B);
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
@@ -211,7 +212,7 @@ namespace
 		        && !is_mate_score(beta)
 		        && ss->eval + TEMPO >= beta + EvalMargin[depth]
 		        && B.st().piece_psq[B.get_turn()]
-		        && !several_bits(threats(B)) )
+		        && !several_bits(hanging) )
 			return ss->eval + TEMPO - EvalMargin[depth];
 
 		// Razoring
@@ -385,7 +386,7 @@ namespace
 			// mark ss->best as good, and all other moves searched as bad
 			move_t m;
 			int bonus = std::min(depth*depth, (int)History::Max);
-			if (threats(B)) bonus /= 2;
+			if (hanging) bonus /= 2;
 			while ( (m = MS.previous()) )
 				if (!move_is_cop(B, m))
 					H.add(B, m, m == ss->best ? bonus : -bonus);
