@@ -32,6 +32,13 @@ namespace
 		move_t m, best, killer[2];
 		int ply, reduction, eval;
 		bool skip_null, null_child;
+		
+		void clear(int _ply) {
+			ply = _ply;
+			m = best = killer[0] = killer[1] = 0;
+			eval = reduction = 0;
+			skip_null = null_child = false;
+		}
 	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
@@ -89,11 +96,9 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 {
 	start = high_resolution_clock::now();
 
-	SearchInfo ss[MAX_PLY + 1-QS_LIMIT], *sp = ss;
-	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply, ++sp) {
-		sp->ply = ply;
-		sp->skip_null = sp->null_child = false;
-	}
+	SearchInfo ss[MAX_PLY + 1-QS_LIMIT];
+	for (int ply = 0; ply < MAX_PLY + 1-QS_LIMIT; ++ply)
+		ss[ply].clear(ply);
 
 	node_count = 0;
 	node_limit = sl.nodes;
