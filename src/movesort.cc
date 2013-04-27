@@ -44,12 +44,10 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move,
-	int _node_type, const History *_H)
-	: B(_B), type(_type), killer(_killer), tt_move(_tt_move), node_type(_node_type), H(_H), idx(0)
+MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type, const History *_H)
+	: B(_B), ss(_ss), node_type(_node_type), H(_H), idx(0), depth(_depth)
 {
-	assert(type == ALL || type == CAPTURES_CHECKS || type == CAPTURES);
-
+	type = depth > 0 ? ALL : (depth == 0 ? CAPTURES_CHECKS : CAPTURES);
 	/* If we're in check set type = ALL. This affects the sort() and uses SEE instead of MVV/LVA for
 	 * example. It improves the quality of sorting for check evasions in the qsearch. */
 	if (B->is_check())
@@ -93,7 +91,7 @@ void MoveSort::score(MoveSort::Token *t)
 {
 	t->see = -INF;	// not computed
 
-	if (t->m == tt_move)
+	if (t->m == ss->best)
 		t->score = INF;
 	else if (move_is_cop(*B, t->m))
 		if (type == ALL) {
@@ -110,9 +108,9 @@ void MoveSort::score(MoveSort::Token *t)
 			t->score = mvv_lva(*B, t->m);
 	else {
 		// killers first, then the rest by history
-		if (killer && t->m == killer[0])
+		if (depth > 0 && t->m == ss->killer[0])
 			t->score = History::Max-1;
-		else if (killer && t->m == killer[1])
+		else if (depth > 0 && t->m == ss->killer[1])
 			t->score = History::Max-2;
 		else
 			t->score = H->get(*B, t->m);

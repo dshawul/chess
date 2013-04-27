@@ -28,18 +28,6 @@ using namespace std::chrono;
 
 namespace
 {
-	struct SearchInfo {
-		move_t m, best, killer[2];
-		int ply, reduction, eval;
-		bool skip_null, null_child;
-		
-		void clear(int _ply) {
-			ply = _ply;
-			m = best = killer[0] = killer[1] = 0;
-			eval = reduction = 0;
-			skip_null = null_child = false;
-		}
-	};
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
 	const int QS_LIMIT = -8;
@@ -264,7 +252,7 @@ namespace
 			ss->skip_null = false;
 		}
 
-		MoveSort MS(&B, MoveSort::ALL, ss->killer, ss->best, node_type, &H);
+		MoveSort MS(&B, depth, ss, node_type, &H);
 		int cnt = 0, LMR = 0, see;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
@@ -431,7 +419,7 @@ namespace
 				return alpha;
 		}
 
-		MoveSort MS(&B, depth < 0 ? MoveSort::CAPTURES : MoveSort::CAPTURES_CHECKS, NULL, ss->best, node_type, &H);
+		MoveSort MS(&B, depth, ss, node_type, &H);
 		int see;
 		const int fut_base = ss->eval + vEP/2;
 

@@ -15,6 +15,19 @@
 #pragma once
 #include "movegen.h"
 
+struct SearchInfo {
+	move_t m, best, killer[2];
+	int ply, reduction, eval;
+	bool skip_null, null_child;
+	
+	void clear(int _ply) {
+		ply = _ply;
+		m = best = killer[0] = killer[1] = 0;
+		eval = reduction = 0;
+		skip_null = null_child = false;
+	}
+};
+
 struct History
 {
 	static const int Max = 2000;
@@ -41,8 +54,7 @@ struct MoveSort
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board* _B, GenType _type, const move_t *_killer, move_t _tt_move, int _node_type,
-	         const History *_H);
+	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type, const History *_H);
 
 	move_t next(int *see);
 	move_t previous();
@@ -52,13 +64,12 @@ struct MoveSort
 private:
 	const Board *B;
 	GenType type;
-	const move_t *killer;
-	move_t tt_move;
+	const SearchInfo *ss;
 	int node_type;
 	const History *H;
 
 	Token list[MAX_MOVES];
-	int idx, count;
+	int idx, count, depth;
 
 	move_t *generate(GenType type, move_t *mlist);
 	void annotate(const move_t *mlist);
