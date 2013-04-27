@@ -92,15 +92,15 @@ struct Board
 	Bitboard get_pieces(int color) const;
 	Bitboard get_pieces(int color, int piece) const;
 
-	Bitboard get_N() const { return get_pieces(WHITE, KNIGHT) ^ get_pieces(BLACK, KNIGHT); }
-	Bitboard get_K() const { return get_pieces(WHITE, KING) ^ get_pieces(BLACK, KING); }
+	Bitboard get_N() const { return b[KNIGHT]; }
+	Bitboard get_K() const { return b[KING]; }
 
-	Bitboard get_RQ(int color) const { return get_pieces(color, ROOK) ^ get_pieces(color, QUEEN); }
-	Bitboard get_BQ(int color) const { return get_pieces(color, BISHOP) ^ get_pieces(color, QUEEN); }
-	Bitboard get_NB(int color) const { return get_pieces(color, KNIGHT) ^ get_pieces(color, BISHOP); }
+	Bitboard get_RQ(int color) const { return (b[ROOK] | b[QUEEN]) & all[color]; }
+	Bitboard get_BQ(int color) const { return (b[BISHOP] | b[QUEEN]) & all[color]; }
+	Bitboard get_NB(int color) const { return (b[KNIGHT] | b[BISHOP]) & all[color]; }
 
-	Bitboard get_RQ() const { return get_RQ(WHITE) ^ get_RQ(BLACK); }
-	Bitboard get_BQ() const { return get_BQ(WHITE) ^ get_BQ(BLACK); }
+	Bitboard get_RQ() const { return b[ROOK] | b[QUEEN]; }
+	Bitboard get_BQ() const { return b[BISHOP] | b[QUEEN]; }
 
 	void set_fen(const std::string& fen);
 	std::string get_fen() const;
