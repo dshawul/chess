@@ -257,7 +257,7 @@ namespace
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 			++cnt;
-			bool check = move_is_check(B, ss->m);
+			const int check = move_is_check(B, ss->m);
 
 			// check extension
 			int new_depth;
