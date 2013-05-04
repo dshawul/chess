@@ -442,10 +442,7 @@ void EvalInfo::eval_pieces()
 		(1ULL << A7) | (1ULL << H7) | (1ULL << A6) | (1ULL << H6),
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
 	};
-	static const Bitboard KnightTrap[NB_COLOR] = {
-		(1ULL << A8) | (1ULL << H8) | (1ULL << A7) | (1ULL << H7),
-		(1ULL << A1) | (1ULL << H1) | (1ULL << A2) | (1ULL << H2)
-	};
+	static const Bitboard KnightTrap[NB_COLOR] = {0xFFFF000000000000ULL, 0x000000000000FFFFULL};
 
 	for (int us = WHITE; us <= BLACK; ++us) {
 		const int them = opp_color(us), ksq = B->get_king_pos(us);
