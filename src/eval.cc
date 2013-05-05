@@ -338,11 +338,8 @@ void EvalInfo::eval_shelter_storm()
 
 void EvalInfo::eval_passer(int sq)
 {
-	const int us = B->get_color_on(sq), them = opp_color(us);
-	const int our_ksq = B->get_king_pos(us), their_ksq = B->get_king_pos(them);
 	const int r = rank(sq), f = file(sq);
 	const int next_sq = pawn_push(us, sq);
-	const Bitboard our_pawns = B->get_pieces(us, PAWN), their_pawns = B->get_pieces(them, PAWN);	
 	const Bitboard besides = our_pawns & AdjacentFiles[f];
 	
 	const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
