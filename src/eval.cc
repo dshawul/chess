@@ -50,22 +50,15 @@ struct EvalInfo
 	EvalInfo(const Board *_B): B(_B), eval_factor(16)
 	{ e[WHITE] = e[BLACK] = {0,0}; }
 
+	void select_side(int color);
 	void eval_material();
 	void eval_mobility();
 	void eval_safety();
 	void eval_pieces();
+	
 	void eval_pawns();
 	void eval_drawish();
 	int interpolate() const;
-
-	void select_side(int color) {
-		us = color;
-		them = opp_color(color);
-		our_ksq = B->get_king_pos(us);
-		their_ksq = B->get_king_pos(them);
-		our_pawns = B->get_pieces(us, PAWN);
-		their_pawns = B->get_pieces(them, PAWN);
-	}
 
 private:
 	const Board *B;
@@ -85,16 +78,24 @@ private:
 	Eval eval_white() const { return e[WHITE] - e[BLACK]; }
 };
 
+void EvalInfo::select_side(int color)
+{
+	us = color;
+	them = opp_color(color);
+	our_ksq = B->get_king_pos(us);
+	their_ksq = B->get_king_pos(them);
+	our_pawns = B->get_pieces(us, PAWN);
+	their_pawns = B->get_pieces(them, PAWN);
+}
+	
 void EvalInfo::eval_material()
 {
-	for (int us = WHITE; us <= BLACK; ++us) {
-		// material (PSQ)
-		e[us] += B->st().psq[us];
+	// material (PSQ)
+	e[us] += B->st().psq[us];
 
-		// bishop pair
-		if (several_bits(B->get_pieces(us, BISHOP)))
-			e[us] += {40, 50};
-	}
+	// bishop pair
+	if (several_bits(B->get_pieces(us, BISHOP)))
+		e[us] += {40, 50};
 }
 
 void EvalInfo::eval_drawish()
@@ -578,16 +579,16 @@ int eval(const Board& B)
 		return 0;
 	
 	EvalInfo ei(&B);
-	ei.eval_material();
-	ei.eval_drawish();
 	ei.eval_pawns();
 	
 	for (int color = WHITE; color <= BLACK; ++color) {
 		ei.select_side(color);
+		ei.eval_material();
 		ei.eval_mobility();
 		ei.eval_safety();
 		ei.eval_pieces();
 	}
-
+	
+	ei.eval_drawish();
 	return ei.interpolate();
 }
