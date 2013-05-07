@@ -216,7 +216,12 @@ void EvalInfo::eval_safety()
 			sq_attackers = fss & rook_attack(sq, occ);
 			ADD_ATTACK(ROOK);
 		}
-	}
+	} else if ( (fss = RPseudoAttacks[our_ksq] & B->get_RQ(them)) )
+		// hidden attackers: increment count when the attacking line contains at most one pawn
+		while (fss) {
+			sq = pop_lsb(&fss);
+			total_count += !several_bits((our_pawns | their_pawns) & Between[our_ksq][sq]);
+		}
 
 	// Diagonal attacks
 	attacked = B->st().attacks[them][BISHOP] & KAttacks[our_ksq] & ~solid;
@@ -228,7 +233,12 @@ void EvalInfo::eval_safety()
 			sq_attackers = fss & bishop_attack(sq, occ);
 			ADD_ATTACK(BISHOP);
 		}
-	}
+	} else if ( (fss = BPseudoAttacks[our_ksq] & B->get_BQ(them)) )
+		// hidden attackers: increment count when the attacking diagonal contains at most one pawn
+		while (fss) {
+			sq = pop_lsb(&fss);
+			total_count += !several_bits((our_pawns | their_pawns) & Between[our_ksq][sq]);
+		}
 
 	// Adjust for king's "distance to safety"
 	total_count += KingDistanceToSafety[us][our_ksq];
