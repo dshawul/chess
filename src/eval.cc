@@ -284,9 +284,11 @@ void EvalInfo::eval_passer_interaction(int sq)
 		}
 
 		if (!attacked)
+			// Promotion path is all defended
 			e[us].eg += Q * (path == defended ? 7 : 6);
 		else
-			e[us].eg += Q * ((attacked & defended) == attacked ? 4 : 2);
+			// Attacked squares on promotion path are defended
+			e[us].eg += Q * (!(attacked & ~defended) ? 4 : 2);
 	}
 }
 
