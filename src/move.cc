@@ -133,52 +133,6 @@ std::string move_to_string(move_t m)
 	return s.str();
 }
 
-std::string move_to_san(const Board& B, move_t m)
-{
-	std::ostringstream s;
-	const int us = B.get_turn();
-	const int fsq = m.fsq(), tsq = m.tsq();
-	const int piece = B.get_piece_on(fsq);
-	const bool capture = m.flag() == EN_PASSANT || B.get_piece_on(tsq) != NO_PIECE;
-
-	if (piece != PAWN) {
-		if (m.flag() == CASTLING) {
-			if (file(tsq) == FILE_C)
-				s << "OOO";
-			else
-				s << "OO";
-		} else {
-			s << PieceLabel[WHITE][piece];
-			Bitboard b = B.get_pieces(us, piece)
-			             & piece_attack(piece, tsq, B.st().occ)
-			             & ~B.st().pinned;
-			if (several_bits(b)) {
-				clear_bit(&b, fsq);
-				const int sq = lsb(b);
-				if (file(fsq) == file(sq))
-					s << char(rank(fsq) + '1');
-				else
-					s << char(file(fsq) + 'a');
-			}
-		}
-	} else if (capture)
-		s << char(file(fsq) + 'a');
-
-	if (capture)
-		s << 'x';
-
-	if (m.flag() != CASTLING)
-		s << square_to_string(tsq);
-
-	if (m.flag() == PROMOTION)
-		s << PieceLabel[WHITE][m.prom()];
-
-	if (move_is_check(B, m))
-		s << '+';
-
-	return s.str();
-}
-
 namespace
 {
 	const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
