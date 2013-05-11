@@ -39,8 +39,8 @@ namespace
 	uint64_t node_count, node_limit;
 	int time_limit[2], time_allowed;
 	time_point<high_resolution_clock> start;
+	
 	void node_poll(Board& B);
-
 	void time_alloc(const SearchLimits& sl, int result[2]);
 
 	History H;
@@ -77,6 +77,9 @@ namespace
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	
 	move_t best;
+	
+	const int CONTEMPT = 25;
+	int DrawScore[NB_COLOR];
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -95,6 +98,11 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	H.clear();
 	TT.new_search();
 	B.set_unwind();		// remember the Board state
+	
+	// Calculate draw score by color (because of contempt)
+	const int us = B.get_turn(), them = opp_color(us);
+	DrawScore[us] = -CONTEMPT;
+	DrawScore[them] = +CONTEMPT;
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
 
@@ -169,7 +177,7 @@ namespace
 		ss->best = 0;
 
 		if (!root && B.is_draw())
-			return 0;
+			return DrawScore[B.get_turn()];
 
 		// mate distance pruning
 		alpha = std::max(alpha, mated_in(ss->ply));
@@ -354,7 +362,7 @@ namespace
 		if (!MS.get_count()) {
 			// mated or stalemated
 			assert(!root);
-			return in_check ? mated_in(ss->ply) : 0;
+			return in_check ? mated_in(ss->ply) : DrawScore[B.get_turn()];
 		} else if (root && MS.get_count() == 1)
 			// forced move at the root node, play instantly and prevent further iterative deepening
 			throw ForcedMove();
@@ -397,7 +405,7 @@ namespace
 		ss->best = 0;
 
 		if (B.is_draw())
-			return 0;
+			return DrawScore[B.get_turn()];
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
