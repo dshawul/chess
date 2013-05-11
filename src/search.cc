@@ -94,7 +94,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	H.clear();
 	TT.new_search();
-	B.set_unwind();
+	B.set_unwind();		// remember the Board state
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
 
@@ -493,12 +493,8 @@ namespace
 			         (high_resolution_clock::now()-start).count() > time_allowed)
 				abort = true;
 
-			// abort search by throwing an exception, caught in bestmove()
-			// B.unwind() restores the board state from its initial state
-			if (abort) {
-				B.unwind();
+			if (abort)
 				throw AbortSearch();
-			}
 		}
 	}
 
