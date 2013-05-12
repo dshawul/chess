@@ -18,6 +18,10 @@
 #include "search.h"
 #include "eval.h"
 
+/* Default values for UCI options */
+int Hash = 32;
+int Contempt = 25;
+
 namespace
 {
 	const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -43,10 +47,13 @@ void loop()
 
 		if (token == "uci")
 			std::cout << "id name DiscoCheck 4.1\n"
-			          << "id author Lucas Braesch\n"
-			          << "option name Hash type spin default 32 min 1 max 8192\n"
-			          << "option name Clear Hash type button\n"
-			          << "uciok" << std::endl;
+				<< "id author Lucas Braesch\n"
+				/* Declare UCI options here */
+				<< "option name Hash type spin default " << Hash << " min 1 max 8192\n"
+				<< "option name Clear Hash type button\n"
+				<< "option name Contempt type spin default " << Contempt << " min 0 max 100\n"
+				/* end of UCI options */
+				<< "uciok" << std::endl;
 		else if (token == "ucinewgame")
 			TT.clear();
 		else if (token == "position")
@@ -121,11 +128,13 @@ namespace
 		while (is >> token && token != "value")
 			name += token;
 
+		/* UCI option 'name' has been modified. Handle here. */
 		if (name == "Hash") {
-			uint64_t size_mb;
-			is >> size_mb;
-			TT.alloc(size_mb << 20);
+			is >> Hash;
+			TT.alloc(Hash << 20);
 		} else if (name == "ClearHash")
 			TT.clear();
+		else if (name == "Contempt")
+			is >> Contempt;
 	}
 }

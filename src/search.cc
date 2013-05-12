@@ -78,7 +78,6 @@ namespace
 	
 	move_t best;
 	
-	const int CONTEMPT = 25;
 	int DrawScore[NB_COLOR];
 }
 
@@ -99,10 +98,10 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	TT.new_search();
 	B.set_unwind();		// remember the Board state
 	
-	// Calculate draw score by color (because of contempt)
+	// Calculate the value of a draw by chess rules, for both colors (contempt option)
 	const int us = B.get_turn(), them = opp_color(us);
-	DrawScore[us] = -CONTEMPT;
-	DrawScore[them] = +CONTEMPT;
+	DrawScore[us] = -Contempt;
+	DrawScore[them] = +Contempt;
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY-1, sl.depth) : MAX_PLY-1;
 
