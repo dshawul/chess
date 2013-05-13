@@ -33,11 +33,24 @@ struct History
 	static const int Max = 2000;
 	
 	void clear();
+	
 	void add(const Board& B, move_t m, int bonus);
 	int get(const Board& B, move_t m) const;
 	
+	void set_refutation(const Board& B, move_t m);
+	move_t get_refutation(const Board& B) const;
+	
 private:
-	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
+	/* History heuristic:
+	 * - when a move causes a beta cutoff, increment by +depth*depth
+	 * - all other previously searched moves are marked as bad, decrement by depth*depth
+	 * - on overflow, divide the whole table by 2 */
+	int history[NB_COLOR][NB_PIECE][NB_SQUARE];
+	
+	/* Counter move heuristic:
+	 * remember the last refutation to each move. For example if 1.. Nf6 refutes 1. Nc3
+	 * refutation[BLACK][KNIGHT][C3] == Nf6 move */
+	move_t refutation[NB_COLOR][NB_PIECE+1][NB_SQUARE];
 };
 
 struct MoveSort
@@ -67,6 +80,7 @@ private:
 	const SearchInfo *ss;
 	int node_type;
 	const History *H;
+	move_t refutation;
 
 	Token list[MAX_MOVES];
 	int idx, count, depth;

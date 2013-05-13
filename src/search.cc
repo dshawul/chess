@@ -378,13 +378,16 @@ namespace
 				ss->killer[0] = ss->best;
 			}
 
-			// mark ss->best as good, and all other moves searched as bad
+			// history table: mark ss->best as good, and all other moves searched as bad
 			move_t m;
 			int bonus = std::min(depth*depth, (int)History::Max);
 			if (hanging) bonus /= 2;
 			while ( (m = MS.previous()) )
 				if (!move_is_cop(B, m))
 					H.add(B, m, m == ss->best ? bonus : -bonus);
+			
+			// refutation table
+			H.set_refutation(B, ss->best);
 		}
 
 		return best_score;

@@ -19,7 +19,8 @@
 
 void History::clear()
 {
-	memset(h, 0, sizeof(h));
+	memset(history, 0, sizeof(history));
+	memset(refutation, 0, sizeof(refutation));
 }
 
 int History::get(const Board& B, move_t m) const
@@ -27,7 +28,7 @@ int History::get(const Board& B, move_t m) const
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
 
-	return h[B.get_turn()][piece][tsq];
+	return history[B.get_turn()][piece][tsq];
 }
 
 void History::add(const Board& B, move_t m, int bonus)
@@ -35,13 +36,36 @@ void History::add(const Board& B, move_t m, int bonus)
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move_is_cop(B, m) && piece_ok(piece));
 
-	int &v = h[B.get_turn()][piece][tsq];
+	// Increment history table
+	int &v = history[B.get_turn()][piece][tsq];
 	v += bonus;
-
+	
+	// Rescale all history table on overflow
 	if (std::abs(v) >= History::Max)
 		for (int c = WHITE; c <= BLACK; ++c)
 			for (int p = PAWN; p <= KING; ++p)
-				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
+				for (int s = A1; s <= H8; history[c][p][s++] /= 2);
+}
+
+void History::set_refutation(const Board& B, move_t m)
+{	
+	const move_t prev_move = B.st().last_move;
+	if (prev_move) {
+		const int prev_tsq = prev_move.tsq();
+		const int prev_piece = B.get_piece_on(prev_tsq);
+		refutation[B.get_turn()][prev_piece][prev_tsq] = m;
+	}
+}
+
+move_t History::get_refutation(const Board& B) const
+{
+	const move_t prev_move = B.st().last_move;
+	if (prev_move) {
+		const int prev_tsq = prev_move.tsq();
+		const int prev_piece = B.get_piece_on(prev_tsq);
+		return refutation[B.get_turn()][prev_piece][prev_tsq];
+	} else
+		return 0;
 }
 
 MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type, const History *_H)
@@ -52,6 +76,8 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node
 	 * example. It improves the quality of sorting for check evasions in the qsearch. */
 	if (B->is_check())
 		type = ALL;
+	
+	refutation = H->get_refutation(*B);
 
 	move_t mlist[MAX_MOVES];
 	count = generate(type, mlist) - mlist;
@@ -112,6 +138,9 @@ void MoveSort::score(MoveSort::Token *t)
 			t->score = History::Max-1;
 		else if (depth > 0 && t->m == ss->killer[1])
 			t->score = History::Max-2;
+		else if (depth > 0 && t->m == refutation)
+			// treat the refutation move as 3-rd killer
+			t->score = History::Max-3;
 		else
 			t->score = H->get(*B, t->m);
 	}
@@ -135,5 +164,5 @@ move_t MoveSort::previous()
 	if (idx > 0)
 		return list[--idx].m;
 	else
-		return move_t(0);
+		return 0;
 }
