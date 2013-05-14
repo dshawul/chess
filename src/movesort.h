@@ -49,8 +49,8 @@ private:
 	
 	/* Counter move heuristic:
 	 * remember the last refutation to each move. For example if 1.. Nf6 refutes 1. Nc3
-	 * refutation[BLACK][B1][C3] == Nf6 move */
-	move_t refutation[NB_COLOR][NB_SQUARE][NB_SQUARE];
+	 * refutation[BLACK][KNIGHT][C3] == Nf6 move */
+	move_t refutation[NB_COLOR][NB_PIECE+1][NB_SQUARE];
 };
 
 struct MoveSort

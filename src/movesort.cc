@@ -50,16 +50,21 @@ void History::add(const Board& B, move_t m, int bonus)
 void History::set_refutation(const Board& B, move_t m)
 {	
 	const move_t prev_move = B.st().last_move;
-	if (prev_move)
-		refutation[B.get_turn()][prev_move.fsq()][prev_move.tsq()] = m;
+	if (prev_move) {
+		const int prev_tsq = prev_move.tsq();
+		const int prev_piece = B.get_piece_on(prev_tsq);
+		refutation[B.get_turn()][prev_piece][prev_tsq] = m;
+	}
 }
 
 move_t History::get_refutation(const Board& B) const
 {
 	const move_t prev_move = B.st().last_move;
-	if (prev_move)
-		return refutation[B.get_turn()][prev_move.fsq()][prev_move.tsq()];
-	else
+	if (prev_move) {
+		const int prev_tsq = prev_move.tsq();
+		const int prev_piece = B.get_piece_on(prev_tsq);
+		return refutation[B.get_turn()][prev_piece][prev_tsq];
+	} else
 		return 0;
 }
 
