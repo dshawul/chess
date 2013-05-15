@@ -198,6 +198,7 @@ inline int Board::get_move_count() const
 inline Key Board::get_dm_key() const
 // Calculates the hash key of the last two moves
 {
-	const GameInfo *p = std::max(sp-2, sp0);
+	const GameInfo *p = sp-2;
+	if (p < game_stack) p = game_stack;
 	return p->key ^ sp->key;
 }
