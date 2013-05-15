@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <cstring>
 #include "movegen.h"
 
 struct SearchInfo {
@@ -38,6 +39,32 @@ struct History
 	
 private:
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
+};
+
+struct Refutation
+{
+	struct Pack {
+		uint64_t dm_key: 48;
+		move_t move;
+	};
+	
+	static const int count = 0x10000;
+	Pack r[count];
+	
+	void clear() {
+		memset(this, 0, sizeof(this));
+	}
+	
+	move_t get_refutation(Key dm_key) const {
+		const size_t idx = dm_key & (count-1);
+		Pack tmp = {dm_key, 0};
+		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
+	}
+	
+	void set_refutation(Key dm_key, move_t m) {
+		const size_t idx = dm_key & (count-1);
+		r[idx] = {dm_key, m};
+	}
 };
 
 struct MoveSort
