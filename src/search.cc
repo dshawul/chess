@@ -260,8 +260,9 @@ namespace
 		}
 
 		MoveSort MS(&B, depth, ss, node_type, &H);
+		const move_t refutation = H.get_refutation(B);
+		
 		int cnt = 0, LMR = 0, see;
-
 		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 			++cnt;
 			const int check = move_is_check(B, ss->m);
@@ -288,6 +289,7 @@ namespace
 				|| new_depth == depth
 				|| ss->m == ss->killer[0]
 				|| ss->m == ss->killer[1]
+				|| ss->m == refutation
 				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
 				|| (ss->m.flag() == CASTLING);
 
