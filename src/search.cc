@@ -44,6 +44,7 @@ namespace
 	void time_alloc(const SearchLimits& sl, int result[2]);
 
 	History H;
+	Refutation R;
 
 	int adjust_tt_score(int score, int ply);
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
@@ -95,6 +96,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	best = 0;
 
 	H.clear();
+	R.clear();
 	TT.new_search();
 	B.set_unwind();		// remember the Board state
 	
@@ -259,7 +261,7 @@ namespace
 			ss->skip_null = false;
 		}
 
-		MoveSort MS(&B, depth, ss, node_type, &H);
+		MoveSort MS(&B, depth, ss, node_type, &H, &R);
 		int cnt = 0, LMR = 0, see;
 
 		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
@@ -385,6 +387,8 @@ namespace
 			while ( (m = MS.previous()) )
 				if (!move_is_cop(B, m))
 					H.add(B, m, m == ss->best ? bonus : -bonus);
+			
+			R.set_refutation(B.get_dm_key(), ss->best);
 		}
 
 		return best_score;
@@ -426,7 +430,7 @@ namespace
 				return alpha;
 		}
 
-		MoveSort MS(&B, depth, ss, node_type, &H);
+		MoveSort MS(&B, depth, ss, node_type, &H, NULL);
 		int see;
 		const int fut_base = ss->eval + vEP/2;
 

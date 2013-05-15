@@ -81,7 +81,8 @@ struct MoveSort
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type, const History *_H);
+	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type,
+		const History *_H, const Refutation *_R);
 
 	move_t next(int *see);
 	move_t previous();
@@ -94,6 +95,8 @@ private:
 	const SearchInfo *ss;
 	int node_type;
 	const History *H;
+	const Refutation *R;
+	move_t refutation;
 
 	Token list[MAX_MOVES];
 	int idx, count, depth;

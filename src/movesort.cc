@@ -43,8 +43,9 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type, const History *_H)
-	: B(_B), ss(_ss), node_type(_node_type), H(_H), idx(0), depth(_depth)
+MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type,
+	const History *_H, const Refutation *_R)
+	: B(_B), ss(_ss), node_type(_node_type), H(_H), R(_R), idx(0), depth(_depth)
 {
 	type = depth > 0 ? ALL : (depth == 0 ? CAPTURES_CHECKS : CAPTURES);
 	/* If we're in check set type = ALL. This affects the sort() and uses SEE instead of MVV/LVA for
@@ -52,6 +53,8 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node
 	if (B->is_check())
 		type = ALL;
 
+	refutation = R ? R->get_refutation(B->get_dm_key()) : move_t(0);
+	
 	move_t mlist[MAX_MOVES];
 	count = generate(type, mlist) - mlist;
 	annotate(mlist);
@@ -111,6 +114,8 @@ void MoveSort::score(MoveSort::Token *t)
 			t->score = History::Max-1;
 		else if (depth > 0 && t->m == ss->killer[1])
 			t->score = History::Max-2;
+		else if (t->m == refutation)
+			t->score = History::Max-3;
 		else
 			t->score = H->get(*B, t->m);
 	}
