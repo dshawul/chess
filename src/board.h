@@ -115,6 +115,7 @@ struct Board
 	bool is_draw() const;
 
 	Key get_key() const;
+	Key get_dm_key() const;
 
 private:
 	Bitboard b[NB_PIECE], all[NB_COLOR];
@@ -192,4 +193,11 @@ inline int Board::get_move_count() const
 {
 	assert(initialized);
 	return move_count;
+}
+
+inline Key Board::get_dm_key() const
+// Calculates the hash key of the last two moves
+{
+	const GameInfo *p = std::max(sp-2, sp0);
+	return p->key ^ sp->key;
 }
