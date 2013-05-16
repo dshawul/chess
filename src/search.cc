@@ -262,8 +262,9 @@ namespace
 		}
 
 		MoveSort MS(&B, depth, ss, node_type, &H, &R);
-		int cnt = 0, LMR = 0, see;
+		const move_t refutation = R.get_refutation(B.get_dm_key());
 
+		int cnt = 0, LMR = 0, see;
 		while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 			++cnt;
 			const int check = move_is_check(B, ss->m);
@@ -290,6 +291,7 @@ namespace
 				|| new_depth == depth
 				|| ss->m == ss->killer[0]
 				|| ss->m == ss->killer[1]
+				|| ss->m == refutation
 				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
 				|| (ss->m.flag() == CASTLING);
 
@@ -380,6 +382,7 @@ namespace
 				ss->killer[0] = ss->best;
 			}
 
+			// update history table
 			// mark ss->best as good, and all other moves searched as bad
 			move_t m;
 			int bonus = std::min(depth*depth, (int)History::Max);
@@ -388,6 +391,7 @@ namespace
 				if (!move_is_cop(B, m))
 					H.add(B, m, m == ss->best ? bonus : -bonus);
 			
+			// update double move refutation hash table
 			R.set_refutation(B.get_dm_key(), ss->best);
 		}
 
