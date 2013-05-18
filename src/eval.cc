@@ -446,7 +446,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 void EvalInfo::eval_pieces()
 {
-	static const int TrappedRook = 40;
+	static const int RookOpen = 6, RookTrapped = 40;
 	static const uint64_t BishopTrap[NB_COLOR] = {
 		(1ULL << A7) | (1ULL << H7) | (1ULL << A6) | (1ULL << H6),
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
@@ -456,15 +456,28 @@ void EvalInfo::eval_pieces()
 	const bool can_castle = B->st().crights & (3 << (2*us));
 	Bitboard fss, tss;
 
+	// Rook on open file
+	fss = B->get_pieces(us, ROOK);
+	while (fss) {
+		const int rsq = pop_lsb(&fss);
+		const Bitboard ahead = SquaresInFront[us][rsq];
+		if (!(our_pawns & ahead)) {
+			int bonus = RookOpen;
+			if (!(their_pawns & ahead))
+				bonus += RookOpen/2;
+			e[us] += {bonus, bonus/2};
+		}
+	}
+	
 	// Rook blocked by uncastled King
 	fss = B->get_pieces(us, ROOK) & PPromotionRank[them];
 	while (fss) {
 		const int rsq = pop_lsb(&fss);
 		if (test_bit(Between[rsq][us ? E8 : E1], our_ksq)) {
 			if (our_pawns & SquaresInFront[us][rsq] & HalfBoard[us])
-				e[us].op -= TrappedRook >> can_castle;
+				e[us].op -= RookTrapped >> can_castle;
 			else
-				e[us].op -= (TrappedRook/2) >> can_castle;
+				e[us].op -= (RookTrapped/2) >> can_castle;
 
 			break;  // King can only trap one Rook
 		}
