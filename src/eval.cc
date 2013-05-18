@@ -446,7 +446,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 void EvalInfo::eval_pieces()
 {
-	static const int RookOpen = 6, RookTrapped = 40;
+	static const int RookOpen = 8, RookTrapped = 40;
 	static const uint64_t BishopTrap[NB_COLOR] = {
 		(1ULL << A7) | (1ULL << H7) | (1ULL << A6) | (1ULL << H6),
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)

@@ -27,7 +27,7 @@ enum {
 #define vEP 100
 #define vN 330
 #define vB 330
-#define vR 550
+#define vR 545
 #define vQ 1000
 #define vK 20000 // only for SEE
 
