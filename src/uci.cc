@@ -1,5 +1,5 @@
 /*
- * DiscoCheck, an UCI chess interface. Copyright (C) 2011-2013 Lucas Braesch.
+ * DiscoCheck, an UCI chess engine. Copyright (C) 2011-2013 Lucas Braesch.
  *
  * DiscoCheck is free software: you can redistribute it and/or modify it under the terms of the GNU
  * General Public License as published by the Free Software Foundation, either version 3 of the
@@ -19,7 +19,7 @@
 #include "eval.h"
 
 /* Default values for UCI options */
-int Hash = 32;
+int Hash = 16;
 int Contempt = 25;
 
 namespace
@@ -34,10 +34,9 @@ namespace
 void loop()
 {
 	Board B;
-	TT.alloc(32 << 20);
+	TT.alloc(Hash << 20);
 
 	std::string cmd, token;
-
 	while (token != "quit") {
 		if (!getline(std::cin, cmd) || cmd == "quit")
 			break;
