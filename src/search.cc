@@ -33,6 +33,7 @@ namespace
 	const int QS_LIMIT = -8;
 	const int TEMPO = 4;
 
+	bool can_abort;
 	struct AbortSearch {};
 	struct ForcedMove {};
 
@@ -94,6 +95,11 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
 	best = 0;
+	
+	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
+	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
+	// as the best move could be illegal or completely stupid.
+	can_abort = false;
 
 	H.clear();
 	R.clear();
@@ -152,8 +158,12 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 				time_allowed = time_limit[1];
 			}
 		}
+		
+		// Here we know that iteration 1 is finished
+		can_abort = true;
 
-		print_pv(B);
+		// Extract the PV from the TT and display it
+		print_pv(B);		
 	}
 
 	return best;
@@ -496,8 +506,7 @@ namespace
 
 	void node_poll(Board &B)
 	{
-		++node_count;
-		if (0 == (node_count % 1024)) {
+		if (!(++node_count & 0xff) && can_abort) {
 			bool abort = false;
 
 			// abort search because node limit exceeded
