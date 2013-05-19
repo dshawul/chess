@@ -29,6 +29,11 @@ struct SearchInfo {
 	}
 };
 
+/* History heuristic (quite move ordering):
+ * - moves are sorted by descending h[color][piece][tsq] (after TT, killers, refutation).
+ * - when a move fails high, its history score is incremented by depth*depth.
+ * - for all other moves searched before, decrement their history score by depth*depth.
+ * */
 struct History
 {
 	static const int Max = 2000;
@@ -41,6 +46,14 @@ private:
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
 };
 
+/* Double Move Refutation Hash Table:
+ * - used for quiet move ordering, and as an LMR guard.
+ * - move pair (m1, m2) -> move m3 that refuted the sequence (m1, m2) last time it was visited by the
+ * search.
+ * - dm_key is the zobrist key of the last 2 moves (see Board::get_dm_key(), in particular floor at
+ * root sp0).
+ * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
+ * */
 struct Refutation
 {
 	struct Pack {
