@@ -60,6 +60,15 @@ namespace
 	const int RazorMargin[4] = {0, 2*vEP, 2*vEP+vEP/2, 3*vEP};
 	const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
+	void print_pv(Board& B);
+
+	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+	
+	move_t best;
+	
+	int DrawScore[NB_COLOR];
+	
 	Bitboard hanging_pieces(const Board& B)
 	{
 		const int us = B.get_turn(), them = opp_color(us);
@@ -73,15 +82,23 @@ namespace
 		return ((our_pawns ^ our_pieces) & attacked & ~defended)
 		       | (our_pieces & B.st().attacks[them][PAWN]);
 	}
-
-	void print_pv(Board& B);
-
-	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	
-	move_t best;
-	
-	int DrawScore[NB_COLOR];
+	int stand_pat_penalty(const Board& B)
+	{
+		Bitboard b = hanging_pieces(B);
+		
+		if (several_bits(b)) {
+			int piece = KING;
+			while (b) {
+				const int sq = pop_lsb(&b);
+				const int p = B.get_piece_on(sq);
+				piece = std::min(piece, p);
+			}
+			return Material[piece].op/2;
+		} else
+			return 0;
+		// FIXME: handle the case (b & B.st().pinned)
+	}
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -439,7 +456,7 @@ namespace
 
 		// stand pat
 		if (!in_check) {
-			best_score = ss->eval + TEMPO;
+			best_score = ss->eval + TEMPO - stand_pat_penalty(B);
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;
