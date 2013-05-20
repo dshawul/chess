@@ -18,6 +18,7 @@
 */
 #include <chrono>
 #include "search.h"
+#include "uci.h"
 #include "eval.h"
 #include "movesort.h"
 #include "prng.h"
@@ -508,13 +509,16 @@ namespace
 	{
 		if (!(++node_count & 0xff) && can_abort) {
 			bool abort = false;
-
+			
 			// abort search because node limit exceeded
 			if (node_limit && node_count >= node_limit)
 				abort = true;
 			// abort search because time limit exceeded
 			else if (time_allowed && duration_cast<milliseconds>
 			         (high_resolution_clock::now()-start).count() > time_allowed)
+				abort = true;
+			// abort when UCI "stop" command is received (involves some non standard I/O)
+			else if (stop_received())
 				abort = true;
 
 			if (abort)

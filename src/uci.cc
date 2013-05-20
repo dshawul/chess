@@ -18,6 +18,15 @@
 #include "search.h"
 #include "eval.h"
 
+#if defined(_WIN32) || defined(_WIN64) 
+   #include <windows.h> 
+   #include <conio.h> 
+#else   // assume POSIX 
+   #include <cerrno> 
+   #include <unistd.h> 
+   #include <sys/time.h> 
+#endif 
+
 /* Default values for UCI options */
 int Hash = 16;
 int Contempt = 25;
@@ -136,4 +145,50 @@ namespace
 		else if (name == "Contempt")
 			is >> Contempt;
 	}
+}
+
+bool input_available()
+{ 
+#if defined(_WIN32) || defined(_WIN64) 
+
+   static bool init = false, is_pipe; 
+   static HANDLE stdin_h; 
+   DWORD val; 
+    
+   if (!init) { 
+      init = true; 
+      stdin_h = GetStdHandle(STD_INPUT_HANDLE); 
+      is_pipe = !GetConsoleMode(stdin_h, &val); 
+   } 
+
+   if (stdin->_cnt > 0) 
+      return true; 
+    
+   if (is_pipe) 
+      return !PeekNamedPipe(stdin_h, NULL, 0, NULL, &val, NULL) ? true : val>0; 
+   else 
+      return _kbhit(); 
+    
+#else   // assume POSIX 
+    
+   fd_set readfds; 
+   FD_ZERO(&readfds); 
+   FD_SET(STDIN_FILENO, &readfds); 
+    
+   struct timeval timeout;    
+   timeout.tv_sec = timeout.tv_usec = 0; 
+    
+   select(STDIN_FILENO+1, &readfds, 0, 0, &timeout); 
+   return FD_ISSET(STDIN_FILENO, &readfds); 
+#endif 
+}
+
+bool stop_received()
+{
+	std::string token;
+	
+	if (input_available())
+		getline(std::cin, token);
+	
+	return token == "stop";
 }

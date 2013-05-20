@@ -15,3 +15,5 @@
 #pragma once
 
 extern void loop();
+
+bool stop_received();
