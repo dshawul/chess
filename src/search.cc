@@ -232,13 +232,15 @@ namespace
 
 		// Eval pruning
 		if ( node_type != PV
-		        && depth <= 3
-		        && !in_check
-		        && !is_mate_score(beta)
-		        && ss->eval + TEMPO >= beta + EvalMargin[depth]
-		        && B.st().piece_psq[B.get_turn()]
-		        && !several_bits(hanging) )
-			return ss->eval + TEMPO - EvalMargin[depth];
+			&& depth <= 3
+			&& !in_check
+			&& !is_mate_score(beta)
+			&& ss->eval + TEMPO >= beta + EvalMargin[depth]
+			&& B.st().piece_psq[B.get_turn()] ) {
+			const int stand_pat = ss->eval + TEMPO - stand_pat_penalty(B) - EvalMargin[depth];
+			if (stand_pat >= beta)
+				return stand_pat;
+		}
 
 		// Razoring
 		if ( node_type != PV
