@@ -54,7 +54,7 @@ void loop()
 		is >> std::skipws >> token;
 
 		if (token == "uci")
-			std::cout << "id name DiscoCheck 4.1\n"
+			std::cout << "id name DiscoCheck 4.2\n"
 				<< "id author Lucas Braesch\n"
 				/* Declare UCI options here */
 				<< "option name Hash type spin default " << Hash << " min 1 max 8192\n"
