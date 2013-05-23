@@ -230,17 +230,17 @@ namespace
 		} else
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
+		// Stand pat score (adjusted for tempo and hanging pieces)
+		const int stand_pat = ss->eval + TEMPO + stand_pat_penalty(B);
+		
 		// Eval pruning
 		if ( node_type != PV
 			&& depth <= 3
 			&& !in_check
 			&& !is_mate_score(beta)
-			&& ss->eval + TEMPO >= beta + EvalMargin[depth]
-			&& B.st().piece_psq[B.get_turn()] ) {
-			const int stand_pat = ss->eval + TEMPO - stand_pat_penalty(B) - EvalMargin[depth];
-			if (stand_pat >= beta)
-				return stand_pat;
-		}
+			&& stand_pat >= beta + EvalMargin[depth]
+			&& B.st().piece_psq[B.get_turn()] )
+			return stand_pat;
 
 		// Razoring
 		if ( node_type != PV
@@ -251,7 +251,7 @@ namespace
 			if (ss->eval < threshold) {
 				const int score = qsearch(B, threshold-1, threshold, 0, All, ss+1);
 				if (score < threshold)
-					return score + TEMPO;
+					return score;
 			}
 		}
 
@@ -331,13 +331,13 @@ namespace
 				        && LMR >= 3 + depth*depth
 				        && alpha > mated_in(MAX_PLY)
 				        && (see < 0 || !refute(B, ss->m, threat_move)) ) {
-					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
+					best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 					continue;
 				}
 
 				// SEE pruning near the leaves
 				if (new_depth <= 1 && see < 0) {
-					best_score = std::max(best_score, std::min(alpha, ss->eval + see));
+					best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 					continue;
 				}
 			}
