@@ -43,9 +43,8 @@ namespace
 void loop()
 {
 	Board B;
-	TT.alloc(Hash << 20);
-
 	std::string cmd, token;
+	
 	while (token != "quit") {
 		if (!getline(std::cin, cmd) || cmd == "quit")
 			break;
@@ -68,9 +67,10 @@ void loop()
 			position(B, is);
 		else if (token == "go")
 			go(B, is);
-		else if (token == "isready")
-			std::cout << "readyok" << std::endl;
-		else if (token == "setoption")
+		else if (token == "isready") {
+			TT.alloc(Hash << 20);
+			std::cout << "readyok" << std::endl;			
+		} else if (token == "setoption")
 			setoption(is);
 		else if (token == "eval")
 			std::cout << B << "eval = " << eval(B) << std::endl;
@@ -137,10 +137,9 @@ namespace
 			name += token;
 
 		/* UCI option 'name' has been modified. Handle here. */
-		if (name == "Hash") {
+		if (name == "Hash")
 			is >> Hash;
-			TT.alloc(Hash << 20);
-		} else if (name == "ClearHash")
+		else if (name == "ClearHash")
 			TT.clear();
 		else if (name == "Contempt")
 			is >> Contempt;
