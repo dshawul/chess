@@ -38,7 +38,9 @@ void aligned_free(void *mem)
 
 TTable::~TTable()
 {
-	aligned_free(cluster);
+	if (count)
+		aligned_free(cluster);
+
 	cluster = NULL;
 	generation = 0;
 	count = 0;
