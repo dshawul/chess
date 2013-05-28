@@ -318,7 +318,6 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
-				|| new_depth == depth
 				|| ss->m == ss->killer[0]
 				|| ss->m == ss->killer[1]
 				|| ss->m == refutation
@@ -336,7 +335,7 @@ namespace
 				}
 
 				// SEE pruning near the leaves
-				if (new_depth <= 1 && see < 0) {
+				if (new_depth <= 1 && see < 0 && MS.get_count > 1) {
 					best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 					continue;
 				}
