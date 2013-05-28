@@ -318,6 +318,7 @@ namespace
 			const bool bad_capture = capture && see < 0;
 			// dangerous movea are not reduced
 			const bool dangerous = check
+				|| new_depth == depth
 				|| ss->m == ss->killer[0]
 				|| ss->m == ss->killer[1]
 				|| ss->m == refutation
