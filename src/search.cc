@@ -324,7 +324,7 @@ namespace
 				|| (move_is_pawn_threat(B, ss->m) && see >= 0)
 				|| (ss->m.flag() == CASTLING);
 
-			if (!capture && !dangerous && !in_check) {
+			if (!capture && !dangerous && !in_check && !root) {
 				// Move count pruning
 				if ( depth <= 8 && node_type != PV
 				        && LMR >= 3 + depth*depth
@@ -335,7 +335,7 @@ namespace
 				}
 
 				// SEE pruning near the leaves
-				if (new_depth <= 1 && see < 0 && MS.get_count > 1) {
+				if (new_depth <= 1 && see < 0) {
 					best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 					continue;
 				}
