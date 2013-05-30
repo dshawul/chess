@@ -30,7 +30,6 @@
 /* Default values for UCI options */
 int Hash = 16;
 int Contempt = 25;
-
 bool UCI_LimitStrength = false;
 static const int ELO_MIN = 1400, ELO_MAX = 2600;
 int UCI_Elo = ELO_MIN;
@@ -58,7 +57,7 @@ void loop()
 		is >> std::boolalpha;
 		is >> std::skipws >> token;
 		if (token == "uci")
-			std::cout << "id name DiscoCheck 4.2\n"
+			std::cout << "id name DiscoCheck 4.2.1\n"
 				<< "id author Lucas Braesch\n"
 				/* Declare UCI options here */
 				<< "option name Hash type spin default " << Hash << " min 1 max 8192\n"
@@ -117,7 +116,7 @@ namespace
 		
 		if (UCI_LimitStrength)
 			// discard parameters of the go command
-			sl.nodes = pow(2.0, 8.0 + (UCI_Elo - ELO_MIN) / 100.0);
+			sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo-ELO_MIN)/128.0, 1.0/0.9));
 		else {
 			std::string token;
 			while (is >> token) {
