@@ -30,7 +30,9 @@ int main (int argc, char **argv)
 			bench(12);
 		else if (std::string(argv[1]) == "perft")
 			test_perft();
-		std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
+
+		if (dbg_cnt1 || dbg_cnt2)
+			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
 	} else
 		loop();
 }
