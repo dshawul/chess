@@ -358,8 +358,8 @@ void EvalInfo::eval_passer(int sq)
 	const int Q = L*(L-1);						// Quadratic part	0..20
 
 	// score based on rank
-	e[us].op += 8 * Q;
-	e[us].eg += 4 * (Q + L + 1);
+	e[us].op += 6 * Q;
+	e[us].eg += 3 * (Q + L + 1);
 
 	if (Q) {
 		//  adjustment for king distance
