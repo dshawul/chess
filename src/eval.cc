@@ -71,7 +71,7 @@ private:
 	
 	Bitboard do_eval_pawns();
 	void eval_shelter_storm();
-	void eval_passer(int sq);
+	void eval_passer(int sq, Eval* res);
 	void eval_passer_interaction(int sq);
 
 	int calc_phase() const;
@@ -348,7 +348,7 @@ void EvalInfo::eval_shelter_storm()
 	}
 }
 
-void EvalInfo::eval_passer(int sq)
+void EvalInfo::eval_passer(int sq, Eval *res)
 {
 	const int r = rank(sq), f = file(sq);
 	const int next_sq = pawn_push(us, sq);
@@ -358,23 +358,23 @@ void EvalInfo::eval_passer(int sq)
 	const int Q = L*(L-1);						// Quadratic part	0..20
 
 	// score based on rank
-	e[us].op += 6 * Q;
-	e[us].eg += 3 * (Q + L + 1);
+	res->op += 6 * Q;
+	res->eg += 3 * (Q + L + 1);
 
 	if (Q) {
-		//  adjustment for king distance
-		e[us].eg += kdist(next_sq, their_ksq) * 2 * Q;
-		e[us].eg -= kdist(next_sq, our_ksq) * Q;
+		// adjustment for king distance
+		res->eg += kdist(next_sq, their_ksq) * 2 * Q;
+		res->eg -= kdist(next_sq, our_ksq) * Q;
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
-			e[us].eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
+			res->eg -= kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
 	}
 
 	// support by friendly pawn
 	if (besides & PawnSpan[them][next_sq]) {
 		if (PAttacks[them][next_sq] & our_pawns)
-			e[us].eg += 8 * L;	// besides is good, as it allows a further push
+			res->eg += 8 * L;	// besides is good, as it allows a further push
 		else if (PAttacks[them][sq] & our_pawns)
-			e[us].eg += 5 * L;	// behind is solid, but doesn't allow further push
+			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
 		else if (!(PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
 			// pawns that are 1 push away
 			Bitboard b = PAttacks[them][sq];
@@ -386,7 +386,7 @@ void EvalInfo::eval_passer(int sq)
 			while (b) {
 				const int tsq = pop_lsb(&b);
 				if (test_bit(our_pawns, pawn_push(them, tsq)))
-					e[us].eg += 2 * L;	// 1 push away from defendint the passer
+					res->eg += 2 * L;	// 1 push away from defendint the passer
 			}
 		}
 	}
@@ -427,17 +427,12 @@ Bitboard EvalInfo::do_eval_pawns()
 		}
 
 		if (candidate) {
-			int n = us ? 7-r : r;
-			const int d1 = kdist(sq, our_ksq), d2 = kdist(sq, their_ksq);
-
-			if (d1 > d2)		// penalise if enemy king is closer
-				n -= d1 - d2;
-
-			if (n > 0)			// quadratic score
-				e[us].eg += n*n;
+			Eval tmp = {0,0};
+			eval_passer(sq, &tmp);
+			e[us] += {tmp.op/2, tmp.eg/2};
 		} else if (passed) {
 			set_bit(&passers, sq);
-			eval_passer(sq);
+			eval_passer(sq, &e[us]);
 		}
 	}
 
