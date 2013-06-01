@@ -27,6 +27,8 @@ enum { PV = 0, All = -1, Cut = +1 };
 // Transposition Table
 extern TTable TT;
 
+extern uint64_t PollingFrequency;	// test search search limits every so nodes, must be a power of two
+
 move_t bestmove(Board& B, const SearchLimits& sl);
 void bench(int depth);
 

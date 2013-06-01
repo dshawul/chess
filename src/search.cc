@@ -24,6 +24,7 @@
 #include "prng.h"
 
 TTable TT;
+uint64_t PollingFrequency;
 
 using namespace std::chrono;
 
@@ -525,9 +526,9 @@ namespace
 
 	void node_poll(Board &B)
 	{
-		if (!(++node_count & 0xff) && can_abort) {
+		if (!(++node_count & (PollingFrequency-1)) && can_abort) {
 			bool abort = false;
-			
+
 			// abort search because node limit exceeded
 			if (node_limit && node_count >= node_limit)
 				abort = true;
