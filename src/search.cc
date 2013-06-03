@@ -232,7 +232,7 @@ namespace
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
 		// Stand pat score (adjusted for tempo and hanging pieces)
-		const int stand_pat = ss->eval + TEMPO + stand_pat_penalty(B);
+		const int stand_pat = ss->eval + TEMPO - stand_pat_penalty(B);
 		
 		// Eval pruning
 		if ( node_type != PV
