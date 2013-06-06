@@ -292,7 +292,7 @@ namespace
 			ss->skip_null = false;
 		}
 
-		MoveSort MS(&B, depth, ss, node_type, &H, &R);
+		MoveSort MS(&B, depth, ss, &H, &R);
 		const move_t refutation = R.get_refutation(B.get_dm_key());
 
 		int cnt = 0, LMR = 0, see;
@@ -464,7 +464,7 @@ namespace
 				return alpha;
 		}
 
-		MoveSort MS(&B, depth, ss, node_type, &H, NULL);
+		MoveSort MS(&B, depth, ss, &H, NULL);
 		int see;
 		const int fut_base = ss->eval + vEP/2;
 

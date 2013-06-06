@@ -43,9 +43,9 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, int _node_type,
+MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, 
 	const History *_H, const Refutation *_R)
-	: B(_B), ss(_ss), node_type(_node_type), H(_H), R(_R), idx(0), depth(_depth)
+	: B(_B), ss(_ss), H(_H), R(_R), idx(0), depth(_depth)
 {
 	type = depth > 0 ? ALL : (depth == 0 ? CAPTURES_CHECKS : CAPTURES);
 	/* If we're in check set type = ALL. This affects the sort() and uses SEE instead of MVV/LVA for
@@ -97,15 +97,10 @@ void MoveSort::score(MoveSort::Token *t)
 		t->score = INF;
 	else if (move_is_cop(*B, t->m))
 		if (type == ALL) {
-			if (node_type == All)
-				t->score = mvv_lva(*B, t->m) + History::Max;
-			else {
-				// equal and winning captures, by SEE, in front of quiet moves
-				// losing captures, after all quiet moves
-				t->see = calc_see(*B, t->m);
-				t->score = t->see >= 0 ? t->see + History::Max : t->see - History::Max;
-			}
-
+			// equal and winning captures, by SEE, in front of quiet moves
+			// losing captures, after all quiet moves
+			t->see = calc_see(*B, t->m);
+			t->score = t->see >= 0 ? t->see + History::Max : t->see - History::Max;
 		} else
 			t->score = mvv_lva(*B, t->m);
 	else {
