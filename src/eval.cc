@@ -68,6 +68,8 @@ private:
 	int eval_factor;	// between 0 and 16
 	
 	void score_mobility(int us, int p0, int p, Bitboard tss);
+	void score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
+		int *total_count, int *total_weight);
 	
 	Bitboard do_eval_pawns();
 	void eval_shelter_storm();
@@ -171,19 +173,21 @@ void EvalInfo::eval_mobility()
 	}
 }
 
-// Generic attack scoring
-#define ADD_ATTACK(p0)								\
-	if (sq_attackers) {								\
-		count = count_bit(sq_attackers);			\
-		total_weight += AttackWeight[p0] * count;	\
-		if (test_bit(defended, sq)) count--;		\
-		total_count += count;						\
+void EvalInfo::score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
+	int *total_count, int *total_weight)
+{
+	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
+	
+	if (sq_attackers) {
+		int count = count_bit(sq_attackers);
+		*total_weight += AttackWeight[p0] * count;
+		if (test_bit(defended, sq)) count--;
+		*total_count += count;
 	}
+}
 
 void EvalInfo::eval_safety()
 {
-	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
-
 	// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 	// attacks are concerned
 	const Bitboard solid = B->st().attacks[us][PAWN] | their_pawns;
@@ -192,7 +196,7 @@ void EvalInfo::eval_safety()
 	const Bitboard defended = B->st().attacks[us][KNIGHT] | B->st().attacks[us][BISHOP]
 		| B->st().attacks[us][ROOK];
 
-	int total_weight = 0, total_count = 0, sq, count;
+	int total_weight = 0, total_count = 0, sq;
 	Bitboard sq_attackers, attacked, occ, fss;
 
 	// Knight attacks
@@ -202,7 +206,7 @@ void EvalInfo::eval_safety()
 		while (attacked) {
 			sq = pop_lsb(&attacked);
 			sq_attackers = NAttacks[sq] & fss;
-			ADD_ATTACK(KNIGHT);
+			score_attacks(KNIGHT, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	}
 
@@ -214,7 +218,7 @@ void EvalInfo::eval_safety()
 		while (attacked) {
 			sq = pop_lsb(&attacked);
 			sq_attackers = fss & rook_attack(sq, occ);
-			ADD_ATTACK(ROOK);
+			score_attacks(ROOK, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	} else if ( (fss = RPseudoAttacks[our_ksq] & B->get_RQ(them)) )
 		// hidden attackers: increment count when the attacking line contains at most one pawn
@@ -231,7 +235,7 @@ void EvalInfo::eval_safety()
 		while (attacked) {
 			sq = pop_lsb(&attacked);
 			sq_attackers = fss & bishop_attack(sq, occ);
-			ADD_ATTACK(BISHOP);
+			score_attacks(BISHOP, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	} else if ( (fss = BPseudoAttacks[our_ksq] & B->get_BQ(them)) )
 		// hidden attackers: increment count when the attacking diagonal contains at most one pawn
