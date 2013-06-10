@@ -123,7 +123,7 @@ move_t MoveSort::next(int *see)
 		const Token& t = list[idx++];
 		*see = t.see == -INF
 		       ? calc_see(*B, t.m)	// compute SEE
-		       : t.see;			// use SEE cache
+		       : t.see;				// use SEE cache
 		return t.m;
 	} else
 		return 0;
@@ -131,8 +131,5 @@ move_t MoveSort::next(int *see)
 
 move_t MoveSort::previous()
 {
-	if (idx > 0)
-		return list[--idx].m;
-	else
-		return move_t(0);
+	return idx > 0 ? list[--idx].m : move_t(0);
 }
