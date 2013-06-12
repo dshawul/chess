@@ -83,9 +83,9 @@ struct Refutation
 struct MoveSort
 {
 	enum GenType {
-	    ALL,				// all legal moves
-	    CAPTURES_CHECKS,	// captures and quiet checks
-	    CAPTURES			// captures only
+	    GEN_ALL,				// all legal moves
+	    GEN_CAPTURES_CHECKS,	// captures and quiet checks
+	    GEN_CAPTURES			// captures only
 	};
 
 	struct Token {

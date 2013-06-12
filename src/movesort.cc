@@ -47,11 +47,11 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
 	const History *_H, const Refutation *_R)
 	: B(_B), ss(_ss), H(_H), R(_R), idx(0), depth(_depth)
 {
-	type = depth > 0 ? ALL : (depth == 0 ? CAPTURES_CHECKS : CAPTURES);
+	type = depth > 0 ? GEN_ALL : (depth == 0 ? GEN_CAPTURES_CHECKS : GEN_CAPTURES);
 	/* If we're in check set type = ALL. This affects the sort() and uses SEE instead of MVV/LVA for
 	 * example. It improves the quality of sorting for check evasions in the qsearch. */
 	if (B->is_check())
-		type = ALL;
+		type = GEN_ALL;
 
 	refutation = R ? R->get_refutation(B->get_dm_key()) : move_t(0);
 	
@@ -62,7 +62,7 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
 
 move_t *MoveSort::generate(GenType type, move_t *mlist)
 {
-	if (type == ALL)
+	if (type == GEN_ALL)
 		return gen_moves(*B, mlist);
 	else {
 		// If we are in check, then type must be ALL (see constructor)
@@ -74,7 +74,7 @@ move_t *MoveSort::generate(GenType type, move_t *mlist)
 		end = gen_piece_moves(*B, enemies, end, true);
 		end = gen_pawn_moves(*B, enemies | B->st().epsq_bb() | PPromotionRank[B->get_turn()], end, false);
 
-		if (type == CAPTURES_CHECKS)
+		if (type == GEN_CAPTURES_CHECKS)
 			end = gen_quiet_checks(*B, end);
 
 		return end;
@@ -96,7 +96,7 @@ void MoveSort::score(MoveSort::Token *t)
 	if (t->m == ss->best)
 		t->score = INF;
 	else if (move_is_cop(*B, t->m))
-		if (type == ALL) {
+		if (type == GEN_ALL) {
 			// equal and winning captures, by SEE, in front of quiet moves
 			// losing captures, after all quiet moves
 			t->see = calc_see(*B, t->m);
