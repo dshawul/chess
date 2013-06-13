@@ -246,9 +246,15 @@ void EvalInfo::eval_safety()
 
 	// Adjust for king's "distance to safety"
 	total_count += KingDistanceToSafety[us][our_ksq];
-
-	if (total_count)
-		e[us].op -= total_weight * total_count;
+	
+	if (total_weight) {
+		// if king cannot retreat increase penalty
+		if ( Shield[them][our_ksq]
+			&& (Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+			++total_count;
+		
+		e[us].op -= total_count * total_weight;
+	}
 }
 
 void EvalInfo::eval_passer_interaction(int sq)
