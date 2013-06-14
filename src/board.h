@@ -141,6 +141,8 @@ private:
 extern const std::string PieceLabel[NB_COLOR];
 extern std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
+extern Bitboard hanging_pieces(const Board& B, int us);
+
 inline int pawn_push(int color, int sq)
 {
 	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);

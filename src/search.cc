@@ -69,24 +69,10 @@ namespace
 	move_t best;
 	
 	int DrawScore[NB_COLOR];
-	
-	Bitboard hanging_pieces(const Board& B)
-	{
-		const int us = B.get_turn(), them = opp_color(us);
-
-		const Bitboard our_pawns = B.get_pieces(us, PAWN);
-		const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;
-
-		const Bitboard attacked = B.st().attacks[them][NO_PIECE];
-		const Bitboard defended = B.st().attacks[us][NO_PIECE];
-
-		return ((our_pawns ^ our_pieces) & attacked & ~defended)
-		       | (our_pieces & B.st().attacks[them][PAWN]);
-	}
-	
+		
 	int stand_pat_penalty(const Board& B)
 	{
-		Bitboard b = hanging_pieces(B);
+		Bitboard b = hanging_pieces(B, B.get_turn());
 		
 		if (several_bits(b)) {
 			// Several pieces are hanging. Take the lowest one and return half its value.
@@ -223,7 +209,7 @@ namespace
 			return alpha;
 		}
 		
-		const Bitboard hanging = hanging_pieces(B);
+		const Bitboard hanging = hanging_pieces(B, B.get_turn());
 
 		// TT lookup
 		const TTable::Entry *tte = TT.probe(key);
