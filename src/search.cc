@@ -198,7 +198,7 @@ namespace
 		int best_score = -INF, old_alpha = alpha;
 		ss->best = 0;
 
-		if (!root && B.is_draw())
+		if (B.is_draw())
 			return DrawScore[B.get_turn()];
 
 		// mate distance pruning
