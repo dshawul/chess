@@ -33,7 +33,6 @@ namespace
 	const int MAX_PLY = 0x80;
 	const int MATE = 32000;
 	const int QS_LIMIT = -8;
-	const int TEMPO = 4;
 
 	bool can_abort;
 	struct AbortSearch {};
@@ -61,37 +60,13 @@ namespace
 	const int RazorMargin[4] = {0, 2*vEP, 2*vEP+vEP/2, 3*vEP};
 	const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
+	int DrawScore[NB_COLOR];	// Contempt draw score by color
+	
+	move_t best;
 	void print_pv(Board& B);
 
 	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-	
-	move_t best;
-	
-	int DrawScore[NB_COLOR];
-		
-	int stand_pat_penalty(const Board& B)
-	{
-		Bitboard b = hanging_pieces(B, B.get_turn());
-		
-		if (several_bits(b)) {
-			// Several pieces are hanging. Take the lowest one and return half its value.
-			int piece = KING;
-			while (b) {
-				const int sq = pop_lsb(&b);
-				const int p = B.get_piece_on(sq);
-				piece = std::min(piece, p);
-			}
-			return Material[piece].op / 2;
-		} else if (b & B.st().pinned) {
-			// Only one piece hanging, but also pinned. Return half its value.
-			assert(count_bit(b) == 1);
-			const int sq = lsb(b), piece = B.get_piece_on(sq);
-			return Material[piece].op / 2;
-		}
-		
-		return 0;
-	}
 }
 
 move_t bestmove(Board& B, const SearchLimits& sl)
@@ -224,22 +199,18 @@ namespace
 			ss->eval = in_check ? -INF : (ss->null_child ? -(ss-1)->eval : eval(B));
 
 		// Stand pat score (adjusted for tempo and hanging pieces)
-		const int stand_pat = ss->eval + TEMPO - stand_pat_penalty(B);
+		const int stand_pat = ss->eval + asymmetric_eval(B);
 		
 		// Eval pruning
-		if ( node_type != PV
-			&& depth <= 3
-			&& !in_check
-			&& !is_mate_score(beta)
+		if ( depth <= 3 && node_type != PV
+			&& !in_check && !is_mate_score(beta)
 			&& stand_pat >= beta + EvalMargin[depth]
 			&& B.st().piece_psq[B.get_turn()] )
 			return stand_pat;
 
 		// Razoring
-		if ( node_type != PV
-		        && depth <= 3
-		        && !in_check
-		        && !is_mate_score(beta) ) {
+		if ( depth <= 3 && node_type != PV
+			&& !in_check && !is_mate_score(beta) ) {
 			const int threshold = beta - RazorMargin[depth];
 			if (ss->eval < threshold) {
 				const int score = qsearch(B, threshold-1, threshold, 0, All, ss+1);
@@ -250,12 +221,10 @@ namespace
 
 		// Null move pruning
 		move_t threat_move = 0;
-		if ( node_type != PV
-		        && !ss->skip_null
-		        && !in_check
-		        && !is_mate_score(beta)
-		        && ss->eval >= beta
-		        && B.st().piece_psq[B.get_turn()] ) {
+		if ( ss->eval >= beta	// eval symmetry prevents double null moves
+			&& !ss->skip_null && node_type != PV 
+			&& !in_check && !is_mate_score(beta)
+			&& B.st().piece_psq[B.get_turn()] ) {
 			const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
 			B.play(0);
@@ -320,9 +289,9 @@ namespace
 			if (!capture && !dangerous && !in_check && !root) {
 				// Move count pruning
 				if ( depth <= 8 && node_type != PV
-				        && LMR >= 3 + depth*depth
-				        && alpha > mated_in(MAX_PLY)
-				        && (see < 0 || !refute(B, ss->m, threat_move)) ) {
+					&& LMR >= 3 + depth*depth
+					&& alpha > mated_in(MAX_PLY)
+					&& (see < 0 || !refute(B, ss->m, threat_move)) ) {
 					best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 					continue;
 				}
@@ -362,7 +331,7 @@ namespace
 
 				// zero window search (reduced)
 				score = -search(B, -alpha-1, -alpha, new_depth - ss->reduction,
-				                node_type == PV ? Cut : -node_type, ss+1);
+					node_type == PV ? Cut : -node_type, ss+1);
 
 				// doesn't fail low: verify at full depth, with zero window
 				if (score > alpha && ss->reduction)
@@ -450,7 +419,7 @@ namespace
 
 		// stand pat
 		if (!in_check) {
-			best_score = ss->eval + TEMPO - stand_pat_penalty(B);
+			best_score = ss->eval + asymmetric_eval(B);
 			alpha = std::max(alpha, best_score);
 			if (alpha >= beta)
 				return alpha;
@@ -467,9 +436,9 @@ namespace
 			if (!check && !in_check && node_type != PV) {
 				// opt_score = current eval + some margin + max material gain of the move
 				const int opt_score = fut_base
-				                      + Material[B.get_piece_on(ss->m.tsq())].eg
-				                      + (ss->m.flag() == EN_PASSANT ? vEP : 0)
-				                      + (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+					+ Material[B.get_piece_on(ss->m.tsq())].eg
+					+ (ss->m.flag() == EN_PASSANT ? vEP : 0)
+					+ (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 				// still can't raise alpha, skip
 				if (opt_score <= alpha) {
@@ -538,15 +507,11 @@ namespace
 	}
 
 	int adjust_tt_score(int score, int ply)
-	/* mate scores from the hash_table_t need to be adjusted. For example, if we find a mate in 10 from the
-	 * hash_table_t at ply 5, then we effectively have a mate in 15 plies. */
+	/* mate scores from the hash_table_t need to be adjusted. For example, if we find a mate in 10
+	 * from the hash_table_t at ply 5, then we effectively have a mate in 15 plies. */
 	{
-		if (score >= mate_in(MAX_PLY))
-			return score - ply;
-		else if (score <= mated_in(MAX_PLY))
-			return score + ply;
-		else
-			return score;
+		return score >= mate_in(MAX_PLY) ? score - ply :
+			score <= mated_in(MAX_PLY) ? score + ply : score;
 	}
 
 	bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply)
