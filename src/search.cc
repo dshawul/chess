@@ -63,8 +63,6 @@ namespace
 	int DrawScore[NB_COLOR];	// Contempt draw score by color
 	
 	move_t best;
-	void print_pv(Board& B);
-
 	int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 	int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 }
@@ -149,7 +147,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 		can_abort = true;
 
 		// Extract the PV from the TT and display it
-		print_pv(B);		
+		std::cout << " pv" << TT.get_pv(B, MAX_PLY) << std::endl;
 	}
 
 	return best;
@@ -544,24 +542,6 @@ namespace
 			result[1] = std::max(std::min(sl.time / (1+movestogo/2) + sl.inc, sl.time-time_buffer), 1);
 		}
 	}
-
-	void print_pv(Board& B)
-	{
-		std::cout << " pv";
-
-		for (int i = 0; i < MAX_PLY; i++) {
-			const TTable::Entry *tte = TT.probe(B.get_key());
-
-			if (tte && tte->move && !B.is_draw()) {
-				std::cout << ' ' << move_to_string(tte->move);
-				B.play(tte->move);
-			}
-		}
-
-		std::cout << std::endl;
-		B.unwind();
-	}
-
 }
 
 void bench(int depth)
