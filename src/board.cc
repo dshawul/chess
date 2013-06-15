@@ -521,8 +521,13 @@ Key Board::get_key() const
 Bitboard hanging_pieces(const Board& B, int us)
 {
 	const int them = opp_color(us);
-	const Bitboard loose_pawns = B.get_pieces(us, PAWN) & ~B.st().attacks[us][NO_PIECE];
-	const Bitboard loose_pieces = (B.get_pieces(us) & ~B.get_pieces(us, PAWN))
-		& (B.st().attacks[them][PAWN] | ~B.st().attacks[us][PAWN]);
-	return  (loose_pawns | loose_pieces) & B.st().attacks[them][NO_PIECE];
+
+	const Bitboard our_pawns = B.get_pieces(us, PAWN);
+	const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;
+
+	const Bitboard attacked = B.st().attacks[them][NO_PIECE];
+	const Bitboard defended = B.st().attacks[us][NO_PIECE];
+
+	return ((our_pawns ^ our_pieces) & attacked & ~defended)
+		   | (our_pieces & B.st().attacks[them][PAWN]);
 }
