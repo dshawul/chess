@@ -11,10 +11,6 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
- *
- * Credits:
- * - Fruit source code, by Fabien Letouzey.
- * - Stockfish source code, by Tord Romstad and Marco Costalba.
 */
 #include <chrono>
 #include "search.h"

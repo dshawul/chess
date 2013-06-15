@@ -11,6 +11,9 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
+ *
+ * Credits:
+ * - iterative SEE adapted from Glaurung, by Tord Romstad
 */
 #include <sstream>
 #include <algorithm>
