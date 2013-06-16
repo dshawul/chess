@@ -92,12 +92,16 @@ void EvalInfo::select_side(int color)
 	
 void EvalInfo::eval_material()
 {
-	// material (PSQ)
+	// Material (including PSQ bonus)
 	e[us] += B->st().psq[us];
 
-	// bishop pair
+	// Bishop pair
 	if (several_bits(B->get_pieces(us, BISHOP)))
 		e[us] += {40, 50};
+
+	// Rook pair penalty
+	if (several_bits(B->get_pieces(us, ROOK)))
+		e[us] -= {12, 12};
 }
 
 void EvalInfo::eval_drawish()
@@ -457,7 +461,7 @@ void EvalInfo::eval_pieces()
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
 	};
 	static const Bitboard KnightTrap[NB_COLOR] = {0xFFFF000000000000ULL, 0x000000000000FFFFULL};
-
+	
 	const bool can_castle = B->st().crights & (3 << (2*us));
 	Bitboard fss, tss;
 
