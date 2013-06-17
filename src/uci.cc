@@ -35,12 +35,14 @@ static const int ELO_MIN = 1500, ELO_MAX = 2700;
 int UCI_Elo = ELO_MIN;
 
 namespace {
+
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 void position(Board& B, std::istringstream& is);
 void go(Board& B, std::istringstream& is);
 void setoption(std::istringstream& is);
-}
+
+}	// namespace
 
 void loop()
 {

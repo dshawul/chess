@@ -16,6 +16,7 @@
 #include "movegen.h"
 
 namespace {
+
 move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool sub_promotions)
 /* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
  * indirect self checks (through fsq, or through the ep captured square) */
@@ -84,7 +85,8 @@ move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
 
 	return mlist;
 }
-}
+
+}	// namespace
 
 move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves)
 /* Generates piece moves, when the board is not in check. Uses targets to filter the tss, eg.

@@ -531,3 +531,16 @@ Bitboard hanging_pieces(const Board& B, int us)
 	return ((our_pawns ^ our_pieces) & attacked & ~defended)
 		   | (our_pieces & B.st().attacks[them][PAWN]);
 }
+
+Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
+{
+	assert(square_ok(sq));
+
+	return (B.get_RQ() & RPseudoAttacks[sq] & rook_attack(sq, occ))
+		   | (B.get_BQ() & BPseudoAttacks[sq] & bishop_attack(sq, occ))
+		   | (NAttacks[sq] & B.get_N())
+		   | (KAttacks[sq] & B.get_K())
+		   | (PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
+		   | (PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
+}
+

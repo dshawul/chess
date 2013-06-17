@@ -139,6 +139,7 @@ extern const std::string PieceLabel[NB_COLOR];
 extern std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
 extern Bitboard hanging_pieces(const Board& B, int us);
+extern Bitboard calc_attackers(const Board& B, int sq, Bitboard occ);
 
 inline int pawn_push(int color, int sq)
 {

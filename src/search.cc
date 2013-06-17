@@ -25,6 +25,7 @@ uint64_t PollingFrequency;
 using namespace std::chrono;
 
 namespace {
+
 const int MAX_PLY = 0x80;
 const int MATE = 32000;
 const int QS_LIMIT = -8;
@@ -60,7 +61,8 @@ int DrawScore[NB_COLOR];	// Contempt draw score by color
 move_t best;
 int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-}
+
+}	// namespace
 
 move_t bestmove(Board& B, const SearchLimits& sl)
 {
@@ -149,6 +151,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 }
 
 namespace {
+
 int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(alpha < beta && (node_type == PV || alpha+1 == beta));
@@ -536,7 +539,8 @@ void time_alloc(const SearchLimits& sl, int result[2])
 		result[1] = std::max(std::min(sl.time / (1+movestogo/2) + sl.inc, sl.time-time_buffer), 1);
 	}
 }
-}
+
+}	// namespace
 
 void bench(int depth)
 {

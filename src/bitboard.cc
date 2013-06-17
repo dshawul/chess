@@ -40,6 +40,7 @@ int KingDistance[NB_SQUARE][NB_SQUARE];
 int kdist(int s1, int s2) { return KingDistance[s1][s2]; }
 
 namespace {
+
 void init_zobrist()
 {
 	PRNG prng;
@@ -484,7 +485,8 @@ void init_magics()
 		}
 	}
 }
-}
+
+}	// namespace
 
 void init_bitboard()
 {

@@ -18,6 +18,7 @@
 #include "bitboard.h"
 
 namespace {
+
 const unsigned IndexMax = 64*64*2*24;	// wk * bk * stm * wp
 uint64_t bitbase[IndexMax/64];
 enum {ILLEGAL=0, UNKNOWN=1, DRAW=2, WIN=4};
@@ -114,7 +115,8 @@ bool kpk_ok(uint8_t res[])
 
 	return illegal == 30932 && win == 111282;
 }
-}
+
+}	// namespace
 
 void init_kpk()
 {

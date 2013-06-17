@@ -20,13 +20,15 @@
 #include "move.h"
 
 namespace {
+
 std::string square_to_string(int sq)
 {
 	std::ostringstream s;
 	s << char(file(sq) + 'a') << char(rank(sq) + '1');
 	return s.str();
 }
-}
+
+}	// namespace
 
 int move_is_check(const Board& B, move_t m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
@@ -135,25 +137,12 @@ std::string move_to_string(move_t m)
 	return s.str();
 }
 
-namespace {
-const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
-
-Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
-{
-	assert(square_ok(sq));
-
-	return (B.get_RQ() & RPseudoAttacks[sq] & rook_attack(sq, occ))
-		   | (B.get_BQ() & BPseudoAttacks[sq] & bishop_attack(sq, occ))
-		   | (NAttacks[sq] & B.get_N())
-		   | (KAttacks[sq] & B.get_K())
-		   | (PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
-		   | (PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
-}
-}
-
 int calc_see(const Board& B, move_t m)
-/* SEE largely inspired by Glaurung. Adapted and improved to handle promotions and en-passant. */
+// Iterative SEE based on Glaurung. Adapted and improved to handle promotions, promoting recaptures
+// and en-passant captures.
 {
+	static const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
+
 	int fsq = m.fsq(), tsq = m.tsq();
 	int stm = B.get_color_on(fsq);	// side to move
 	uint64_t attackers, stm_attackers;
