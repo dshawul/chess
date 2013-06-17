@@ -19,14 +19,13 @@
 #include <algorithm>
 #include "move.h"
 
-namespace
+namespace {
+std::string square_to_string(int sq)
 {
-	std::string square_to_string(int sq)
-	{
-		std::ostringstream s;
-		s << char(file(sq) + 'a') << char(rank(sq) + '1');
-		return s.str();
-	}
+	std::ostringstream s;
+	s << char(file(sq) + 'a') << char(rank(sq) + '1');
+	return s.str();
+}
 }
 
 int move_is_check(const Board& B, move_t m)
@@ -41,13 +40,13 @@ int move_is_check(const Board& B, move_t m)
 
 	// test discovered check
 	if ( (test_bit(B.st().dcheckers, fsq))		// discovery checker
-	        && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
+			&& (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (flag != PROMOTION) {
 		const int piece = B.get_piece_on(fsq);
 		Bitboard tss = piece == PAWN ? PAttacks[us][tsq]
-		               : piece_attack(piece, tsq, B.st().occ);
+					   : piece_attack(piece, tsq, B.st().occ);
 		if (test_bit(tss, kpos))
 			return 1;
 	}
@@ -60,7 +59,7 @@ int move_is_check(const Board& B, move_t m)
 		set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
 		if ((B.get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-		        || (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+				|| (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
@@ -85,8 +84,8 @@ int move_is_check(const Board& B, move_t m)
 bool move_is_cop(const Board& B, move_t m)
 {
 	return piece_ok(B.get_piece_on(m.tsq()))
-	       || m.flag() == EN_PASSANT
-	       || m.flag() == PROMOTION;
+		   || m.flag() == EN_PASSANT
+		   || m.flag() == PROMOTION;
 }
 
 bool move_is_pawn_threat(const Board& B, move_t m)
@@ -97,7 +96,7 @@ bool move_is_pawn_threat(const Board& B, move_t m)
 		if (test_bit(HalfBoard[them], sq)) {
 			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
 			return !(PawnSpan[us][sq] & their_pawns)
-			       && !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
+				   && !(SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		}
 	}
 
@@ -136,21 +135,20 @@ std::string move_to_string(move_t m)
 	return s.str();
 }
 
-namespace
+namespace {
+const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
+
+Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 {
-	const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
+	assert(square_ok(sq));
 
-	Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
-	{
-		assert(square_ok(sq));
-
-		return (B.get_RQ() & RPseudoAttacks[sq] & rook_attack(sq, occ))
-		       | (B.get_BQ() & BPseudoAttacks[sq] & bishop_attack(sq, occ))
-		       | (NAttacks[sq] & B.get_N())
-		       | (KAttacks[sq] & B.get_K())
-		       | (PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
-		       | (PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
-	}
+	return (B.get_RQ() & RPseudoAttacks[sq] & rook_attack(sq, occ))
+		   | (B.get_BQ() & BPseudoAttacks[sq] & bishop_attack(sq, occ))
+		   | (NAttacks[sq] & B.get_N())
+		   | (KAttacks[sq] & B.get_K())
+		   | (PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
+		   | (PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
+}
 }
 
 int calc_see(const Board& B, move_t m)
@@ -204,7 +202,7 @@ int calc_see(const Board& B, move_t m)
 		clear_bit(&occ, lsb(stm_attackers & B.get_pieces(stm, piece)));
 		// scan for new X-ray attacks through the vacated square
 		attackers |= (B.get_RQ() & RPseudoAttacks[tsq] & rook_attack(tsq, occ))
-		             | (B.get_BQ() & BPseudoAttacks[tsq] & bishop_attack(tsq, occ));
+					 | (B.get_BQ() & BPseudoAttacks[tsq] & bishop_attack(tsq, occ));
 		// cut out pieces we've already done
 		attackers &= occ;
 
@@ -245,7 +243,7 @@ int mvv_lva(const Board& B, move_t m)
 	static const int attacker[NB_PIECE] = {4, 3, 3, 2, 1, 5};
 
 	int victim_value = victim[m.flag() == EN_PASSANT ? PAWN : B.get_piece_on(m.tsq())]
-	                   + (m.flag() == PROMOTION ? victim[m.prom()] - victim[PAWN] : 0);
+					   + (m.flag() == PROMOTION ? victim[m.prom()] - victim[PAWN] : 0);
 	int attacker_value = attacker[B.get_piece_on(m.fsq())];
 
 	return victim_value * 8 + attacker_value;
@@ -271,7 +269,7 @@ bool refute(const Board& B, move_t m1, move_t m2)
 	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op) {
 		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
 		const Bitboard b = m1piece == PAWN ? PAttacks[B.get_turn()][m1tsq]
-		                   : piece_attack(m1piece, m1tsq, B.st().occ);
+						   : piece_attack(m1piece, m1tsq, B.st().occ);
 
 		if (test_bit(b, m2tsq))
 			return true;

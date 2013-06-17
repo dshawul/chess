@@ -84,7 +84,7 @@ void Board::set_fen(const std::string& _fen)
 	}
 
 	if ( (fen >> f) && ('a' <= f && f <= 'h')
-	        && (fen >> r) && ('1' <= r && r <= '8') )
+			&& (fen >> r) && ('1' <= r && r <= '8') )
 		sp->epsq = square(r - '1', f - 'a');
 
 	fen >> std::skipws >> sp->rule50 >> move_count;
@@ -166,8 +166,8 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 			int sq = square(r, f);
 			int color = B.get_color_on(sq);
 			char c = color != NO_COLOR
-			         ? PieceLabel[color][B.get_piece_on(sq)]
-			         : (sq == B.st().epsq ? '*' : '.');
+					 ? PieceLabel[color][B.get_piece_on(sq)]
+					 : (sq == B.st().epsq ? '*' : '.');
 			ostrm << ' ' << c;
 		}
 		ostrm << std::endl;
@@ -325,7 +325,7 @@ Bitboard Board::calc_attacks(int color) const
 	// Pawn
 	fss = get_pieces(color, PAWN);
 	r |= sp->attacks[color][PAWN] = shift_bit((fss & ~FileA_bb), color ? -9 : 7)
-		| shift_bit((fss & ~FileH_bb), color ? -7 : 9);
+									| shift_bit((fss & ~FileH_bb), color ? -7 : 9);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
@@ -385,9 +385,9 @@ Bitboard Board::calc_checkers(int kcolor) const
 	const Bitboard BQ = get_BQ(them) & BPseudoAttacks[kpos];
 
 	return (RQ & rook_attack(kpos, st().occ))
-		| (BQ & bishop_attack(kpos, st().occ))
-		| (get_pieces(them, KNIGHT) & NAttacks[kpos])
-		| (get_pieces(them, PAWN) & PAttacks[kcolor][kpos]);
+		   | (BQ & bishop_attack(kpos, st().occ))
+		   | (get_pieces(them, KNIGHT) & NAttacks[kpos])
+		   | (get_pieces(them, PAWN) & PAttacks[kcolor][kpos]);
 }
 
 void Board::set_square(int color, int piece, int sq, bool play)
@@ -448,7 +448,7 @@ bool Board::verify_keys() const
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
-			mat_key += (uint64_t)count_bit(sqs) << (8*piece + 4*color);			
+			mat_key += (uint64_t)count_bit(sqs) << (8*piece + 4*color);
 			while (sqs) {
 				const int sq = pop_lsb(&sqs);
 				key ^= zob[color][piece][sq];
@@ -493,7 +493,7 @@ bool Board::is_draw() const
 		// If the keys match, increment rep
 		// Stop when rep >= 2 or 3 once we've traversed the root
 		if ( (sp-i)->key == sp->key
-			&& ++rep >= 2 + (sp-i < sp0) )
+				&& ++rep >= 2 + (sp-i < sp0) )
 			return true;
 	}
 
@@ -503,8 +503,8 @@ bool Board::is_draw() const
 
 	// insufficient material
 	if ( get_pieces(WHITE) == (get_NB(WHITE) | get_pieces(WHITE, KING))
-		&& get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
-		&& !several_bits(get_NB(WHITE)) && !several_bits(get_NB(BLACK)) )
+			&& get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
+			&& !several_bits(get_NB(WHITE)) && !several_bits(get_NB(BLACK)) )
 		return true;
 
 	return false;
@@ -514,8 +514,8 @@ Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
-		^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
-		^ zob_castle[st().crights];
+		   ^ (st().epsq == NO_SQUARE ? 0 : zob_ep[st().epsq])
+		   ^ zob_castle[st().crights];
 }
 
 Bitboard hanging_pieces(const Board& B, int us)

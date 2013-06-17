@@ -43,8 +43,8 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, 
-	const History *_H, const Refutation *_R)
+MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
+				   const History *_H, const Refutation *_R)
 	: B(_B), ss(_ss), H(_H), R(_R), idx(0), depth(_depth)
 {
 	type = depth > 0 ? GEN_ALL : (depth == 0 ? GEN_CAPTURES_CHECKS : GEN_CAPTURES);
@@ -54,7 +54,7 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
 		type = GEN_ALL;
 
 	refutation = R ? R->get_refutation(B->get_dm_key()) : move_t(0);
-	
+
 	move_t mlist[MAX_MOVES];
 	count = generate(type, mlist) - mlist;
 	annotate(mlist);
@@ -122,8 +122,8 @@ move_t MoveSort::next(int *see)
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
 		const Token& t = list[idx++];
 		*see = t.see == -INF
-		       ? calc_see(*B, t.m)	// compute SEE
-		       : t.see;				// use SEE cache
+			   ? calc_see(*B, t.m)	// compute SEE
+			   : t.see;				// use SEE cache
 		return t.m;
 	} else
 		return 0;

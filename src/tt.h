@@ -17,8 +17,7 @@
 
 enum { BOUND_EXACT, BOUND_UPPER, BOUND_LOWER };
 
-struct TTable
-{
+struct TTable {
 	struct Entry {
 		Key key_bound;	// bit 0..1 for bounr2 bits for bound, and 2..63 for key's 62 MSB
 		mutable uint8_t generation;
@@ -60,7 +59,7 @@ struct TTable
 	const Entry *probe(Key key) const;
 	void prefetch(Key key) const { __builtin_prefetch((char *)&cluster[key & (count-1)]); }
 	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
-	
+
 	std::string get_pv(Board& B, int max_len) const;
 
 private:

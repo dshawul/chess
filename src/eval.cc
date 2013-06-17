@@ -27,8 +27,7 @@ void init_eval()
 			KingDistanceToSafety[us][sq] = std::min(kdist(sq, us ? E8 : E1), kdist(sq, us ? B8 : B1));
 }
 
-struct PawnCache
-{
+struct PawnCache {
 	struct Entry {
 		Key key;
 		Eval eval_white;
@@ -45,8 +44,7 @@ private:
 
 PawnCache PC;
 
-struct EvalInfo
-{
+struct EvalInfo {
 	EvalInfo(const Board *_B): B(_B), eval_factor(16)
 	{ e[WHITE] = e[BLACK] = {0,0}; }
 
@@ -55,7 +53,7 @@ struct EvalInfo
 	void eval_mobility();
 	void eval_safety();
 	void eval_pieces();
-	
+
 	void eval_pawns();
 	void eval_drawish();
 	int interpolate() const;
@@ -66,11 +64,11 @@ private:
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
 	int eval_factor;	// between 0 and 16
-	
+
 	void score_mobility(int us, int p0, int p, Bitboard tss);
 	void score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
-		int *total_count, int *total_weight);
-	
+					   int *total_count, int *total_weight);
+
 	Bitboard do_eval_pawns();
 	void eval_shelter_storm();
 	void eval_passer(int sq, Eval* res);
@@ -89,7 +87,7 @@ void EvalInfo::select_side(int color)
 	our_pawns = B->get_pieces(us, PAWN);
 	their_pawns = B->get_pieces(them, PAWN);
 }
-	
+
 void EvalInfo::eval_material()
 {
 	// Material (including PSQ bonus)
@@ -144,7 +142,7 @@ void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 void EvalInfo::eval_mobility()
 {
 	const Bitboard mob_targets = ~(our_pawns | B->get_pieces(us, KING)
-		| B->st().attacks[them][PAWN]);
+								   | B->st().attacks[them][PAWN]);
 
 	Bitboard fss, tss, occ;
 	int fsq, piece;
@@ -178,10 +176,10 @@ void EvalInfo::eval_mobility()
 }
 
 void EvalInfo::score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
-	int *total_count, int *total_weight)
+							 int *total_count, int *total_weight)
 {
 	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
-	
+
 	if (sq_attackers) {
 		int count = count_bit(sq_attackers);
 		*total_weight += AttackWeight[p0] * count;
@@ -198,7 +196,7 @@ void EvalInfo::eval_safety()
 
 	// Defended by our pieces
 	const Bitboard defended = B->st().attacks[us][KNIGHT] | B->st().attacks[us][BISHOP]
-		| B->st().attacks[us][ROOK];
+							  | B->st().attacks[us][ROOK];
 
 	int total_weight = 0, total_count = 0, sq;
 	Bitboard sq_attackers, attacked, occ, fss;
@@ -250,13 +248,13 @@ void EvalInfo::eval_safety()
 
 	// Adjust for king's "distance to safety"
 	total_count += KingDistanceToSafety[us][our_ksq];
-	
+
 	if (total_weight) {
 		// if king cannot retreat increase penalty
 		if ( Shield[them][our_ksq]
-			&& (Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+				&& (Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
 			++total_count;
-		
+
 		e[us].op -= total_count * total_weight;
 	}
 }
@@ -317,7 +315,7 @@ void EvalInfo::eval_pawns()
 		const Eval ew0 = eval_white();
 		h.key = key;
 		select_side(WHITE); h.passers  = do_eval_pawns();
-		select_side(BLACK); h.passers |= do_eval_pawns();		
+		select_side(BLACK); h.passers |= do_eval_pawns();
 		h.eval_white = eval_white() - ew0;
 	}
 
@@ -367,7 +365,7 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 	const int r = rank(sq), f = file(sq);
 	const int next_sq = pawn_push(us, sq);
 	const Bitboard besides = our_pawns & AdjacentFiles[f];
-	
+
 	const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
 	const int Q = L*(L-1);						// Quadratic part	0..20
 
@@ -396,7 +394,7 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 			// for simplicity neglect en-passant refutation of the double push
 			if (L == 3)
 				b |= PAttacks[them][pawn_push(them, sq)];
-			
+
 			while (b) {
 				const int tsq = pop_lsb(&b);
 				if (test_bit(our_pawns, pawn_push(them, tsq)))
@@ -411,9 +409,9 @@ Bitboard EvalInfo::do_eval_pawns()
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
 	Bitboard passers = 0;
-	
+
 	eval_shelter_storm();
-	
+
 	Bitboard sqs = our_pawns;
 	while (sqs) {
 		const int sq = pop_lsb(&sqs), next_sq = pawn_push(us, sq);
@@ -461,7 +459,7 @@ void EvalInfo::eval_pieces()
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
 	};
 	static const Bitboard KnightTrap[NB_COLOR] = {0xFFFF000000000000ULL, 0x000000000000FFFFULL};
-	
+
 	const bool can_castle = B->st().crights & (3 << (2*us));
 	Bitboard fss, tss;
 
@@ -477,7 +475,7 @@ void EvalInfo::eval_pieces()
 			e[us] += {bonus, bonus/2};
 		}
 	}
-	
+
 	// Rook blocked by uncastled King
 	fss = B->get_pieces(us, ROOK) & PPromotionRank[them];
 	while (fss) {
@@ -552,7 +550,7 @@ bool kpk_draw(const Board& B)
 	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
 	int wp = lsb(B.get_pieces(us, PAWN));
 	int stm = B.get_turn();
-	
+
 	if (us == BLACK) {
 		wk = rank_mirror(wk);
 		bk = rank_mirror(bk);
@@ -564,7 +562,7 @@ bool kpk_draw(const Board& B)
 		bk = file_mirror(bk);
 		wp = file_mirror(wp);
 	}
-	
+
 	return !probe_kpk(wk, bk, stm, wp);
 }
 
@@ -575,11 +573,11 @@ bool kbpk_draw(const Board& B)
 	int pawn = lsb(B.get_pieces(us, PAWN)), bishop = lsb(B.get_pieces(us, BISHOP));
 	int prom_sq = square(us ? RANK_1 : RANK_8, file(pawn));
 	int stm = B.get_turn();
-	
+
 	return (file(pawn) == FILE_A || file(pawn) == FILE_H)
-		&& color_of(bishop) != color_of(prom_sq)
-		&& kdist(their_king, prom_sq) < kdist(our_king, prom_sq) - (stm == us)
-		&& kdist(their_king, prom_sq) - (stm != us) <= kdist(pawn, prom_sq);
+		   && color_of(bishop) != color_of(prom_sq)
+		   && kdist(their_king, prom_sq) < kdist(our_king, prom_sq) - (stm == us)
+		   && kdist(their_king, prom_sq) - (stm != us) <= kdist(pawn, prom_sq);
 }
 
 #define KPK		0x110000000001
@@ -597,10 +595,10 @@ int eval(const Board& B)
 		return 0;
 	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
 		return 0;
-	
+
 	EvalInfo ei(&B);
 	ei.eval_pawns();
-	
+
 	for (int color = WHITE; color <= BLACK; ++color) {
 		ei.select_side(color);
 		ei.eval_material();
@@ -608,7 +606,7 @@ int eval(const Board& B)
 		ei.eval_safety();
 		ei.eval_pieces();
 	}
-	
+
 	ei.eval_drawish();
 	return ei.interpolate();
 }
@@ -616,7 +614,7 @@ int eval(const Board& B)
 int stand_pat_penalty(const Board& B)
 {
 	Bitboard b = hanging_pieces(B, B.get_turn());
-	
+
 	if (several_bits(b)) {
 		// Several pieces are hanging. Take the lowest one and return half its value.
 		int piece = KING;
@@ -632,7 +630,7 @@ int stand_pat_penalty(const Board& B)
 		const int sq = lsb(b), piece = B.get_piece_on(sq);
 		return Material[piece].op / 2;
 	}
-	
+
 	return 0;
 }
 

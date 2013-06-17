@@ -20,7 +20,7 @@ struct SearchInfo {
 	move_t m, best, killer[2];
 	int ply, reduction, eval;
 	bool skip_null, null_child;
-	
+
 	void clear(int _ply) {
 		ply = _ply;
 		m = best = killer[0] = killer[1] = 0;
@@ -34,14 +34,13 @@ struct SearchInfo {
  * - when a move fails high, its history score is incremented by depth*depth.
  * - for all other moves searched before, decrement their history score by depth*depth.
  * */
-struct History
-{
+struct History {
 	static const int Max = 2000;
-	
+
 	void clear();
 	void add(const Board& B, move_t m, int bonus);
 	int get(const Board& B, move_t m) const;
-	
+
 private:
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
 };
@@ -54,38 +53,36 @@ private:
  * root sp0).
  * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
  * */
-struct Refutation
-{
+struct Refutation {
 	struct Pack {
 		uint64_t dm_key: 48;
 		move_t move;
 	};
-	
+
 	static const int count = 0x10000;
 	Pack r[count];
-	
+
 	void clear() {
 		memset(this, 0, sizeof(this));
 	}
-	
+
 	move_t get_refutation(Key dm_key) const {
 		const size_t idx = dm_key & (count-1);
 		Pack tmp = {dm_key, 0};
 		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
 	}
-	
+
 	void set_refutation(Key dm_key, move_t m) {
 		const size_t idx = dm_key & (count-1);
 		r[idx] = {dm_key, m};
 	}
 };
 
-struct MoveSort
-{
+struct MoveSort {
 	enum GenType {
-	    GEN_ALL,				// all legal moves
-	    GEN_CAPTURES_CHECKS,	// captures and quiet checks
-	    GEN_CAPTURES			// captures only
+		GEN_ALL,				// all legal moves
+		GEN_CAPTURES_CHECKS,	// captures and quiet checks
+		GEN_CAPTURES			// captures only
 	};
 
 	struct Token {
@@ -94,8 +91,8 @@ struct MoveSort
 		bool operator< (const Token& t) const {return score < t.score; }
 	};
 
-	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss, 
-		const History *_H, const Refutation *_R);
+	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
+			 const History *_H, const Refutation *_R);
 
 	move_t next(int *see);
 	move_t previous();

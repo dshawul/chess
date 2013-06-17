@@ -31,7 +31,7 @@ void *aligned_malloc(size_t size, size_t align)
 	((void**)amem)[-1] = mem;
 	return amem;
 }
- 
+
 void aligned_free(void *mem)
 {
 	free(((void**)mem)[-1]);
@@ -51,11 +51,11 @@ void TTable::alloc(uint64_t size)
 {
 	// calculate the number of clusters allocate (count must be a power of two)
 	size_t new_count = 1ULL << msb(size / sizeof(Cluster));
-	
+
 	// nothing to do if already allocated to the given size
 	if (new_count == count)
 		return;
-	
+
 	if (cluster)
 		aligned_free(cluster);
 
@@ -117,7 +117,7 @@ std::string TTable::get_pv(Board& B, int max_len) const
 {
 	std::string s;
 	B.set_unwind();
-	
+
 	for (int i = 0; i < max_len; i++) {
 		const Entry *tte = probe(B.get_key());
 
@@ -127,7 +127,7 @@ std::string TTable::get_pv(Board& B, int max_len) const
 		} else
 			break;
 	}
-	
+
 	B.unwind();
 	return s;
 }

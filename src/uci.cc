@@ -19,12 +19,12 @@
 #include "eval.h"
 
 #if defined(_WIN32) || defined(_WIN64)
-   #include <windows.h>
-   #include <conio.h>
+#include <windows.h>
+#include <conio.h>
 #else   // assume POSIX
-   #include <cerrno>
-   #include <unistd.h>
-   #include <sys/time.h>
+#include <cerrno>
+#include <unistd.h>
+#include <sys/time.h>
 #endif
 
 /* Default values for UCI options */
@@ -34,13 +34,12 @@ bool UCI_LimitStrength = false;
 static const int ELO_MIN = 1500, ELO_MAX = 2700;
 int UCI_Elo = ELO_MIN;
 
-namespace
-{
-	const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+namespace {
+const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-	void position(Board& B, std::istringstream& is);
-	void go(Board& B, std::istringstream& is);
-	void setoption(std::istringstream& is);
+void position(Board& B, std::istringstream& is);
+void go(Board& B, std::istringstream& is);
+void setoption(std::istringstream& is);
 }
 
 void loop()
@@ -48,7 +47,7 @@ void loop()
 	Board B;
 	std::string cmd, token;
 	std::cout << std::boolalpha;
-	
+
 	while (token != "quit") {
 		if (!getline(std::cin, cmd) || cmd == "quit")
 			break;
@@ -58,16 +57,16 @@ void loop()
 		is >> std::skipws >> token;
 		if (token == "uci")
 			std::cout << "id name DiscoCheck 4.2.1\n"
-				<< "id author Lucas Braesch\n"
-				/* Declare UCI options here */
-				<< "option name Hash type spin default " << Hash << " min 1 max 8192\n"
-				<< "option name Clear Hash type button\n"
-				<< "option name Contempt type spin default " << Contempt << " min 0 max 100\n"
-				<< "option name UCI_LimitStrength type check default " << UCI_LimitStrength << '\n'
-				<< "option name UCI_Elo type spin default " << UCI_Elo
-					<< " min " << ELO_MIN << " max " << ELO_MAX <<  "\n"
-				/* end of UCI options */
-				<< "uciok" << std::endl;
+					  << "id author Lucas Braesch\n"
+					  /* Declare UCI options here */
+					  << "option name Hash type spin default " << Hash << " min 1 max 8192\n"
+					  << "option name Clear Hash type button\n"
+					  << "option name Contempt type spin default " << Contempt << " min 0 max 100\n"
+					  << "option name UCI_LimitStrength type check default " << UCI_LimitStrength << '\n'
+					  << "option name UCI_Elo type spin default " << UCI_Elo
+					  << " min " << ELO_MIN << " max " << ELO_MAX <<  "\n"
+					  /* end of UCI options */
+					  << "uciok" << std::endl;
 		else if (token == "ucinewgame")
 			TT.clear();
 		else if (token == "position")
@@ -84,85 +83,84 @@ void loop()
 	}
 }
 
-namespace
+namespace {
+void position(Board& B, std::istringstream& is)
 {
-	void position(Board& B, std::istringstream& is)
-	{
-		move_t m;
-		std::string token, fen;
-		is >> token;
+	move_t m;
+	std::string token, fen;
+	is >> token;
 
-		if (token == "startpos") {
-			fen = StartFEN;
-			is >> token;	// Consume "moves" token if any
-		} else if (token == "fen")
-			while (is >> token && token != "moves")
-				fen += token + " ";
-		else
-			return;
+	if (token == "startpos") {
+		fen = StartFEN;
+		is >> token;	// Consume "moves" token if any
+	} else if (token == "fen")
+		while (is >> token && token != "moves")
+			fen += token + " ";
+	else
+		return;
 
-		B.set_fen(fen);
+	B.set_fen(fen);
 
-		// Parse move list (if any)
+	// Parse move list (if any)
+	while (is >> token) {
+		m = string_to_move(B, token);
+		B.play(m);
+	}
+}
+
+void go(Board& B, std::istringstream& is)
+{
+	SearchLimits sl;
+	PollingFrequency = 256;
+
+	if (UCI_LimitStrength) {
+		// discard parameters of the go command
+		sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo-ELO_MIN)/128.0, 1.0/0.9));
+		if (sl.nodes/16 <= 256)
+			PollingFrequency = 1ULL << msb(sl.nodes/16);
+	} else {
+		std::string token;
 		while (is >> token) {
-			m = string_to_move(B, token);
-			B.play(m);
+			if (token == (B.get_turn() ? "btime" : "wtime"))
+				is >> sl.time;
+			else if (token == (B.get_turn() ? "binc" : "winc"))
+				is >> sl.inc;
+			else if (token == "movestogo")
+				is >> sl.movestogo;
+			else if (token == "movetime")
+				is >> sl.movetime;
+			else if (token == "depth")
+				is >> sl.depth;
+			else if (token == "nodes")
+				is >> sl.nodes;
 		}
 	}
 
-	void go(Board& B, std::istringstream& is)
-	{
-		SearchLimits sl;
-		PollingFrequency = 256;
+	move_t m = bestmove(B, sl);
+	std::cout << "bestmove " << move_to_string(m) << std::endl;
+}
 
-		if (UCI_LimitStrength) {
-			// discard parameters of the go command
-			sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo-ELO_MIN)/128.0, 1.0/0.9));
-			if (sl.nodes/16 <= 256)
-				PollingFrequency = 1ULL << msb(sl.nodes/16);
-		} else {
-			std::string token;
-			while (is >> token) {
-				if (token == (B.get_turn() ? "btime" : "wtime"))
-					is >> sl.time;
-				else if (token == (B.get_turn() ? "binc" : "winc"))
-					is >> sl.inc;
-				else if (token == "movestogo")
-					is >> sl.movestogo;
-				else if (token == "movetime")
-					is >> sl.movetime;
-				else if (token == "depth")
-					is >> sl.depth;
-				else if (token == "nodes")
-					is >> sl.nodes;
-			}
-		}
+void setoption(std::istringstream& is)
+{
+	std::string token, name;
+	if (!(is >> token) || token != "name")
+		return;
 
-		move_t m = bestmove(B, sl);
-		std::cout << "bestmove " << move_to_string(m) << std::endl;
-	}
+	while (is >> token && token != "value")
+		name += token;
 
-	void setoption(std::istringstream& is)
-	{
-		std::string token, name;
-		if (!(is >> token) || token != "name")
-			return;
-
-		while (is >> token && token != "value")
-			name += token;
-
-		/* UCI option 'name' has been modified. Handle here. */
-		if (name == "Hash")
-			is >> Hash;
-		else if (name == "ClearHash")
-			TT.clear();
-		else if (name == "Contempt")
-			is >> Contempt;
-		else if (name == "UCI_LimitStrength")
-			is >> UCI_LimitStrength;
-		else if (name == "UCI_Elo")
-			is >> UCI_Elo;
-	}
+	/* UCI option 'name' has been modified. Handle here. */
+	if (name == "Hash")
+		is >> Hash;
+	else if (name == "ClearHash")
+		TT.clear();
+	else if (name == "Contempt")
+		is >> Contempt;
+	else if (name == "UCI_LimitStrength")
+		is >> UCI_LimitStrength;
+	else if (name == "UCI_Elo")
+		is >> UCI_Elo;
+}
 }
 
 bool input_available()
@@ -205,9 +203,9 @@ bool input_available()
 bool stop_received()
 {
 	std::string token;
-	
+
 	if (input_available())
 		getline(std::cin, token);
-	
+
 	return token == "stop";
 }

@@ -15,76 +15,75 @@
 #include <chrono>
 #include "movegen.h"
 
-namespace
+namespace {
+move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool sub_promotions)
+/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
+ * indirect self checks (through fsq, or through the ep captured square) */
 {
-	move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool sub_promotions)
-	/* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
-	 * indirect self checks (through fsq, or through the ep captured square) */
-	{
-		assert(square_ok(fsq) && square_ok(tsq));
-		const int us = B.get_turn(), them = opp_color(us);
-		int kpos = B.get_king_pos(us);
+	assert(square_ok(fsq) && square_ok(tsq));
+	const int us = B.get_turn(), them = opp_color(us);
+	int kpos = B.get_king_pos(us);
 
-		// filter self check through fsq
-		if (test_bit(B.st().pinned, fsq) && !test_bit(Direction[kpos][fsq], tsq))
-			return mlist;
-
-		move_t m;
-		m.fsq(fsq);
-		m.tsq(tsq);
-
-		if (tsq == B.st().epsq) {
-			m.flag(EN_PASSANT);
-			Bitboard occ = B.st().occ;
-			// play the ep capture on occ
-			clear_bit(&occ, m.fsq());
-			clear_bit(&occ, pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
-			set_bit(&occ, m.tsq());
-			// test for check by a sliding enemy piece
-			if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-			        || (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
-				return mlist;	// illegal move by indirect self check (through the ep captured pawn)
-		} else
-			m.flag(NORMAL);
-
-		if (test_bit(PPromotionRank[us], tsq)) {
-			// promotion(s)
-			m.flag(PROMOTION);
-			m.prom(QUEEN); *mlist++ = m;
-			if (sub_promotions) {
-				m.prom(KNIGHT);	*mlist++ = m;
-				m.prom(ROOK);	*mlist++ = m;
-				m.prom(BISHOP);	*mlist++ = m;
-			}
-		} else
-			// non promotions: normal or en-passant
-			*mlist++ = m;
-
+	// filter self check through fsq
+	if (test_bit(B.st().pinned, fsq) && !test_bit(Direction[kpos][fsq], tsq))
 		return mlist;
-	}
 
-	move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
-	/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
-	 * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
-	 * other words, we never put our King in check before calling this function */
-	{
-		assert(square_ok(fsq));
-		const int kpos = B.get_king_pos(B.get_turn());
+	move_t m;
+	m.fsq(fsq);
+	m.tsq(tsq);
 
-		move_t m;
-		m.fsq(fsq);
+	if (tsq == B.st().epsq) {
+		m.flag(EN_PASSANT);
+		Bitboard occ = B.st().occ;
+		// play the ep capture on occ
+		clear_bit(&occ, m.fsq());
+		clear_bit(&occ, pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
+		set_bit(&occ, m.tsq());
+		// test for check by a sliding enemy piece
+		if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
+				|| (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
+	} else
 		m.flag(NORMAL);
 
-		if (test_bit(B.st().pinned, fsq))
-			tss &= Direction[kpos][fsq];
-
-		while (tss) {
-			m.tsq(pop_lsb(&tss));
-			*mlist++ = m;
+	if (test_bit(PPromotionRank[us], tsq)) {
+		// promotion(s)
+		m.flag(PROMOTION);
+		m.prom(QUEEN); *mlist++ = m;
+		if (sub_promotions) {
+			m.prom(KNIGHT);	*mlist++ = m;
+			m.prom(ROOK);	*mlist++ = m;
+			m.prom(BISHOP);	*mlist++ = m;
 		}
+	} else
+		// non promotions: normal or en-passant
+		*mlist++ = m;
 
-		return mlist;
+	return mlist;
+}
+
+move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
+/* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
+ * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
+ * other words, we never put our King in check before calling this function */
+{
+	assert(square_ok(fsq));
+	const int kpos = B.get_king_pos(B.get_turn());
+
+	move_t m;
+	m.fsq(fsq);
+	m.flag(NORMAL);
+
+	if (test_bit(B.st().pinned, fsq))
+		tss &= Direction[kpos][fsq];
+
+	while (tss) {
+		m.tsq(pop_lsb(&tss));
+		*mlist++ = m;
 	}
+
+	return mlist;
+}
 }
 
 move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves)
@@ -189,8 +188,8 @@ move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub
 
 	// double pushes
 	fssd = fss & PInitialRank[us]				// pawns on their initial rank
-		& ~shift_bit(B.st().occ, -sp_inc)		// can push once
-		& ~shift_bit(B.st().occ, -dp_inc);		// can push twice
+		   & ~shift_bit(B.st().occ, -sp_inc)		// can push once
+		   & ~shift_bit(B.st().occ, -dp_inc);		// can push twice
 	tss_dp = shift_bit(fssd, dp_inc);			// double push fssd
 
 	// captures (including en passant if epsq != NO_SQUARE)
@@ -251,8 +250,8 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	if (!several_bits(B.st().checkers)) {
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
-		      ? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
-		      : checkers;				// capture the checker
+			  ? Between[kpos][csq]	// cover the check (inc capture the sliding checker)
+			  : checkers;				// capture the checker
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
 		 * push, and we also need to consider capturing it en passant to solve the check */
@@ -367,7 +366,7 @@ bool test_perft()
 	};
 
 	// Movegen test positions by Martin Sedlak
-	TestPerft Test[] = {		
+	TestPerft Test[] = {
 		// avoid illegal en passant capture
 		{"8/5bk1/8/2Pp4/8/1K6/8/8 w - d6 0 1", 6, 824064ULL},
 		{"8/8/1k6/8/2pP4/8/5BK1/8 b - d3 0 1", 6, 824064ULL},

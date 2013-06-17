@@ -17,8 +17,7 @@
 #pragma once
 #include <cinttypes>
 
-struct PRNG
-{
+struct PRNG {
 	PRNG() { init(); }
 
 	// Return 64 bit unsigned integer in between [0, 2^64 - 1]

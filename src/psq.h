@@ -17,9 +17,9 @@
 
 // game phase
 enum {
-    OPENING,
-    ENDGAME,
-    NB_PHASE
+	OPENING,
+	ENDGAME,
+	NB_PHASE
 };
 
 // material values

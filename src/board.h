@@ -24,19 +24,18 @@ bool test_perft();
 
 /* Castling flags: those are for White, use << 2 for Black */
 enum {
-    OO = 1,		// King side castle (OO = chess notation)
-    OOO = 2		// Queen side castle (OOO = chess notation)
+	OO = 1,		// King side castle (OO = chess notation)
+	OOO = 2		// Queen side castle (OOO = chess notation)
 };
 
 enum {
-    NORMAL,
-    EN_PASSANT,
-    PROMOTION,
-    CASTLING
+	NORMAL,
+	EN_PASSANT,
+	PROMOTION,
+	CASTLING
 };
 
-struct move_t
-{
+struct move_t {
 	move_t(): b(0) {}	// silence compiler warnings
 	move_t(short _b): b(_b) {}
 	operator bool() const { return b; }
@@ -60,8 +59,7 @@ private:
 	uint16_t b;	// fsq = 0..5, tsq = 6..11, prom = 12,13 (0=Knight..3=Queen), flag = 14,15 (0=NORMAL...3=CASTLING)
 };
 
-struct GameInfo
-{
+struct GameInfo {
 	int capture;				// piece just captured
 	int epsq;					// en passant square
 	int crights;				// castling rights, 4 bits in FEN order KQkq
@@ -79,8 +77,7 @@ struct GameInfo
 	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
 };
 
-struct Board
-{
+struct Board {
 	const GameInfo& st() const;
 
 	int get_turn() const;
