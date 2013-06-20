@@ -12,7 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
  *
- * Credits: Bob Jenkins' 64-bit KISS PRNG and seeding algorithm.
+ * Credits: Bob Jenkins' 64-bit PRNG http://www.burtleburtle.net/bob/rand/smallprng.html
+ * - passes the DieHarder test suite, with various seeds, even zero (I've tested it).
+ * - much simpler and faster than complex generators (eg. Mersenne Twister).
+ * - not cryptographically secure, but I don't care (for Zobrist hashing).
 */
 #pragma once
 #include <cinttypes>
