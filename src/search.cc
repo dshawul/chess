@@ -283,7 +283,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 
 		if (!capture && !dangerous && !in_check && !root) {
 			// Move count pruning
-			if ( depth <= 8 && node_type != PV
+			if ( depth <= 6 && node_type != PV
 					&& LMR >= 3 + depth*depth
 					&& alpha > mated_in(MAX_PLY)
 					&& (see < 0 || !refute(B, ss->m, threat_move)) ) {
