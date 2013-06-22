@@ -302,7 +302,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 		ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
 		if (ss->reduction) {
 			LMR += !capture;
-			ss->reduction += (bad_quiet && LMR >= 3+8/depth);
+			ss->reduction += (bad_quiet && LMR >= 4+8/depth);
 		}
 		// do not LMR into the QS
 		if (new_depth - ss->reduction <= 0)
