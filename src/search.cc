@@ -165,7 +165,8 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	node_poll(B);
 
 	const bool root = !ss->ply, in_check = B.is_check();
-	int best_score = -INF, old_alpha = alpha;
+	const int old_alpha = alpha, static_node_type = node_type;
+	int best_score = -INF;
 	ss->best = 0;
 
 	if (B.is_draw())
@@ -301,7 +302,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 		// reduction decision
 		ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
 		if (ss->reduction && !capture)
-			ss->reduction += (bad_quiet && ++LMR >= 2+8/depth);
+			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8/depth;
 
 		// do not LMR into the QS
 		if (new_depth - ss->reduction <= 0)
