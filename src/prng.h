@@ -23,7 +23,6 @@
 struct PRNG {
 	PRNG() { init(); }
 
-	// Return 64 bit unsigned integer in between [0, 2^64 - 1]
 	uint64_t rand() {
 		const uint64_t e = a - rotate(b,  7);
 		a = b ^ rotate(c, 13);
