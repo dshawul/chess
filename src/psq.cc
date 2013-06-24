@@ -30,6 +30,7 @@ const Eval Material[NB_PIECE] = {
 Eval PsqTable[NB_PIECE][NB_SQUARE];
 
 namespace {
+
 /* Shape */
 const int Center[8]	= {-3, -1, +0, +1, +1, +0, -1, -3};
 const int NRank[8]	= {-2, -1, +0, +1, +2, +3, +2, +1};
@@ -62,45 +63,38 @@ Eval psq_bonus(int piece, int sq)
 	e = {0,0};
 	const int r = rank(sq), f = file(sq);
 
-	switch (piece) {
-	case PAWN:
+	if (piece == PAWN) {
 		e.op += Center[f] * PFileOpening;
 		if (sq == D5 || sq == E5 || sq == D3 || sq == E3)
 			e.op += PCenterOpening / 2;
 		else if (sq == D4 || sq == E4)
 			e.op += PCenterOpening;
-		break;
-	case KNIGHT:
+	} else if (piece == KNIGHT) {
 		e.op += (Center[r] + Center[f]) * NCentreOpening;
 		e.eg += (Center[r] + Center[f]) * NCentreEndgame;
 		e.op += NRank[r] * NRankOpening;
-		break;
-	case BISHOP:
+	} else if (piece == BISHOP) {
 		e.op += (Center[r] + Center[f]) * BCentreOpening;
 		e.eg += (Center[r] + Center[f]) * BCentreEndgame;
 		e.op -= BBackRankOpening * (r == RANK_1);
 		e.op += BDiagonalOpening * (7 == r + f || r == f);
-		break;
-	case ROOK:
+	} else if (piece == ROOK) {
 		e.op += Center[f] * RFileOpening;
-		if (r == RANK_7) {
-			e.op += RSeventhRank;
-			e.eg += RSeventhRank;
-		}
-		break;
-	case QUEEN:
+		if (r == RANK_7)
+			e += {RSeventhRank, RSeventhRank};
+	} else if (piece == QUEEN) {
 		e.eg += (Center[r] + Center[f]) * QCentreEndgame;
 		e.op -= QBackRankOpening * (r == RANK_1);
-		break;
-	case KING:
+	} else {
+		assert(piece == KING);
 		e.eg += (Center[r] + Center[f]) * KCentreEndgame;
 		e.op += KFile[f] * KFileOpening + KRank[r] * KRankOpening;
-		break;
 	}
 
 	return e;
 }
-}
+
+}	// namespace
 
 void init_psq()
 {
