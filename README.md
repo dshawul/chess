@@ -18,14 +18,13 @@ its opponent seeks them).
 
 ### Compiling it yourself
 
-On Linux, assuming you have g++ installed, simply run './make.sh' to compile. It should also work on
-any POSIX system with g++ installed (eg. MacOSX, FreeBSD, etc.)
+On Linux, assuming you have g++ installed, simply run `./make.sh` to compile. It should also work on
+any other UNIX-like system with g++ installed (eg. MacOSX, BSD, Solaris etc.)
 
-For other operating systems (ie. Windows), and/or compilers (ie. MSVC, ICC), I don't know. So you
-will have to figure it out. That being said, I have tried hard to write code as portable as possible,
-but there may be a few things that are GCC specific. If you find something that is not portable and
-should be rewritten to improve portability, please let me know (patches and pull requests are
-welcome).
+For Windows, and/or other compilers (eg. MSVC, ICC), I don't know. So you will have to figure it out.
+That being said, I have tried hard to write code as portable as possible, but there may be a few things
+that are GCC specific. If you find something that is not portable and should be rewritten to improve
+portability, please let me know (patches and pull requests are welcome).
 
 ### Terms of use
 
