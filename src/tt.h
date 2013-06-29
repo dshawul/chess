@@ -60,8 +60,6 @@ struct TTable {
 	void prefetch(Key key) const { __builtin_prefetch((char *)&cluster[key & (count-1)]); }
 	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
 
-	std::string get_pv(Board& B, int max_len) const;
-
 private:
 	size_t count;
 	uint8_t generation;

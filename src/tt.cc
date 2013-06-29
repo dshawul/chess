@@ -112,22 +112,3 @@ void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t 
 
 	replace->save(key, generation, bound, depth, score, eval, move);
 }
-
-std::string TTable::get_pv(Board& B, int max_len) const
-{
-	std::string s;
-	B.set_unwind();
-
-	for (int i = 0; i < max_len; i++) {
-		const Entry *tte = probe(B.get_key());
-
-		if (tte && tte->move && !B.is_draw()) {
-			s += ' ' + move_to_string(tte->move);
-			B.play(tte->move);
-		} else
-			break;
-	}
-
-	B.unwind();
-	return s;
-}

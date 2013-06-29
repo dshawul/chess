@@ -140,11 +140,12 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 			}
 		}
 
-		// Here we know that iteration 1 is finished
+		// Here we know for sure that iteration 1 is finished. Aborting before the end of
+		// iteration 1 is disastrous, and can return a null or stupid move
 		can_abort = true;
 
-		// Extract the PV from the TT and display it
-		std::cout << " pv" << TT.get_pv(B, MAX_PLY) << std::endl;
+		// Display best move for this iteration
+		std::cout << " pv " << move_to_string(best) << std::endl;
 	}
 
 	return best;
