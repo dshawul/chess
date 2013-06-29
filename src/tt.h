@@ -15,26 +15,26 @@
 #pragma once
 #include "board.h"
 
-enum { BOUND_EXACT, BOUND_UPPER, BOUND_LOWER };
+enum { PV = 0, All = -1, Cut = +1 };
 
 struct TTable {
 	struct Entry {
-		Key key_bound;	// bit 0..1 for bounr2 bits for bound, and 2..63 for key's 62 MSB
+		Key key_type;	// bit 0..1 for node_type+1, and 2..63 for key's 62 MSB
 		mutable uint8_t generation;
 		int8_t depth;
 		int16_t score, eval;
 		move_t move;
 
-		int bound() const {
-			return key_bound & 3;
+		int node_type() const {
+			return (key_type & 3) - 1;
 		}
 
 		bool key_match(Key k) const {
-			return (key_bound & ~3ULL) == (k & ~3ULL);
+			return (key_type & ~3ULL) == (k & ~3ULL);
 		}
 
-		void save(Key k, uint8_t g, uint8_t b, int8_t d, int16_t s, int16_t e, move_t m) {
-			key_bound = (k & ~3ULL) ^ b;
+		void save(Key k, uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move_t m) {
+			key_type = (k & ~3ULL) ^ (nt + 1);
 			generation = g;
 			depth = d;
 			score = s;
@@ -58,7 +58,7 @@ struct TTable {
 
 	const Entry *probe(Key key) const;
 	void prefetch(Key key) const { __builtin_prefetch((char *)&cluster[key & (count-1)]); }
-	void store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move);
+	void store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move);
 
 private:
 	size_t count;

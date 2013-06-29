@@ -358,8 +358,8 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 		throw ForcedMove();
 
 	// update TT
-	uint8_t bound = best_score <= old_alpha ? BOUND_UPPER : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-	TT.store(key, bound, depth, best_score, ss->eval, ss->best);
+	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
+	TT.store(key, node_type, depth, best_score, ss->eval, ss->best);
 
 	// best move is quiet: update killers and history
 	if (ss->best && !move_is_cop(B, ss->best)) {
@@ -474,9 +474,8 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 		return mated_in(ss->ply);
 
 	// update TT
-	int8_t bound = best_score <= old_alpha ? BOUND_UPPER
-				   : (best_score >= beta ? BOUND_LOWER : BOUND_EXACT);
-	TT.store(key, bound, depth, best_score, ss->eval, ss->best);
+	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
+	TT.store(key, node_type, depth, best_score, ss->eval, ss->best);
 
 	return best_score;
 }
@@ -518,14 +517,14 @@ bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, in
 	const bool depth_ok = tte->depth >= depth;
 
 	if (is_pv)
-		return depth_ok && tte->bound() == BOUND_EXACT;
+		return depth_ok && tte->node_type() == PV;
 	else {
 		const int tt_score = adjust_tt_score(tte->score, ply);
 		return (depth_ok
 				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
 				|| tt_score < std::min(mated_in(MAX_PLY), beta))
-			   && ((tte->bound() == BOUND_LOWER && tt_score >= beta)
-				   ||(tte->bound() == BOUND_UPPER && tt_score < beta));
+			   && ((tte->node_type() == Cut && tt_score >= beta)
+				   ||(tte->node_type() == All && tt_score < beta));
 	}
 }
 

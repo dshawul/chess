@@ -89,13 +89,13 @@ const TTable::Entry *TTable::probe(Key key) const
 	return NULL;
 }
 
-void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t eval, move_t move)
+void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move)
 {
 	Entry *e = cluster[key & (count-1)].entry, *replace = e;
 
 	for (size_t i = 0; i < 4; ++i, ++e) {
 		// overwrite empty or old
-		if (!e->key_bound || e->key_match(key)) {
+		if (!e->key_type || e->key_match(key)) {
 			replace = e;
 			if (!move)
 				move = e->move;
@@ -104,11 +104,11 @@ void TTable::store(Key key, uint8_t bound, int8_t depth, int16_t score, int16_t 
 
 		// Stockfish replacement strategy
 		int c1 = generation == replace->generation ? 2 : 0;
-		int c2 = e->generation == generation || e->bound() == BOUND_EXACT ? -2 : 0;
+		int c2 = e->generation == generation || e->node_type() == PV ? -2 : 0;
 		int c3 = e->depth < replace->depth ? 1 : 0;
 		if (c1 + c2 + c3 > 0)
 			replace = e;
 	}
 
-	replace->save(key, generation, bound, depth, score, eval, move);
+	replace->save(key, generation, node_type, depth, score, eval, move);
 }
