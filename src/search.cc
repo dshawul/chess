@@ -564,7 +564,7 @@ void bench(int depth)
 		"3q2k1/pb3p1p/4pbp1/2r5/PpN2N2/1P2P2P/5PP1/Q2R2K1 b - - 4 26",
 		"2r5/8/1n6/1P1p1pkp/p2P4/R1P1PKP1/8/1R6 w - - 0 1",
 		"r2q1rk1/1b1nbppp/4p3/3pP3/p1pP4/PpP2N1P/1P3PP1/R1BQRNK1 b 0 1",
-		"1r1r4/3q2k1/3p1p2/p1pNpPp1/PpP1B1Pp/1P5P/2Q5/6K1 b 0 1",
+		"6k1/5pp1/7p/p1p2n1P/P4N2/6P1/1P3P1K/8 w - - 0 35",
 		"r4rk1/1pp1q1pp/p2p4/3Pn3/1PP1Pp2/P7/3QB1PP/2R2RK1 b 0 1",
 		NULL
 	};
