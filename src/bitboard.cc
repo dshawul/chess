@@ -41,114 +41,10 @@ int kdist(int s1, int s2) { return KingDistance[s1][s2]; }
 
 namespace {
 
-void init_zobrist()
-{
-	PRNG prng;
-
-	for (int c = WHITE; c <= BLACK; c++)
-		for (int p = PAWN; p <= KING; p++)
-			for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand());
-
-	zob_turn = prng.rand();
-	for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand());
-	for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand());
-}
-
 void safe_add_bit(Bitboard *b, int r, int f)
 {
 	if (rank_file_ok(r, f))
 		set_bit(b, square(r, f));
-}
-
-void init_rays()
-{
-	const int dir[8][2] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};
-	memset(Between, 0, sizeof(Between));
-	memset(Direction, 0, sizeof(Direction));
-
-	for (int sq = A1; sq <= H8; ++sq) {
-		int r = rank(sq);
-		int f = file(sq);
-
-		for (int i = 0; i < 8; i++) {
-			Bitboard mask = 0;
-			const int dr = dir[i][0], df = dir[i][1];
-			int _r, _f, _sq;
-
-			for (_r = r + dr, _f = f + df;
-					rank_file_ok(_r, _f); _r += dr,_f += df) {
-				_sq = square(_r,_f);
-				mask |= 1ULL << _sq;
-				Between[sq][_sq] = mask;
-			}
-
-			Bitboard direction = mask;
-
-			while (mask) {
-				_sq = pop_lsb(&mask);
-				Direction[sq][_sq] = direction;
-			}
-		}
-	}
-}
-
-void init_attacks()
-{
-	const int Kdir[8][2] = { {-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1} };
-	const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
-	const int Pdir[2][2] = { {1,-1}, {1,1} };
-
-	for (int sq = A1; sq <= H8; ++sq) {
-		const int r = rank(sq);
-		const int f = file(sq);
-
-		NAttacks[sq] = KAttacks[sq] = 0;
-		for (int d = 0; d < 8; d++) {
-			safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
-			safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
-		}
-
-		PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
-		for (int d = 0; d < 2; d++) {
-			safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
-			safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
-		}
-
-		BPseudoAttacks[sq] = bishop_attack(sq, 0);
-		RPseudoAttacks[sq] = rook_attack(sq, 0);
-	}
-}
-
-void init_mask()
-{
-	for (int f = FILE_A; f <= FILE_H; f++) {
-		AdjacentFiles[f] = 0ULL;
-		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
-		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
-	}
-
-	InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
-	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
-		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
-		InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
-	}
-
-	for (int us = WHITE; us <= BLACK; ++us) {
-		for (int sq = A1; sq <= H8; ++sq) {
-			const int r = rank(sq), f = file(sq);
-			SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
-			PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
-			PassedPawnMask[us][sq] = PawnSpan[us][sq] ^ SquaresInFront[us][sq];
-			Shield[us][sq] = KAttacks[sq] & InFront[us][r];
-		}
-	}
-}
-
-void init_kdist()
-{
-	for (int s1 = A1; s1 <= H8; ++s1)
-		for (int s2 = A1; s2 <= H8; ++s2)
-			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
 }
 
 const int magic_bb_r_shift[NB_SQUARE] = {
@@ -492,12 +388,107 @@ void init_bitboard()
 {
 	if (BitboardInitialized) return;
 
-	init_zobrist();
 	init_magics();
-	init_attacks();
-	init_rays();
-	init_mask();
-	init_kdist();
+
+	/* Zobrist: zob[c][p][s], zob_turn, zob_castle[cr], zob_ep[s] */
+
+	PRNG prng;
+	for (int c = WHITE; c <= BLACK; c++)
+		for (int p = PAWN; p <= KING; p++)
+			for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand());
+
+	zob_turn = prng.rand();
+	for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand());
+	for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand());
+
+	/* NAttacks[s], KAttacks[s], Pattacks[c][s] */
+
+	const int Kdir[8][2] = { {-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1} };
+	const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
+	const int Pdir[2][2] = { {1,-1}, {1,1} };
+
+	for (int sq = A1; sq <= H8; ++sq) {
+		const int r = rank(sq);
+		const int f = file(sq);
+
+		NAttacks[sq] = KAttacks[sq] = 0;
+		for (int d = 0; d < 8; d++) {
+			safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
+			safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
+		}
+
+		PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
+		for (int d = 0; d < 2; d++) {
+			safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
+			safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
+		}
+
+		BPseudoAttacks[sq] = bishop_attack(sq, 0);
+		RPseudoAttacks[sq] = rook_attack(sq, 0);
+	}
+
+	/* Between[s1][s2] and Direction[s1][s2] */
+
+	const int dir[8][2] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};
+	memset(Between, 0, sizeof(Between));
+	memset(Direction, 0, sizeof(Direction));
+
+	for (int sq = A1; sq <= H8; ++sq) {
+		int r = rank(sq);
+		int f = file(sq);
+
+		for (int i = 0; i < 8; i++) {
+			Bitboard mask = 0;
+			const int dr = dir[i][0], df = dir[i][1];
+			int _r, _f, _sq;
+
+			for (_r = r + dr, _f = f + df;
+					rank_file_ok(_r, _f); _r += dr, _f += df) {
+				_sq = square(_r, _f);
+				mask |= 1ULL << _sq;
+				Between[sq][_sq] = mask;
+			}
+
+			Bitboard direction = mask;
+
+			while (mask) {
+				_sq = pop_lsb(&mask);
+				Direction[sq][_sq] = direction;
+			}
+		}
+	}
+
+	/* AdjacentFile[f] and InFront[c][r] */
+
+	for (int f = FILE_A; f <= FILE_H; f++) {
+		AdjacentFiles[f] = 0ULL;
+		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
+		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
+	}
+
+	InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
+	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
+		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
+		InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
+	}
+
+	/* SquaresInFront[c][sq], PawnSpan[c][sq], PassedPawnMask[c][sq], Shield[c][sq] */
+
+	for (int us = WHITE; us <= BLACK; ++us) {
+		for (int sq = A1; sq <= H8; ++sq) {
+			const int r = rank(sq), f = file(sq);
+			SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
+			PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
+			PassedPawnMask[us][sq] = PawnSpan[us][sq] ^ SquaresInFront[us][sq];
+			Shield[us][sq] = KAttacks[sq] & InFront[us][r];
+		}
+	}
+
+	/* KingDistance[s1][s2] */
+
+	for (int s1 = A1; s1 <= H8; ++s1)
+		for (int s2 = A1; s2 <= H8; ++s2)
+			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
 
 	BitboardInitialized = true;
 }
