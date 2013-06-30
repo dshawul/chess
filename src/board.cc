@@ -208,8 +208,13 @@ void Board::play(move_t m)
 	if (piece == PAWN) {
 		sp->rule50 = 0;
 		int inc_pp = us ? -8 : 8;
-		// set the epsq if double push
-		sp->epsq = (tsq == fsq + 2 * inc_pp) ? fsq + inc_pp : NO_SQUARE;
+
+		// set the epsq if double push, and ep square is attacked by enemy pawns
+		if (tsq == fsq + 2 * inc_pp && test_bit(st().attacks[them][PAWN], fsq + inc_pp))
+			sp->epsq = fsq + inc_pp;
+		else
+			sp->epsq = NO_SQUARE;
+
 		// capture en passant
 		if (m.flag() == EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
