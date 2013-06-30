@@ -40,7 +40,7 @@ extern Bitboard Direction[NB_SQUARE][NB_SQUARE];
 extern Bitboard InFront[NB_COLOR][8];
 extern Bitboard AdjacentFiles[8];
 extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
-extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE], PassedPawnMask[NB_COLOR][NB_SQUARE];
+extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
 extern Bitboard Shield[NB_COLOR][NB_SQUARE];
 
 // Occupancy independant attacks
