@@ -277,7 +277,7 @@ move_t *gen_quiet_checks(const Board& B, move_t *mlist)
 
 	// Pawn push checks (single push only)
 	if (B.get_pieces(us, PAWN) & NAttacks[ksq] & PawnSpan[them][ksq]) {
-		tss = Shield[them][ksq] & AdjacentFiles[file(ksq)] & ~occ;
+		tss = PAttacks[them][ksq] & ~occ;
 		if (tss)
 			mlist = gen_pawn_moves(B, tss, mlist, false);
 	}
