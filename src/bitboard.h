@@ -48,8 +48,9 @@ extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 extern Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 extern Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
-// Initialize: bitboards, zobrist, magics
+// Initialize: bitboards, magics
 extern void init_bitboard();
+extern void init_magics();
 
 // Squares attacked by a bishop/rook for a given board occupancy
 extern Bitboard bishop_attack(int sq, Bitboard occ);

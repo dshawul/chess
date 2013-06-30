@@ -20,6 +20,7 @@ uint64_t dbg_cnt1=0, dbg_cnt2=0;
 
 int main (int argc, char **argv)
 {
+	init_magics();
 	init_bitboard();
 	init_psq();
 	init_eval();
