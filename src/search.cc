@@ -44,7 +44,9 @@ void time_alloc(const SearchLimits& sl, int result[2]);
 History H;
 Refutation R;
 
-int adjust_tt_score(int score, int ply);
+int score_to_tt(int score, int ply);
+int score_from_tt(int tt_score, int ply);
+
 bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
 bool is_mate_score(int score) { return std::abs(score) >= MATE-MAX_PLY; }
@@ -188,7 +190,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	if (tte) {
 		if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
 			TT.refresh(tte);
-			return adjust_tt_score(tte->score, ss->ply);
+			return score_from_tt(tte->score, ss->ply);
 		}
 		ss->eval = tte->eval;
 		ss->best = tte->move;
@@ -359,7 +361,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 
 	// update TT
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
-	TT.store(key, node_type, depth, best_score, ss->eval, ss->best);
+	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
 	// best move is quiet: update killers and history
 	if (ss->best && !move_is_cop(B, ss->best)) {
@@ -406,7 +408,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 	if (tte) {
 		if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
 			TT.refresh(tte);
-			return adjust_tt_score(tte->score, ss->ply);
+			return score_from_tt(tte->score, ss->ply);
 		}
 		ss->eval = tte->eval;
 		ss->best = tte->move;
@@ -475,7 +477,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 
 	// update TT
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
-	TT.store(key, node_type, depth, best_score, ss->eval, ss->best);
+	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
 	return best_score;
 }
@@ -501,12 +503,21 @@ void node_poll(Board &B)
 	}
 }
 
-int adjust_tt_score(int score, int ply)
-/* mate scores from the hash_table_t need to be adjusted. For example, if we find a mate in 10
- * from the hash_table_t at ply 5, then we effectively have a mate in 15 plies. */
+int score_to_tt(int score, int ply)
+/* mate scores from the search, must be adjusted to be written in the TT. For example, if we find a
+ * mate in 10 plies from the current position, it will be scored mate_in(15) by the search and must
+ * be entered mate_in(10) in the TT */
 {
-	return score >= mate_in(MAX_PLY) ? score - ply :
-		   score <= mated_in(MAX_PLY) ? score + ply : score;
+	return score >= mate_in(MAX_PLY) ? score + ply :
+		   score <= mated_in(MAX_PLY) ? score - ply : score;
+}
+
+int score_from_tt(int tt_score, int ply)
+/* mate scores from the TT need to be adjusted. For example, if we find a mate in 10 in the TT at
+ * ply 5, then we effectively have a mate in 15 plies (from the root) */
+{
+	return tt_score >= mate_in(MAX_PLY) ? tt_score - ply :
+		   tt_score <= mated_in(MAX_PLY) ? tt_score + ply : tt_score;
 }
 
 bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply)
@@ -519,7 +530,7 @@ bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, in
 	if (is_pv)
 		return depth_ok && tte->node_type() == PV;
 	else {
-		const int tt_score = adjust_tt_score(tte->score, ply);
+		const int tt_score = score_from_tt(tte->score, ply);
 		return (depth_ok
 				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
 				|| tt_score < std::min(mated_in(MAX_PLY), beta))
