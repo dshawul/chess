@@ -245,8 +245,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 
 	// Internal Iterative Deepening
 	if ( (!tte || !tte->move || tte->depth <= 0)
-			&& depth >= (node_type == PV ? 4 : 7)
-			&& (node_type != All || ss->eval+vOP >= beta) ) {
+			&& depth >= (node_type == PV ? 4 : 7) ) {
 		ss->skip_null = true;
 		search(B, alpha, beta, node_type == PV ? depth-2 : depth/2, node_type, ss);
 		ss->skip_null = false;
