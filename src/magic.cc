@@ -158,97 +158,6 @@ const Bitboard* magic_bb_r_indices[64] = {
 	magic_bb_r_db+49152, magic_bb_r_db+55296, magic_bb_r_db+79872, magic_bb_r_db+98304
 };
 
-Bitboard init_magic_bb_r(int sq, Bitboard occ)
-{
-	Bitboard ret = 0;
-	Bitboard bit;
-	Bitboard rowbits = 0xFFULL << (sq & ~7);
-
-	bit = 1ULL << sq;
-	do {
-		bit <<= 8;
-		ret |= bit;
-	} while (bit && !(bit & occ));
-
-	bit = 1ULL << sq;
-	do {
-		bit >>= 8;
-		ret |= bit;
-	} while(bit && !(bit & occ));
-
-	bit = 1ULL << sq;
-	do {
-		bit<<=1;
-		if(bit&rowbits)
-			ret |= bit;
-		else
-			break;
-	} while (!(bit & occ));
-
-	bit = 1ULL << sq;
-	do {
-		bit >>= 1;
-		if (bit & rowbits)
-			ret |= bit;
-		else
-			break;
-	} while (!(bit & occ));
-	return ret;
-}
-
-Bitboard init_magic_bb_b(int sq, Bitboard occ)
-{
-	Bitboard ret = 0;
-	Bitboard bit, bit2;
-	Bitboard rowbits = 0xFFULL << (sq & ~7);
-
-	bit = 1ULL << sq;
-	bit2 = bit;
-	do {
-		bit <<= 8-1;
-		bit2 >>= 1;
-		if (bit2 & rowbits)
-			ret |= bit;
-		else
-			break;
-	} while(bit && !(bit & occ));
-
-	bit = 1ULL << sq;
-	bit2 = bit;
-	do {
-		bit <<= 8+1;
-		bit2 <<= 1;
-		if (bit2 & rowbits)
-			ret |= bit;
-		else
-			break;
-	} while (bit && !(bit & occ));
-
-	bit = 1ULL << sq;
-	bit2 = bit;
-	do {
-		bit >>= 8-1;
-		bit2 <<= 1;
-		if (bit2 & rowbits)
-			ret |= bit;
-		else
-			break;
-	} while(bit && !(bit & occ));
-
-	bit = 1ULL << sq;
-	bit2 = bit;
-	do {
-		bit >>= 8+1;
-		bit2 >>= 1;
-		if (bit2 & rowbits)
-			ret |= bit;
-		else
-			break;
-	} while (bit && !(bit & occ));
-
-	return ret;
-}
-
 Bitboard init_magic_bb_occ(const int* sq, int numSq, Bitboard linocc)
 {
 	Bitboard ret = 0;
@@ -323,6 +232,9 @@ void init_magics()
 		magic_bb_r_db+98304
 	};
 
+	static const int Bdir[4][2] = { {-1,-1}, {-1, 1}, { 1,-1}, { 1, 1} };
+	static const int Rdir[4][2] = { {-1, 0}, { 0,-1}, { 0, 1}, { 1, 0} };
+
 	for(int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];
 		int numSq = 0;
@@ -335,7 +247,7 @@ void init_magics()
 		for(temp = 0; temp < (1ULL << numSq); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 			*(magic_bb_b_indices2[i] + ((tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i])) =
-				init_magic_bb_b(i,tempocc);
+				calc_sliding_attacks(i, tempocc, Bdir);
 		}
 	}
 
@@ -351,7 +263,7 @@ void init_magics()
 		for(temp = 0; temp < (1ULL << numSq); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 			*(magic_bb_r_indices2[i] + ((tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i])) =
-				init_magic_bb_r(i, tempocc);
+				calc_sliding_attacks(i, tempocc, Rdir);
 		}
 	}
 }
