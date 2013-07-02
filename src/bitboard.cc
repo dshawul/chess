@@ -71,13 +71,11 @@ void init_bitboard()
 		const int r = rank(sq);
 		const int f = file(sq);
 
-		NAttacks[sq] = KAttacks[sq] = 0;
 		for (int d = 0; d < 8; d++) {
 			safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
 			safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 		}
 
-		PAttacks[WHITE][sq] = PAttacks[BLACK][sq] = 0;
 		for (int d = 0; d < 2; d++) {
 			safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
 			safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
@@ -89,17 +87,13 @@ void init_bitboard()
 
 	/* Between[s1][s2] and Direction[s1][s2] */
 
-	const int dir[8][2] = {{-1,-1},{-1,0},{-1,1},{0,-1},{0,1},{1,-1},{1,0},{1,1}};
-	memset(Between, 0, sizeof(Between));
-	memset(Direction, 0, sizeof(Direction));
-
 	for (int sq = A1; sq <= H8; ++sq) {
 		int r = rank(sq);
 		int f = file(sq);
 
 		for (int i = 0; i < 8; i++) {
 			Bitboard mask = 0;
-			const int dr = dir[i][0], df = dir[i][1];
+			const int dr = Kdir[i][0], df = Kdir[i][1];
 			int _r, _f, _sq;
 
 			for (_r = r + dr, _f = f + df;
@@ -121,12 +115,10 @@ void init_bitboard()
 	/* AdjacentFile[f] and InFront[c][r] */
 
 	for (int f = FILE_A; f <= FILE_H; f++) {
-		AdjacentFiles[f] = 0ULL;
 		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
 		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
 	}
 
-	InFront[WHITE][RANK_8] = InFront[BLACK][RANK_1] = 0;
 	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
 		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
 		InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
@@ -171,20 +163,15 @@ Bitboard piece_attack(int piece, int sq, Bitboard occ)
 	assert(BitboardInitialized);
 	assert(KNIGHT <= piece && piece <= KING && square_ok(sq));
 
-	switch (piece) {
-	case KNIGHT:
+	if (piece == KNIGHT)
 		return NAttacks[sq];
-	case BISHOP:
+	else if (piece == BISHOP)
 		return bishop_attack(sq, occ);
-	case ROOK:
+	else if (piece == ROOK)
 		return rook_attack(sq, occ);
-	case QUEEN:
+	else if (piece == QUEEN)
 		return bishop_attack(sq, occ) | rook_attack(sq, occ);
-	case KING:
+	else
 		return KAttacks[sq];
-	default:
-		assert(false);
-		return 0;	// silence compiler warning
-	}
 }
 
