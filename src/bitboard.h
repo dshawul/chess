@@ -52,9 +52,6 @@ extern Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 extern void init_bitboard();
 extern void init_magics();
 
-// Calculate squares attacked by sliding pieces for a given board occupancy
-extern Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2]);
-
 // Squares attacked by a bishop/rook for a given board occupancy
 extern Bitboard bishop_attack(int sq, Bitboard occ);
 extern Bitboard rook_attack(int sq, Bitboard occ);

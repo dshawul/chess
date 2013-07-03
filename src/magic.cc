@@ -158,6 +158,26 @@ const Bitboard* magic_bb_r_indices[64] = {
 	magic_bb_r_db+49152, magic_bb_r_db+55296, magic_bb_r_db+79872, magic_bb_r_db+98304
 };
 
+Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
+{
+	const int r = rank(sq), f = file(sq);
+	Bitboard result = 0;
+
+	for (int i = 0; i < 4; ++i) {
+		const int dr = dir[i][0], df = dir[i][1];
+		int _r, _f;
+
+		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
+			const int _sq = square(_r, _f);
+			result |= 1ULL << _sq;
+			if (test_bit(occ, _sq))
+				break;
+		}
+	}
+
+	return result;
+}
+
 Bitboard init_magic_bb_occ(const int* sq, int numSq, Bitboard linocc)
 {
 	Bitboard ret = 0;

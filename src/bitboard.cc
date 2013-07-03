@@ -46,26 +46,6 @@ void safe_add_bit(Bitboard *b, int r, int f)
 
 }	// namespace
 
-Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
-{
-	const int r = rank(sq), f = file(sq);
-	Bitboard result = 0;
-
-	for (int i = 0; i < 4; ++i) {
-		const int dr = dir[i][0], df = dir[i][1];
-		int _r, _f;
-
-		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
-			const int _sq = square(_r, _f);
-			result |= 1ULL << _sq;
-			if (test_bit(occ, _sq))
-				break;
-		}
-	}
-
-	return result;
-}
-
 void init_bitboard()
 {
 	if (BitboardInitialized) return;
