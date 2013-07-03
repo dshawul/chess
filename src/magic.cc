@@ -169,7 +169,7 @@ Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
 
 		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
 			const int _sq = square(_r, _f);
-			result |= 1ULL << _sq;
+			set_bit(&result, _sq);
 			if (test_bit(occ, _sq))
 				break;
 		}
@@ -180,11 +180,13 @@ Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
 
 Bitboard init_magic_bb_occ(const int* sq, int numSq, Bitboard linocc)
 {
-	Bitboard ret = 0;
-	for(int i = 0; i < numSq; i++)
-		if (linocc & (1ULL << i))
-			ret |= 1ULL << sq[i];
-	return ret;
+	Bitboard result = 0;
+
+	for (int i = 0; i < numSq; ++i)
+		if (test_bit(linocc, i))
+			set_bit(&result, sq[i]);
+
+	return result;
 }
 
 }	// namespace
