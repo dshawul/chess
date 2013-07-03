@@ -191,17 +191,6 @@ Bitboard init_magic_bb_occ(const int* sq, int numSq, Bitboard linocc)
 
 void init_magics()
 {
-	static const int init_magic_bitpos64_db[64] = {
-		63,  0, 58,  1, 59, 47, 53,  2,
-		60, 39, 48, 27, 54, 33, 42,  3,
-		61, 51, 37, 40, 49, 18, 28, 20,
-		55, 30, 34, 11, 43, 14, 22,  4,
-		62, 57, 46, 52, 38, 26, 32, 41,
-		50, 36, 17, 19, 29, 10, 13, 21,
-		56, 45, 25, 31, 35, 16,  9, 12,
-		44, 24, 15,  8, 23,  7,  6,  5
-	};
-
 	static const uintptr_t magic_bb_b_indices2[64] = {
 		4992, 2624,  256,  896, 1280, 1664, 4800, 5120,
 		2560, 2656,  288,  928, 1312, 1696, 4832, 4928,
@@ -230,12 +219,11 @@ void init_magics()
 	for(int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];
 		int numSq = 0;
+
 		Bitboard temp = magic_bb_b_mask[i];
-		while(temp) {
-			Bitboard bit = temp & -temp;
-			sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
-			temp ^= bit;
-		}
+		while (temp)
+			sq[numSq++] = pop_lsb(&temp);
+
 		for(temp = 0; temp < (1ULL << numSq); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
@@ -247,12 +235,11 @@ void init_magics()
 	for(int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];
 		int numSq = 0;
+
 		Bitboard temp = magic_bb_r_mask[i];
-		while(temp) {
-			Bitboard bit = temp & -temp;
-			sq[numSq++] = init_magic_bitpos64_db[(bit * 0x07EDD5E59A4E28C2ull) >> 58];
-			temp ^= bit;
-		}
+		while(temp)
+			sq[numSq++] = pop_lsb(&temp);
+
 		for(temp = 0; temp < (1ULL << numSq); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, numSq, temp);
 			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
