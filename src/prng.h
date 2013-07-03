@@ -30,7 +30,7 @@ struct PRNG {
 		c = d + e;
 		return d = e + a;
 	}
-	
+
 	void init(uint64_t seed = 0) {
 		a = 0xf1ea5eed, b = c = d = seed;
 		for (int i = 0; i < 20; ++i)
