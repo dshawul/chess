@@ -17,8 +17,6 @@
 
 #define MAX_MOVES	0x80	// max number of legal moves
 
-extern uint64_t perft(Board& B, int depth, int ply);
-
 extern move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves);
 extern move_t *gen_castling(const Board& B, move_t *mlist);
 extern move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub_promotions);

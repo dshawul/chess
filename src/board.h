@@ -17,9 +17,6 @@
 #include "bitboard.h"
 #include "psq.h"
 
-/* Runs a set of perft(). This is the unit test to validate ANY modification in the board code. */
-bool test_perft();
-
 #define MAX_GAME_PLY		0x400	// max number of plies for a game
 
 /* Castling flags: those are for White, use << 2 for Black */

@@ -25,9 +25,9 @@ struct SearchLimits {
 // Transposition Table
 extern TTable TT;
 
-extern uint64_t PollingFrequency;	// test search search limits every so nodes, must be a power of two
+extern uint64_t node_count;
+extern uint64_t PollingFrequency;	// must be a power of two
 
 move_t bestmove(Board& B, const SearchLimits& sl);
-void bench(int depth);
 
 extern int Contempt;
