@@ -23,7 +23,7 @@ struct SearchInfo {
 
 	void clear(int _ply) {
 		ply = _ply;
-		m = best = killer[0] = killer[1] = 0;
+		m = best = killer[0] = killer[1] = move_t(0);
 		eval = reduction = 0;
 		skip_null = null_child = false;
 	}
@@ -68,7 +68,7 @@ struct Refutation {
 
 	move_t get_refutation(Key dm_key) const {
 		const size_t idx = dm_key & (count-1);
-		Pack tmp = {dm_key, 0};
+		Pack tmp = {dm_key, move_t(0)};
 		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
 	}
 

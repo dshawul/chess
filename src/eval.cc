@@ -45,7 +45,7 @@ private:
 PawnCache PC;
 
 struct EvalInfo {
-	EvalInfo(const Board *_B): B(_B), eval_factor(16)
+	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16)
 	{ e[WHITE] = e[BLACK] = {0,0}; }
 
 	void select_side(int color);
@@ -129,7 +129,7 @@ void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 		{-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
 		{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
 	};
-	static const unsigned mob_unit[NB_PHASE][NB_PIECE] = {
+	static const int mob_unit[NB_PHASE][NB_PIECE] = {
 		{0, 4, 5, 2, 1, 0},		// Opening
 		{0, 4, 5, 4, 2, 0}		// EndGame
 	};

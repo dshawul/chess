@@ -25,13 +25,8 @@ struct TTable {
 		int16_t score, eval;
 		move_t move;
 
-		int node_type() const {
-			return (key_type & 3) - 1;
-		}
-
-		bool key_match(Key k) const {
-			return (key_type & ~3ULL) == (k & ~3ULL);
-		}
+		int node_type() const { return (key_type & 3) - 1; }
+		bool key_match(Key k) const { return (key_type & ~3ULL) == (k & ~3ULL); }
 
 		void save(Key k, uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move_t m) {
 			key_type = (k & ~3ULL) ^ (nt + 1);
@@ -43,9 +38,7 @@ struct TTable {
 		}
 	};
 
-	struct Cluster {
-		Entry entry[4];
-	};
+	struct Cluster { Entry entry[4]; };
 
 	TTable(): count(0), cluster(NULL) {}
 	~TTable();

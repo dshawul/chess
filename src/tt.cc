@@ -20,6 +20,8 @@
 #include "tt.h"
 #include "move.h"
 
+namespace {
+
 void *aligned_malloc(size_t size, size_t align)
 {
 	void *mem = malloc(size + (align-1) + sizeof(void*));
@@ -36,6 +38,8 @@ void aligned_free(void *mem)
 {
 	free(((void**)mem)[-1]);
 }
+
+}	// namespace
 
 TTable::~TTable()
 {

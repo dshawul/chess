@@ -79,7 +79,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
-	best = 0;
+	best = move_t(0);
 
 	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
 	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
@@ -172,7 +172,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	const bool root = !ss->ply, in_check = B.is_check();
 	const int old_alpha = alpha, static_node_type = node_type;
 	int best_score = -INF;
-	ss->best = 0;
+	ss->best = move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -221,14 +221,14 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	}
 
 	// Null move pruning
-	move_t threat_move = 0;
+	move_t threat_move = move_t(0);
 	if ( ss->eval >= beta	// eval symmetry prevents double null moves
 			&& !ss->skip_null && node_type != PV
 			&& !in_check && !is_mate_score(beta)
 			&& B.st().piece_psq[B.get_turn()] ) {
 		const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
-		B.play(0);
+		B.play(move_t(0));
 		(ss+1)->null_child = true;
 		int score = -search(B, -beta, -alpha, depth - reduction, All, ss+1);
 		(ss+1)->null_child = false;
@@ -399,7 +399,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 
 	const bool in_check = B.is_check();
 	int best_score = -INF, old_alpha = alpha;
-	ss->best = 0;
+	ss->best = move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];

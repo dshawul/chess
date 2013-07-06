@@ -34,7 +34,7 @@ enum {
 
 struct move_t {
 	move_t(): b(0) {}	// silence compiler warnings
-	move_t(short _b): b(_b) {}
+	explicit move_t(uint16_t _b): b(_b) {}
 	operator bool() const { return b; }
 
 	bool operator== (move_t m) const { return b == m.b; }

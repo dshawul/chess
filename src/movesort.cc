@@ -126,7 +126,7 @@ move_t MoveSort::next(int *see)
 			   : t.see;				// use SEE cache
 		return t.m;
 	} else
-		return 0;
+		return move_t(0);
 }
 
 move_t MoveSort::previous()
