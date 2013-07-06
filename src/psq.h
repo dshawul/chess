@@ -35,14 +35,32 @@ enum {
 struct Eval {
 	int op, eg;
 
-	bool operator== (const Eval& e) { return op == e.op && eg == e.eg; }
-	bool operator!= (const Eval& e) { return !(*this == e); }
+	bool operator== (const Eval& e) {
+		return op == e.op && eg == e.eg;
+	}
 
-	const Eval& operator+= (const Eval& e) { op += e.op; eg += e.eg; return *this; }
-	const Eval& operator-= (const Eval& e) { op -= e.op; eg -= e.eg; return *this; }
+	bool operator!= (const Eval& e) {
+		return !(*this == e);
+	}
+
+	const Eval& operator+= (const Eval& e) {
+		op += e.op;
+		eg += e.eg;
+		return *this;
+	}
+
+	const Eval& operator-= (const Eval& e) {
+		op -= e.op;
+		eg -= e.eg;
+		return *this;
+	}
 };
 
-inline const Eval& operator- (const Eval& e1, const Eval& e2) { Eval e(e1); return e -= e2; }
+inline const Eval& operator- (const Eval& e1, const Eval& e2)
+{
+	Eval e(e1);
+	return e -= e2;
+}
 
 extern const Eval Material[NB_PIECE];
 

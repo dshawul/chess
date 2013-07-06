@@ -36,32 +36,83 @@ enum {
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
 
-inline bool rank_file_ok(int r, int f) { return 0 <= r && r < 8 && 0 <= f && f < 8; }
-inline bool square_ok(int sq) { return A1 <= sq && sq <= H8; }
+inline bool rank_file_ok(int r, int f)
+{
+	return 0 <= r && r < 8 && 0 <= f && f < 8;
+}
 
-inline int rank(int sq) { assert(square_ok(sq)); return int(int(sq) / 8); }
-inline int file(int sq) { assert(square_ok(sq)); return int(int(sq) % 8); }
-inline int square(int r, int f) { assert(rank_file_ok(r, f)); return int(8 * int(r) + int(f)); }
+inline bool square_ok(int sq)
+{
+	return A1 <= sq && sq <= H8;
+}
 
-inline int rank_mirror(int sq) { assert(square_ok(sq)); return sq ^ 070; }
-inline int file_mirror(int sq) { assert(square_ok(sq)); return sq ^ 7; }
+inline int rank(int sq)
+{
+	assert(square_ok(sq));
+	return int(int(sq) / 8);
+}
+
+inline int file(int sq)
+{
+	assert(square_ok(sq));
+	return int(int(sq) % 8);
+}
+
+inline int square(int r, int f)
+{
+	assert(rank_file_ok(r, f));
+	return int(8 * int(r) + int(f));
+}
+
+inline int rank_mirror(int sq)
+{
+	assert(square_ok(sq));
+	return sq ^ 070;
+}
+
+inline int file_mirror(int sq)
+{
+	assert(square_ok(sq));
+	return sq ^ 7;
+}
 
 /* Piece */
 
 #define NB_PIECE 6
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE };
 
-inline bool piece_ok(int piece) { return PAWN <= piece && piece < NO_PIECE; }
-inline bool is_slider(int piece) { assert(piece_ok(piece)); return BISHOP <= piece && piece <= QUEEN; }
+inline bool piece_ok(int piece)
+{
+	return PAWN <= piece && piece < NO_PIECE;
+}
+
+inline bool is_slider(int piece)
+{
+	assert(piece_ok(piece));
+	return BISHOP <= piece && piece <= QUEEN;
+}
 
 /* Color */
 
 #define NB_COLOR 2
 enum { WHITE, BLACK, NO_COLOR };
 
-inline bool color_ok(int color) { return color == WHITE || color == BLACK; }
-inline int opp_color(int color) { assert(color_ok(color)); return color ^ BLACK; }
-inline int color_of(int sq) { assert(square_ok(sq)); return (sq & 1) ^ BLACK; }
+inline bool color_ok(int color)
+{
+	return color == WHITE || color == BLACK;
+}
+
+inline int opp_color(int color)
+{
+	assert(color_ok(color));
+	return color ^ BLACK;
+}
+
+inline int color_of(int sq)
+{
+	assert(square_ok(sq));
+	return (sq & 1) ^ BLACK;
+}
 
 typedef uint64_t Key;
 typedef uint64_t Bitboard;

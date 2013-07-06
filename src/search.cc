@@ -51,11 +51,25 @@ int score_from_tt(int tt_score, int ply);
 
 bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
-bool is_mate_score(int score) { return std::abs(score) >= MATE - MAX_PLY; }
-int mated_in(int ply) { return ply - MATE; }
-int mate_in(int ply) { return MATE - ply; }
+bool is_mate_score(int score)
+{
+	return std::abs(score) >= MATE - MAX_PLY;
+}
 
-int null_reduction(int depth) { return 3 + depth / 4; }
+int mated_in(int ply)
+{
+	return ply - MATE;
+}
+
+int mate_in(int ply)
+{
+	return MATE - ply;
+}
+
+int null_reduction(int depth)
+{
+	return 3 + depth / 4;
+}
 
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
 const int EvalMargin[4]	 = {0, vEP, vN, vQ};

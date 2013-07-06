@@ -21,7 +21,9 @@
 #include <cinttypes>
 
 struct PRNG {
-	PRNG() { init(); }
+	PRNG() {
+		init();
+	}
 
 	uint64_t rand() {
 		const uint64_t e = a - rotate(b,  7);

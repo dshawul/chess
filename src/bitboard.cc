@@ -34,7 +34,11 @@ Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
 int KingDistance[NB_SQUARE][NB_SQUARE];
-int kdist(int s1, int s2) { return KingDistance[s1][s2]; }
+
+int kdist(int s1, int s2)
+{
+	return KingDistance[s1][s2];
+}
 
 namespace {
 

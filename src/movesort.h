@@ -54,6 +54,7 @@ private:
  * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
  * */
 struct Refutation {
+
 	struct Pack {
 		uint64_t dm_key: 48;
 		move_t move;
@@ -79,6 +80,7 @@ struct Refutation {
 };
 
 struct MoveSort {
+
 	enum GenType {
 		GEN_ALL,				// all legal moves
 		GEN_CAPTURES_CHECKS,	// captures and quiet checks
@@ -88,7 +90,10 @@ struct MoveSort {
 	struct Token {
 		move_t m;
 		int score, see;
-		bool operator< (const Token& t) const {return score < t.score; }
+
+		bool operator< (const Token& t) const {
+			return score < t.score;
+		}
 	};
 
 	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
@@ -97,7 +102,9 @@ struct MoveSort {
 	move_t next(int *see);
 	move_t previous();
 
-	int get_count() const { return count; }
+	int get_count() const {
+		return count;
+	}
 
 private:
 	const Board *B;

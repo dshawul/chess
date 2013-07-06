@@ -35,25 +35,70 @@ enum {
 struct move_t {
 	move_t(): b(0) {}	// silence compiler warnings
 	explicit move_t(uint16_t _b): b(_b) {}
-	operator bool() const { return b; }
+	operator bool() const {
+		return b;
+	}
 
-	bool operator== (move_t m) const { return b == m.b; }
-	bool operator!= (move_t m) const { return b != m.b; }
+	bool operator== (move_t m) const {
+		return b == m.b;
+	}
 
-	// getters
-	int fsq() const { return b & 0x3f; }
-	int tsq() const { return (b >> 6) & 0x3f; }
-	int flag() const { return (b >> 14) & 3; }
-	int prom() const { assert(flag() == PROMOTION); return ((b >> 12) & 3) + KNIGHT; }
+	bool operator!= (move_t m) const {
+		return b != m.b;
+	}
 
-	// setters
-	void fsq(int fsq) { assert(square_ok(fsq)); b &= 0xffc0; b ^= fsq; }
-	void tsq(int tsq) { assert(square_ok(tsq)); b &= 0xf03f; b ^= (tsq << 6); }
-	void flag(int flag) { assert(flag < 4); b &= 0x3fff; b ^= (flag << 14); }
-	void prom(int piece) { assert(KNIGHT <= piece && piece <= QUEEN); b &= 0xcfff; b ^= (piece - KNIGHT) << 12; }
+	/* Getters */
+
+	int fsq() const {
+		return b & 0x3f;
+	}
+
+	int tsq() const {
+		return (b >> 6) & 0x3f;
+	}
+
+	int flag() const {
+		return (b >> 14) & 3;
+	}
+
+	int prom() const {
+		assert(flag() == PROMOTION);
+		return ((b >> 12) & 3) + KNIGHT;
+	}
+
+	/* Setters */
+
+	void fsq(int fsq) {
+		assert(square_ok(fsq));
+		b &= 0xffc0;
+		b ^= fsq;
+	}
+
+	void tsq(int tsq) {
+		assert(square_ok(tsq));
+		b &= 0xf03f;
+		b ^= (tsq << 6);
+	}
+
+	void flag(int flag) {
+		assert(flag < 4);
+		b &= 0x3fff;
+		b ^= (flag << 14);
+	}
+
+	void prom(int piece) {
+		assert(KNIGHT <= piece && piece <= QUEEN);
+		b &= 0xcfff;
+		b ^= (piece - KNIGHT) << 12;
+	}
 
 private:
-	uint16_t b;	// fsq = 0..5, tsq = 6..11, prom = 12,13 (0=Knight..3=Queen), flag = 14,15 (0=NORMAL...3=CASTLING)
+	/* a move is incoded in 16 bits, as follows:
+	 * 0..5: fsq (from square)
+	 * 6..11: tsq (to square)
+	 * 12,13: prom (promotion). Uses unusual numbering for optimal compactness: Knight=0 ... Queen=3
+	 * 14,15: flag. Flags are: NORMAL=0, EN_PASSANT=1, PROMOTION=2, CASTLING=3 */
+	uint16_t b;
 };
 
 struct GameInfo {
@@ -71,7 +116,9 @@ struct GameInfo {
 	int piece_psq[NB_COLOR];	// PSQ Eval.op for pieces only
 	Bitboard attacks[NB_COLOR][NB_PIECE + 1];
 
-	Bitboard epsq_bb() const { return epsq < NO_SQUARE ? (1ULL << epsq) : 0; }
+	Bitboard epsq_bb() const {
+		return epsq < NO_SQUARE ? (1ULL << epsq) : 0;
+	}
 };
 
 struct Board {
@@ -86,15 +133,29 @@ struct Board {
 	Bitboard get_pieces(int color) const;
 	Bitboard get_pieces(int color, int piece) const;
 
-	Bitboard get_N() const { return b[KNIGHT]; }
-	Bitboard get_K() const { return b[KING]; }
+	Bitboard get_N() const {
+		return b[KNIGHT];
+	}
+	Bitboard get_K() const {
+		return b[KING];
+	}
 
-	Bitboard get_RQ(int color) const { return (b[ROOK] | b[QUEEN]) & all[color]; }
-	Bitboard get_BQ(int color) const { return (b[BISHOP] | b[QUEEN]) & all[color]; }
-	Bitboard get_NB(int color) const { return (b[KNIGHT] | b[BISHOP]) & all[color]; }
+	Bitboard get_RQ(int color) const {
+		return (b[ROOK] | b[QUEEN]) & all[color];
+	}
+	Bitboard get_BQ(int color) const {
+		return (b[BISHOP] | b[QUEEN]) & all[color];
+	}
+	Bitboard get_NB(int color) const {
+		return (b[KNIGHT] | b[BISHOP]) & all[color];
+	}
 
-	Bitboard get_RQ() const { return b[ROOK] | b[QUEEN]; }
-	Bitboard get_BQ() const { return b[BISHOP] | b[QUEEN]; }
+	Bitboard get_RQ() const {
+		return b[ROOK] | b[QUEEN];
+	}
+	Bitboard get_BQ() const {
+		return b[BISHOP] | b[QUEEN];
+	}
 
 	void set_fen(const std::string& fen);
 	std::string get_fen() const;
@@ -102,10 +163,16 @@ struct Board {
 	void play(move_t m);
 	void undo();
 
-	void set_unwind()	{ sp0 = sp; }
-	void unwind()		{ while (sp > sp0) undo(); }
+	void set_unwind()	{
+		sp0 = sp;
+	}
+	void unwind()		{
+		while (sp > sp0) undo();
+	}
 
-	bool is_check() const { return st().checkers; }
+	bool is_check() const {
+		return st().checkers;
+	}
 	bool is_draw() const;
 
 	Key get_key() const;

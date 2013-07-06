@@ -34,8 +34,13 @@ struct PawnCache {
 		Bitboard passers;
 	};
 
-	PawnCache() { memset(buf, 0, sizeof(buf)); }
-	Entry &probe(Key key) { return buf[key & (count - 1)]; }
+	PawnCache() {
+		memset(buf, 0, sizeof(buf));
+	}
+
+	Entry &probe(Key key) {
+		return buf[key & (count - 1)];
+	}
 
 private:
 	static const int count = 0x10000;
@@ -45,8 +50,9 @@ private:
 PawnCache PC;
 
 struct EvalInfo {
-	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16)
-	{ e[WHITE] = e[BLACK] = {0, 0}; }
+	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16) {
+		e[WHITE] = e[BLACK] = {0, 0};
+	}
 
 	void select_side(int color);
 	void eval_material();
@@ -75,7 +81,9 @@ private:
 	void eval_passer_interaction(int sq);
 
 	int calc_phase() const;
-	Eval eval_white() const { return e[WHITE] - e[BLACK]; }
+	Eval eval_white() const {
+		return e[WHITE] - e[BLACK];
+	}
 };
 
 void EvalInfo::select_side(int color)
