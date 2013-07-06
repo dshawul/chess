@@ -145,9 +145,9 @@ int calc_see(const Board& B, move_t m)
 
 	int fsq = m.fsq(), tsq = m.tsq();
 	int stm = B.get_color_on(fsq);	// side to move
-	uint64_t attackers, stm_attackers;
+	std::uint64_t attackers, stm_attackers;
 	int swap_list[32], sl_idx = 1;
-	uint64_t occ = B.st().occ;
+	std::uint64_t occ = B.st().occ;
 	int piece = B.get_piece_on(fsq), capture;
 
 	// Determine captured piece

@@ -3,7 +3,7 @@
 
 using namespace std::chrono;
 
-uint64_t perft(Board& B, int depth, int ply)
+std::uint64_t perft(Board& B, int depth, int ply)
 /* Calculates perft(depth), and displays all perft(depth-1) in the initial position. This
  * decomposition is useful to debug an incorrect perft recursively, against a correct perft
  * generator */
@@ -11,11 +11,11 @@ uint64_t perft(Board& B, int depth, int ply)
 	move_t mlist[MAX_MOVES];
 	move_t *begin = mlist, *m;
 	move_t *end = gen_moves(B, mlist);
-	uint64_t count;
+	std::uint64_t count;
 
 	if (depth > 1) {
 		for (m = begin, count = 0ULL; m < end; m++) {
-			uint64_t count_subtree;
+			std::uint64_t count_subtree;
 
 			B.play(*m);
 			count += count_subtree = perft(B, depth - 1, ply + 1);
@@ -41,7 +41,7 @@ bool test_perft()
 	struct TestPerft {
 		const char *s;
 		int depth;
-		uint64_t value;
+		std::uint64_t value;
 	};
 
 	// http://chessprogramming.wikispaces.com/Perft+Results
@@ -54,7 +54,7 @@ bool test_perft()
 		{NULL, 0, 0}
 	};
 
-	uint64_t total = 0;
+	std::uint64_t total = 0;
 	auto start = high_resolution_clock::now();
 
 	for (int i = 0; Test[i].s; i++) {
@@ -103,7 +103,7 @@ void bench(int depth)
 	Board B;
 	SearchLimits sl;
 	sl.depth = depth;
-	uint64_t signature = 0;
+	std::uint64_t signature = 0;
 
 	TT.alloc(32 << 20);
 

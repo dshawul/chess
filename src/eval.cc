@@ -294,7 +294,7 @@ void EvalInfo::eval_passer_interaction(int sq)
 		const Bitboard path = BB::SquaresInFront[us][sq];
 		const Bitboard b = BB::file_bb(file(sq)) & BB::rook_attack(sq, B->st().occ);
 
-		uint64_t defended, attacked;
+		std::uint64_t defended, attacked;
 		if (B->get_RQ(them) & b) {
 			defended = path & B->st().attacks[us][NO_PIECE];
 			attacked = path;
@@ -462,7 +462,7 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int RookOpen = 8, RookTrapped = 40;
-	static const uint64_t BishopTrap[NB_COLOR] = {
+	static const std::uint64_t BishopTrap[NB_COLOR] = {
 		(1ULL << A7) | (1ULL << H7) | (1ULL << A6) | (1ULL << H6),
 		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
 	};

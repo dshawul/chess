@@ -56,7 +56,7 @@ private:
 struct Refutation {
 
 	struct Pack {
-		uint64_t dm_key: 48;
+		std::uint64_t dm_key: 48;
 		move_t move;
 	};
 

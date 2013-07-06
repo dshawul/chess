@@ -16,7 +16,7 @@
 #include "eval.h"
 #include "uci.h"
 
-uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
+std::uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
 
 int main (int argc, char **argv)
 {

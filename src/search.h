@@ -19,14 +19,14 @@
 struct SearchLimits {
 	SearchLimits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0) {}
 	int time, inc, movetime, depth, movestogo;
-	uint64_t nodes;
+	std::uint64_t nodes;
 };
 
 // Transposition Table
 extern TTable TT;
 
-extern uint64_t node_count;
-extern uint64_t PollingFrequency;	// must be a power of two
+extern std::uint64_t node_count;
+extern std::uint64_t PollingFrequency;	// must be a power of two
 
 move_t bestmove(Board& B, const SearchLimits& sl);
 

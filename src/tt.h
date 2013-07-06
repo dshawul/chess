@@ -20,7 +20,7 @@ enum { PV = 0, All = -1, Cut = +1 };
 struct TTable {
 	struct Entry {
 		Key key_type;	// bit 0..1 for node_type+1, and 2..63 for key's 62 MSB
-		mutable uint8_t generation;
+		mutable std::uint8_t generation;
 		int8_t depth;
 		int16_t score, eval;
 		move_t move;
@@ -33,7 +33,7 @@ struct TTable {
 			return (key_type & ~3ULL) == (k & ~3ULL);
 		}
 
-		void save(Key k, uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move_t m) {
+		void save(Key k, std::uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move_t m) {
 			key_type = (k & ~3ULL) ^ (nt + 1);
 			generation = g;
 			depth = d;
@@ -50,7 +50,7 @@ struct TTable {
 	TTable(): count(0), cluster(NULL) {}
 	~TTable();
 
-	void alloc(uint64_t size);
+	void alloc(std::uint64_t size);
 	void clear();
 
 	void new_search();
@@ -66,6 +66,6 @@ struct TTable {
 
 private:
 	size_t count;
-	uint8_t generation;
+	std::uint8_t generation;
 	Cluster *cluster;
 };

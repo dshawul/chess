@@ -28,7 +28,7 @@ void *aligned_malloc(size_t size, size_t align)
 	if (!mem) throw std::bad_alloc();
 
 	char *amem = ((char*)mem) + sizeof(void*);
-	amem += align - ((uintptr_t)amem & (align - 1));
+	amem += align - ((std::uintptr_t)amem & (align - 1));
 
 	((void**)amem)[-1] = mem;
 	return amem;
@@ -51,7 +51,7 @@ TTable::~TTable()
 	count = 0;
 }
 
-void TTable::alloc(uint64_t size)
+void TTable::alloc(std::uint64_t size)
 {
 	// calculate the number of clusters allocate (count must be a power of two)
 	size_t new_count = 1ULL << BB::msb(size / sizeof(Cluster));

@@ -21,8 +21,8 @@
 
 TTable TT;
 
-uint64_t node_count;
-uint64_t PollingFrequency;
+std::uint64_t node_count;
+std::uint64_t PollingFrequency;
 
 using namespace std::chrono;
 
@@ -36,7 +36,7 @@ bool can_abort;
 struct AbortSearch {};
 struct ForcedMove {};
 
-uint64_t node_limit;
+std::uint64_t node_limit;
 int time_limit[2], time_allowed;
 time_point<high_resolution_clock> start;
 

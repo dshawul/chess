@@ -34,7 +34,7 @@ enum {
 
 struct move_t {
 	move_t(): b(0) {}	// silence compiler warnings
-	explicit move_t(uint16_t _b): b(_b) {}
+	explicit move_t(std::uint16_t _b): b(_b) {}
 	operator bool() const {
 		return b;
 	}
@@ -98,7 +98,7 @@ private:
 	 * 6..11: tsq (to square)
 	 * 12,13: prom (promotion). Uses unusual numbering for optimal compactness: Knight=0 ... Queen=3
 	 * 14,15: flag. Flags are: NORMAL=0, EN_PASSANT=1, PROMOTION=2, CASTLING=3 */
-	uint16_t b;
+	std::uint16_t b;
 };
 
 struct GameInfo {
