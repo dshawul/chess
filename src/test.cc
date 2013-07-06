@@ -18,7 +18,7 @@ uint64_t perft(Board& B, int depth, int ply)
 			uint64_t count_subtree;
 
 			B.play(*m);
-			count += count_subtree = perft(B, depth-1, ply+1);
+			count += count_subtree = perft(B, depth - 1, ply + 1);
 			B.undo();
 
 			if (!ply)
@@ -119,7 +119,7 @@ void bench(int depth)
 	}
 
 	end = high_resolution_clock::now();
-	int64_t elapsed_usec = duration_cast<microseconds>(end-start).count();
+	int64_t elapsed_usec = duration_cast<microseconds>(end - start).count();
 
 	std::cout << "signature = " << signature << std::endl;
 	std::cout << "time = " << (float)elapsed_usec / 1e6 << std::endl;

@@ -42,7 +42,7 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 		set_bit(&occ, m.tsq());
 		// test for check by a sliding enemy piece
 		if ((B.get_RQ(them) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-				|| (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+			|| (B.get_BQ(them) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 	} else
 		m.flag(NORMAL);

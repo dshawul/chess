@@ -67,13 +67,13 @@ struct Refutation {
 	}
 
 	move_t get_refutation(Key dm_key) const {
-		const size_t idx = dm_key & (count-1);
+		const size_t idx = dm_key & (count - 1);
 		Pack tmp = {dm_key, move_t(0)};
 		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
 	}
 
 	void set_refutation(Key dm_key, move_t m) {
-		const size_t idx = dm_key & (count-1);
+		const size_t idx = dm_key & (count - 1);
 		r[idx] = {dm_key, m};
 	}
 };

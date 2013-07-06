@@ -42,7 +42,7 @@ int move_is_check(const Board& B, move_t m)
 
 	// test discovered check
 	if ( (test_bit(B.st().dcheckers, fsq))		// discovery checker
-			&& (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
+		 && (!test_bit(Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (flag != PROMOTION) {
@@ -61,7 +61,7 @@ int move_is_check(const Board& B, move_t m)
 		set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
 		if ((B.get_RQ(us) & RPseudoAttacks[kpos] & rook_attack(kpos, occ))
-				|| (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
+			|| (B.get_BQ(us) & BPseudoAttacks[kpos] & bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
@@ -108,8 +108,8 @@ bool move_is_pawn_threat(const Board& B, move_t m)
 move_t string_to_move(const Board& B, const std::string& s)
 {
 	move_t m;
-	m.fsq(square(s[1]-'1', s[0]-'a'));
-	m.tsq(square(s[3]-'1', s[2]-'a'));
+	m.fsq(square(s[1] - '1', s[0] - 'a'));
+	m.tsq(square(s[3] - '1', s[2] - 'a'));
 	m.flag(NORMAL);
 
 	if (B.get_piece_on(m.fsq()) == PAWN && m.tsq() == B.st().epsq)
@@ -118,7 +118,7 @@ move_t string_to_move(const Board& B, const std::string& s)
 	if (s[4]) {
 		m.flag(PROMOTION);
 		m.prom(PieceLabel[BLACK].find(s[4]));
-	} else if (B.get_piece_on(m.fsq()) == KING && (m.fsq()+2 == m.tsq() || m.tsq()+2==m.fsq()))
+	} else if (B.get_piece_on(m.fsq()) == KING && (m.fsq() + 2 == m.tsq() || m.tsq() + 2 == m.fsq()))
 		m.flag(CASTLING);
 
 	return m;
@@ -141,7 +141,7 @@ int calc_see(const Board& B, move_t m)
 // Iterative SEE based on Glaurung. Adapted and improved to handle promotions, promoting recaptures
 // and en-passant captures.
 {
-	static const int see_val[NB_PIECE+1] = {vOP, vN, vB, vR, vQ, vK, 0};
+	static const int see_val[NB_PIECE + 1] = {vOP, vN, vB, vR, vQ, vK, 0};
 
 	int fsq = m.fsq(), tsq = m.tsq();
 	int stm = B.get_color_on(fsq);	// side to move
@@ -219,7 +219,7 @@ int calc_see(const Board& B, move_t m)
 	/* Having built the swap list, we negamax through it to find the best achievable score from the
 	 * point of view of the side to move */
 	while (--sl_idx)
-		swap_list[sl_idx-1] = std::min(-swap_list[sl_idx], swap_list[sl_idx-1]);
+		swap_list[sl_idx - 1] = std::min(-swap_list[sl_idx], swap_list[sl_idx - 1]);
 
 	return swap_list[0];
 }
@@ -227,7 +227,7 @@ int calc_see(const Board& B, move_t m)
 int mvv_lva(const Board& B, move_t m)
 {
 	// Queen is the best capture available (King can't be captured since move is legal)
-	static const int victim[NB_PIECE+1] = {1, 2, 2, 3, 4, 0, 0};
+	static const int victim[NB_PIECE + 1] = {1, 2, 2, 3, 4, 0, 0};
 	// King is the best attacker (since move is legal) followed by Pawn etc.
 	static const int attacker[NB_PIECE] = {4, 3, 3, 2, 1, 5};
 

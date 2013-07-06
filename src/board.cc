@@ -84,7 +84,7 @@ void Board::set_fen(const std::string& _fen)
 	}
 
 	if ( (fen >> f) && ('a' <= f && f <= 'h')
-			&& (fen >> r) && ('1' <= r && r <= '8') )
+		 && (fen >> r) && ('1' <= r && r <= '8') )
 		sp->epsq = square(r - '1', f - 'a');
 
 	fen >> std::skipws >> sp->rule50 >> move_count;
@@ -180,7 +180,7 @@ void Board::play(move_t m)
 {
 	assert(initialized);
 	++sp;
-	memcpy(sp, sp-1, sizeof(GameInfo));
+	memcpy(sp, sp - 1, sizeof(GameInfo));
 	sp->last_move = m;
 	sp->rule50++;
 
@@ -210,7 +210,7 @@ void Board::play(move_t m)
 		const int inc_pp = us ? -8 : 8;
 		// set the epsq if double push, and ep square is attacked by enemy pawns
 		sp->epsq = tsq == fsq + 2 * inc_pp && test_bit(st().attacks[them][PAWN], fsq + inc_pp)
-			? fsq + inc_pp : NO_SQUARE;
+				   ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
 		if (m.flag() == EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
@@ -230,10 +230,10 @@ void Board::play(move_t m)
 
 			if (m.flag() == CASTLING) {
 				// rook jump
-				if (tsq == fsq+2) {			// OO
+				if (tsq == fsq + 2) {			// OO
 					clear_square(us, ROOK, us ? H8 : H1);
 					set_square(us, ROOK, us ? F8 : F1);
-				} else if (tsq == fsq-2) {	// OOO
+				} else if (tsq == fsq - 2) {	// OOO
 					clear_square(us, ROOK, us ? A8 : A1);
 					set_square(us, ROOK, us ? D8 : D1);
 				}
@@ -299,10 +299,10 @@ void Board::undo()
 
 		if (m.flag() == CASTLING) {
 			// undo rook jump
-			if (tsq == fsq+2) {			// OO
+			if (tsq == fsq + 2) {			// OO
 				clear_square(us, ROOK, us ? F8 : F1, false);
 				set_square(us, ROOK, us ? H8 : H1, false);
-			} else if (tsq == fsq-2) {	// OOO
+			} else if (tsq == fsq - 2) {	// OOO
 				clear_square(us, ROOK, us ? D8 : D1, false);
 				set_square(us, ROOK, us ? A8 : A1, false);
 			}
@@ -412,7 +412,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 			sp->kpkey ^= zob[color][piece][sq];
 
 		sp->key ^= zob[color][piece][sq];
-		sp->mat_key += 1ULL << (8*piece + 4*color);
+		sp->mat_key += 1ULL << (8 * piece + 4 * color);
 	}
 }
 
@@ -437,7 +437,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 			sp->kpkey ^= zob[color][piece][sq];
 
 		sp->key ^= zob[color][piece][sq];
-		sp->mat_key -= 1ULL << (8*piece + 4*color);
+		sp->mat_key -= 1ULL << (8 * piece + 4 * color);
 	}
 }
 
@@ -449,7 +449,7 @@ bool Board::verify_keys() const
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
-			mat_key += (uint64_t)count_bit(sqs) << (8*piece + 4*color);
+			mat_key += (uint64_t)count_bit(sqs) << (8 * piece + 4 * color);
 			while (sqs) {
 				const int sq = pop_lsb(&sqs);
 				key ^= zob[color][piece][sq];
@@ -467,7 +467,7 @@ bool Board::verify_psq() const
 	int piece_psq[NB_COLOR];
 
 	for (int color = WHITE; color <= BLACK; ++color) {
-		psq[color] = {0,0};
+		psq[color] = {0, 0};
 		piece_psq[color] = 0;
 
 		for (int piece = PAWN; piece <= KING; ++piece) {
@@ -493,8 +493,8 @@ bool Board::is_draw() const
 	for (int i = 4, rep = 1; i <= std::min(st().rule50, int(sp - game_stack)); i += 2) {
 		// If the keys match, increment rep
 		// Stop when rep >= 2 or 3 once we've traversed the root
-		if ( (sp-i)->key == sp->key
-				&& ++rep >= 2 + (sp-i < sp0) )
+		if ( (sp - i)->key == sp->key
+			 && ++rep >= 2 + (sp - i < sp0) )
 			return true;
 	}
 
@@ -504,8 +504,8 @@ bool Board::is_draw() const
 
 	// insufficient material
 	if ( get_pieces(WHITE) == (get_NB(WHITE) | get_pieces(WHITE, KING))
-			&& get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
-			&& !several_bits(get_NB(WHITE)) && !several_bits(get_NB(BLACK)) )
+		 && get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
+		 && !several_bits(get_NB(WHITE)) && !several_bits(get_NB(BLACK)) )
 		return true;
 
 	return false;

@@ -35,7 +35,7 @@ struct PawnCache {
 	};
 
 	PawnCache() { memset(buf, 0, sizeof(buf)); }
-	Entry &probe(Key key) { return buf[key & (count-1)]; }
+	Entry &probe(Key key) { return buf[key & (count - 1)]; }
 
 private:
 	static const int count = 0x10000;
@@ -46,7 +46,7 @@ PawnCache PC;
 
 struct EvalInfo {
 	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16)
-	{ e[WHITE] = e[BLACK] = {0,0}; }
+	{ e[WHITE] = e[BLACK] = {0, 0}; }
 
 	void select_side(int color);
 	void eval_material();
@@ -117,17 +117,17 @@ void EvalInfo::eval_drawish()
 		if ((b & white_sqaures) && (b & black_sqaures))
 			// We have an opposite color bishop situation. If the stronger side has no other
 			// pieces it's more drawish.
-			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4*strong_side))) ? 12 : 8;
+			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4 * strong_side))) ? 12 : 8;
 	}
 }
 
 void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 {
-	static const int mob_count[ROOK+1][15] = {
+	static const int mob_count[ROOK + 1][15] = {
 		{},
-		{-3, -2, -1, 0, 1, 2, 3, 4, 4},
-		{-4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
-		{-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
+		{ -3, -2, -1, 0, 1, 2, 3, 4, 4},
+		{ -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
+		{ -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
 	};
 	static const int mob_unit[NB_PHASE][NB_PIECE] = {
 		{0, 4, 5, 2, 1, 0},		// Opening
@@ -252,7 +252,7 @@ void EvalInfo::eval_safety()
 	if (total_weight) {
 		// if king cannot retreat increase penalty
 		if ( Shield[them][our_ksq]
-				&& (Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+			 && (Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
 			++total_count;
 
 		e[us].op -= total_count * total_weight;
@@ -279,8 +279,8 @@ void EvalInfo::eval_passer_interaction(int sq)
 	}
 
 	const int r = rank(sq);
-	const int L = (us ? 7-r : r) - RANK_2;	// Linear part		0..5
-	const int Q = L*(L-1);					// Quadratic part	0..20
+	const int L = (us ? 7 - r : r) - RANK_2;	// Linear part		0..5
+	const int Q = L * (L - 1);					// Quadratic part	0..20
 
 	if (Q && !test_bit(B->st().occ, pawn_push(us, sq))) {
 		const Bitboard path = SquaresInFront[us][sq];
@@ -332,7 +332,7 @@ void EvalInfo::eval_shelter_storm()
 
 	const int kf = file(our_ksq);
 
-	for (int f = kf-1; f <= kf+1; ++f) {
+	for (int f = kf - 1; f <= kf + 1; ++f) {
 		if (f < FILE_A || f > FILE_H)
 			continue;
 
@@ -342,7 +342,7 @@ void EvalInfo::eval_shelter_storm()
 
 		// Pawn shelter
 		b = our_pawns & file_bb(f);
-		r = b ? (us ? 7-rank(msb(b)) : rank(lsb(b))): 0;
+		r = b ? (us ? 7 - rank(msb(b)) : rank(lsb(b))) : 0;
 		half = f != kf;
 		e[us].op -= ShelterPenalty[r] >> half;
 
@@ -350,7 +350,7 @@ void EvalInfo::eval_shelter_storm()
 		b = their_pawns & file_bb(f);
 		if (b) {
 			sq = us ? msb(b) : lsb(b);
-			r = us ? 7-rank(sq) : rank(sq);
+			r = us ? 7 - rank(sq) : rank(sq);
 			half = test_bit(our_pawns, pawn_push(them, sq));
 		} else {
 			r = RANK_1;		// actually we penalize for the semi open file here
@@ -366,8 +366,8 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 	const int next_sq = pawn_push(us, sq);
 	const Bitboard besides = our_pawns & AdjacentFiles[f];
 
-	const int L = (us ? RANK_8-r : r)-RANK_2;	// Linear part		0..5
-	const int Q = L*(L-1);						// Quadratic part	0..20
+	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
+	const int Q = L * (L - 1);						// Quadratic part	0..20
 
 	// score based on rank
 	res->op += 6 * Q;
@@ -418,7 +418,7 @@ Bitboard EvalInfo::do_eval_pawns()
 		const int r = rank(sq), f = file(sq);
 		const Bitboard besides = our_pawns & AdjacentFiles[f];
 
-		const bool chained = besides & (rank_bb(r) | rank_bb(us ? r+1 : r-1));
+		const bool chained = besides & (rank_bb(r) | rank_bb(us ? r + 1 : r - 1));
 		const bool hole = !chained && !(PawnSpan[them][next_sq] & our_pawns)
 						  && test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
@@ -431,17 +431,17 @@ Bitboard EvalInfo::do_eval_pawns()
 		if (chained)
 			e[us].op += Chained;
 		else if (hole) {
-			e[us].op -= open ? Hole.op : Hole.op/2;
+			e[us].op -= open ? Hole.op : Hole.op / 2;
 			e[us].eg -= Hole.eg;
 		} else if (isolated) {
-			e[us].op -= open ? Isolated : Isolated/2;
+			e[us].op -= open ? Isolated : Isolated / 2;
 			e[us].eg -= Isolated;
 		}
 
 		if (candidate) {
-			Eval tmp = {0,0};
+			Eval tmp = {0, 0};
 			eval_passer(sq, &tmp);
-			e[us] += {tmp.op/2, tmp.eg/2};
+			e[us] += {tmp.op / 2, tmp.eg / 2};
 		} else if (passed) {
 			set_bit(&passers, sq);
 			eval_passer(sq, &e[us]);
@@ -460,7 +460,7 @@ void EvalInfo::eval_pieces()
 	};
 	static const Bitboard KnightTrap[NB_COLOR] = {0xFFFF000000000000ULL, 0x000000000000FFFFULL};
 
-	const bool can_castle = B->st().crights & (3 << (2*us));
+	const bool can_castle = B->st().crights & (3 << (2 * us));
 	Bitboard fss, tss;
 
 	// Rook on open file
@@ -471,8 +471,8 @@ void EvalInfo::eval_pieces()
 		if (!(our_pawns & ahead)) {
 			int bonus = RookOpen;
 			if (!(their_pawns & ahead))
-				bonus += RookOpen/2;
-			e[us] += {bonus, bonus/2};
+				bonus += RookOpen / 2;
+			e[us] += {bonus, bonus / 2};
 		}
 	}
 
@@ -484,7 +484,7 @@ void EvalInfo::eval_pieces()
 			if (our_pawns & SquaresInFront[us][rsq] & HalfBoard[us])
 				e[us].op -= RookTrapped >> can_castle;
 			else
-				e[us].op -= (RookTrapped/2) >> can_castle;
+				e[us].op -= (RookTrapped / 2) >> can_castle;
 
 			break;  // King can only trap one Rook
 		}
@@ -525,14 +525,14 @@ void EvalInfo::eval_pieces()
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
 		const int victim = B->get_piece_on(pop_lsb(&hanging));
-		e[us].op -= 4 + Material[victim].op/32;
-		e[us].eg -= 8 + Material[victim].eg/32;
+		e[us].op -= 4 + Material[victim].op / 32;
+		e[us].eg -= 8 + Material[victim].eg / 32;
 	}
 }
 
 int EvalInfo::calc_phase() const
 {
-	static const int total = 4*(vN + vB + vR) + 2*vQ;
+	static const int total = 4 * (vN + vB + vR) + 2 * vQ;
 	return (B->st().piece_psq[WHITE] + B->st().piece_psq[BLACK]) * 1024 / total;
 }
 
@@ -540,7 +540,7 @@ int EvalInfo::interpolate() const
 {
 	const int us = B->get_turn(), them = opp_color(us);
 	const int phase = calc_phase();
-	const int eval = (phase*(e[us].op-e[them].op) + (1024-phase)*(e[us].eg-e[them].eg)) / 1024;
+	const int eval = (phase * (e[us].op - e[them].op) + (1024 - phase) * (e[us].eg - e[them].eg)) / 1024;
 	return eval * eval_factor / 16;
 }
 

@@ -106,11 +106,11 @@ void MoveSort::score(MoveSort::Token *t)
 	else {
 		// killers first, then the rest by history
 		if (depth > 0 && t->m == ss->killer[0])
-			t->score = History::Max-1;
+			t->score = History::Max - 1;
 		else if (depth > 0 && t->m == ss->killer[1])
-			t->score = History::Max-2;
+			t->score = History::Max - 2;
 		else if (t->m == refutation)
-			t->score = History::Max-3;
+			t->score = History::Max - 3;
 		else
 			t->score = H->get(*B, t->m);
 	}

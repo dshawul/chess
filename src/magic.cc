@@ -121,41 +121,41 @@ Bitboard magic_bb_r_db[0x19000];
 Bitboard magic_bb_b_db[0x1480];
 
 const Bitboard* magic_bb_b_indices[NB_SQUARE] = {
-	magic_bb_b_db+4992, magic_bb_b_db+2624, magic_bb_b_db+256,	magic_bb_b_db+896,
-	magic_bb_b_db+1280, magic_bb_b_db+1664, magic_bb_b_db+4800, magic_bb_b_db+5120,
-	magic_bb_b_db+2560, magic_bb_b_db+2656, magic_bb_b_db+288, magic_bb_b_db+928,
-	magic_bb_b_db+1312, magic_bb_b_db+1696, magic_bb_b_db+4832, magic_bb_b_db+4928,
-	magic_bb_b_db+0, magic_bb_b_db+128, magic_bb_b_db+320,	magic_bb_b_db+960,
-	magic_bb_b_db+1344, magic_bb_b_db+1728, magic_bb_b_db+2304, magic_bb_b_db+2432,
-	magic_bb_b_db+32, magic_bb_b_db+160, magic_bb_b_db+448,	magic_bb_b_db+2752,
-	magic_bb_b_db+3776, magic_bb_b_db+1856, magic_bb_b_db+2336, magic_bb_b_db+2464,
-	magic_bb_b_db+64,	magic_bb_b_db+192, magic_bb_b_db+576, magic_bb_b_db+3264,
-	magic_bb_b_db+4288, magic_bb_b_db+1984, magic_bb_b_db+2368, magic_bb_b_db+2496,
-	magic_bb_b_db+96, magic_bb_b_db+224, magic_bb_b_db+704,	magic_bb_b_db+1088,
-	magic_bb_b_db+1472, magic_bb_b_db+2112, magic_bb_b_db+2400, magic_bb_b_db+2528,
-	magic_bb_b_db+2592, magic_bb_b_db+2688, magic_bb_b_db+832,	magic_bb_b_db+1216,
-	magic_bb_b_db+1600, magic_bb_b_db+2240, magic_bb_b_db+4864, magic_bb_b_db+4960,
-	magic_bb_b_db+5056, magic_bb_b_db+2720, magic_bb_b_db+864, magic_bb_b_db+1248,
-	magic_bb_b_db+1632, magic_bb_b_db+2272, magic_bb_b_db+4896, magic_bb_b_db+5184
+	magic_bb_b_db + 4992, magic_bb_b_db + 2624, magic_bb_b_db + 256,	magic_bb_b_db + 896,
+	magic_bb_b_db + 1280, magic_bb_b_db + 1664, magic_bb_b_db + 4800, magic_bb_b_db + 5120,
+	magic_bb_b_db + 2560, magic_bb_b_db + 2656, magic_bb_b_db + 288, magic_bb_b_db + 928,
+	magic_bb_b_db + 1312, magic_bb_b_db + 1696, magic_bb_b_db + 4832, magic_bb_b_db + 4928,
+	magic_bb_b_db + 0, magic_bb_b_db + 128, magic_bb_b_db + 320,	magic_bb_b_db + 960,
+	magic_bb_b_db + 1344, magic_bb_b_db + 1728, magic_bb_b_db + 2304, magic_bb_b_db + 2432,
+	magic_bb_b_db + 32, magic_bb_b_db + 160, magic_bb_b_db + 448,	magic_bb_b_db + 2752,
+	magic_bb_b_db + 3776, magic_bb_b_db + 1856, magic_bb_b_db + 2336, magic_bb_b_db + 2464,
+	magic_bb_b_db + 64,	magic_bb_b_db + 192, magic_bb_b_db + 576, magic_bb_b_db + 3264,
+	magic_bb_b_db + 4288, magic_bb_b_db + 1984, magic_bb_b_db + 2368, magic_bb_b_db + 2496,
+	magic_bb_b_db + 96, magic_bb_b_db + 224, magic_bb_b_db + 704,	magic_bb_b_db + 1088,
+	magic_bb_b_db + 1472, magic_bb_b_db + 2112, magic_bb_b_db + 2400, magic_bb_b_db + 2528,
+	magic_bb_b_db + 2592, magic_bb_b_db + 2688, magic_bb_b_db + 832,	magic_bb_b_db + 1216,
+	magic_bb_b_db + 1600, magic_bb_b_db + 2240, magic_bb_b_db + 4864, magic_bb_b_db + 4960,
+	magic_bb_b_db + 5056, magic_bb_b_db + 2720, magic_bb_b_db + 864, magic_bb_b_db + 1248,
+	magic_bb_b_db + 1632, magic_bb_b_db + 2272, magic_bb_b_db + 4896, magic_bb_b_db + 5184
 };
 
 const Bitboard* magic_bb_r_indices[64] = {
-	magic_bb_r_db+86016, magic_bb_r_db+73728, magic_bb_r_db+36864, magic_bb_r_db+43008,
-	magic_bb_r_db+47104, magic_bb_r_db+51200, magic_bb_r_db+77824, magic_bb_r_db+94208,
-	magic_bb_r_db+69632, magic_bb_r_db+32768, magic_bb_r_db+38912, magic_bb_r_db+10240,
-	magic_bb_r_db+14336, magic_bb_r_db+53248, magic_bb_r_db+57344, magic_bb_r_db+81920,
-	magic_bb_r_db+24576, magic_bb_r_db+33792, magic_bb_r_db+6144, magic_bb_r_db+11264,
-	magic_bb_r_db+15360, magic_bb_r_db+18432, magic_bb_r_db+58368, magic_bb_r_db+61440,
-	magic_bb_r_db+26624, magic_bb_r_db+4096, magic_bb_r_db+7168, magic_bb_r_db+0,
-	magic_bb_r_db+2048, magic_bb_r_db+19456, magic_bb_r_db+22528, magic_bb_r_db+63488,
-	magic_bb_r_db+28672, magic_bb_r_db+5120, magic_bb_r_db+8192, magic_bb_r_db+1024,
-	magic_bb_r_db+3072, magic_bb_r_db+20480, magic_bb_r_db+23552, magic_bb_r_db+65536,
-	magic_bb_r_db+30720, magic_bb_r_db+34816, magic_bb_r_db+9216, magic_bb_r_db+12288,
-	magic_bb_r_db+16384, magic_bb_r_db+21504, magic_bb_r_db+59392, magic_bb_r_db+67584,
-	magic_bb_r_db+71680, magic_bb_r_db+35840, magic_bb_r_db+39936, magic_bb_r_db+13312,
-	magic_bb_r_db+17408, magic_bb_r_db+54272, magic_bb_r_db+60416, magic_bb_r_db+83968,
-	magic_bb_r_db+90112, magic_bb_r_db+75776, magic_bb_r_db+40960, magic_bb_r_db+45056,
-	magic_bb_r_db+49152, magic_bb_r_db+55296, magic_bb_r_db+79872, magic_bb_r_db+98304
+	magic_bb_r_db + 86016, magic_bb_r_db + 73728, magic_bb_r_db + 36864, magic_bb_r_db + 43008,
+	magic_bb_r_db + 47104, magic_bb_r_db + 51200, magic_bb_r_db + 77824, magic_bb_r_db + 94208,
+	magic_bb_r_db + 69632, magic_bb_r_db + 32768, magic_bb_r_db + 38912, magic_bb_r_db + 10240,
+	magic_bb_r_db + 14336, magic_bb_r_db + 53248, magic_bb_r_db + 57344, magic_bb_r_db + 81920,
+	magic_bb_r_db + 24576, magic_bb_r_db + 33792, magic_bb_r_db + 6144, magic_bb_r_db + 11264,
+	magic_bb_r_db + 15360, magic_bb_r_db + 18432, magic_bb_r_db + 58368, magic_bb_r_db + 61440,
+	magic_bb_r_db + 26624, magic_bb_r_db + 4096, magic_bb_r_db + 7168, magic_bb_r_db + 0,
+	magic_bb_r_db + 2048, magic_bb_r_db + 19456, magic_bb_r_db + 22528, magic_bb_r_db + 63488,
+	magic_bb_r_db + 28672, magic_bb_r_db + 5120, magic_bb_r_db + 8192, magic_bb_r_db + 1024,
+	magic_bb_r_db + 3072, magic_bb_r_db + 20480, magic_bb_r_db + 23552, magic_bb_r_db + 65536,
+	magic_bb_r_db + 30720, magic_bb_r_db + 34816, magic_bb_r_db + 9216, magic_bb_r_db + 12288,
+	magic_bb_r_db + 16384, magic_bb_r_db + 21504, magic_bb_r_db + 59392, magic_bb_r_db + 67584,
+	magic_bb_r_db + 71680, magic_bb_r_db + 35840, magic_bb_r_db + 39936, magic_bb_r_db + 13312,
+	magic_bb_r_db + 17408, magic_bb_r_db + 54272, magic_bb_r_db + 60416, magic_bb_r_db + 83968,
+	magic_bb_r_db + 90112, magic_bb_r_db + 75776, magic_bb_r_db + 40960, magic_bb_r_db + 45056,
+	magic_bb_r_db + 49152, magic_bb_r_db + 55296, magic_bb_r_db + 79872, magic_bb_r_db + 98304
 };
 
 Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
@@ -215,8 +215,8 @@ void init_magics()
 		90112, 75776, 40960, 45056, 49152, 55296, 79872, 98304
 	};
 
-	static const int Bdir[4][2] = { {-1,-1}, {-1, 1}, { 1,-1}, { 1, 1} };
-	static const int Rdir[4][2] = { {-1, 0}, { 0,-1}, { 0, 1}, { 1, 0} };
+	static const int Bdir[4][2] = { { -1, -1}, { -1, 1}, { 1, -1}, { 1, 1} };
+	static const int Rdir[4][2] = { { -1, 0}, { 0, -1}, { 0, 1}, { 1, 0} };
 
 	for(int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];

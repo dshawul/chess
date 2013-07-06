@@ -24,7 +24,7 @@ namespace {
 
 void *aligned_malloc(size_t size, size_t align)
 {
-	void *mem = malloc(size + (align-1) + sizeof(void*));
+	void *mem = malloc(size + (align - 1) + sizeof(void*));
 	if (!mem) throw std::bad_alloc();
 
 	char *amem = ((char*)mem) + sizeof(void*);
@@ -84,7 +84,7 @@ void TTable::new_search()
 
 const TTable::Entry *TTable::probe(Key key) const
 {
-	const Entry *e = cluster[key & (count-1)].entry;
+	const Entry *e = cluster[key & (count - 1)].entry;
 
 	for (size_t i = 0; i < 4; ++i, ++e)
 		if (e->key_match(key))
@@ -95,7 +95,7 @@ const TTable::Entry *TTable::probe(Key key) const
 
 void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move)
 {
-	Entry *e = cluster[key & (count-1)].entry, *replace = e;
+	Entry *e = cluster[key & (count - 1)].entry, *replace = e;
 
 	for (size_t i = 0; i < 4; ++i, ++e) {
 		// overwrite empty or old

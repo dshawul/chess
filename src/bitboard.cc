@@ -63,9 +63,9 @@ void init_bitboard()
 
 	/* NAttacks[s], KAttacks[s], Pattacks[c][s] */
 
-	const int Kdir[8][2] = { {-1,-1}, {-1,0}, {-1,1}, {0,-1}, {0,1}, {1,-1}, {1,0}, {1,1} };
-	const int Ndir[8][2] = { {-2,-1}, {-2,1}, {-1,-2}, {-1,2}, {1,-2}, {1,2}, {2,-1}, {2,1} };
-	const int Pdir[2][2] = { {1,-1}, {1,1} };
+	const int Kdir[8][2] = { { -1, -1}, { -1, 0}, { -1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
+	const int Ndir[8][2] = { { -2, -1}, { -2, 1}, { -1, -2}, { -1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1} };
+	const int Pdir[2][2] = { {1, -1}, {1, 1} };
 
 	for (int sq = A1; sq <= H8; ++sq) {
 		const int r = rank(sq);
@@ -96,8 +96,7 @@ void init_bitboard()
 			const int dr = Kdir[i][0], df = Kdir[i][1];
 			int _r, _f, _sq;
 
-			for (_r = r + dr, _f = f + df;
-					rank_file_ok(_r, _f); _r += dr, _f += df) {
+			for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
 				_sq = square(_r, _f);
 				mask |= 1ULL << _sq;
 				Between[sq][_sq] = mask;
@@ -115,13 +114,13 @@ void init_bitboard()
 	/* AdjacentFile[f] and InFront[c][r] */
 
 	for (int f = FILE_A; f <= FILE_H; f++) {
-		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f-1);
-		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f+1);
+		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f - 1);
+		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f + 1);
 	}
 
 	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
-		InFront[WHITE][rw] = InFront[WHITE][rw+1] | rank_bb(rw+1);
-		InFront[BLACK][rb] = InFront[BLACK][rb-1] | rank_bb(rb-1);
+		InFront[WHITE][rw] = InFront[WHITE][rw + 1] | rank_bb(rw + 1);
+		InFront[BLACK][rb] = InFront[BLACK][rb - 1] | rank_bb(rb - 1);
 	}
 
 	/* SquaresInFront[c][sq], PawnSpan[c][sq], Shield[c][sq] */
@@ -139,7 +138,7 @@ void init_bitboard()
 
 	for (int s1 = A1; s1 <= H8; ++s1)
 		for (int s2 = A1; s2 <= H8; ++s2)
-			KingDistance[s1][s2] = std::max(std::abs(file(s1)-file(s2)), std::abs(rank(s1)-rank(s2)));
+			KingDistance[s1][s2] = std::max(std::abs(file(s1) - file(s2)), std::abs(rank(s1) - rank(s2)));
 
 	BitboardInitialized = true;
 }

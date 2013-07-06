@@ -117,9 +117,9 @@ void go(Board& B, std::istringstream& is)
 
 	if (UCI_LimitStrength) {
 		// discard parameters of the go command
-		sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo-ELO_MIN)/128.0, 1.0/0.9));
-		if (sl.nodes/16 <= 256)
-			PollingFrequency = 1ULL << msb(sl.nodes/16);
+		sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo - ELO_MIN) / 128.0, 1.0 / 0.9));
+		if (sl.nodes / 16 <= 256)
+			PollingFrequency = 1ULL << msb(sl.nodes / 16);
 	} else {
 		std::string token;
 		while (is >> token) {
@@ -183,7 +183,7 @@ bool input_available()
 		return true;
 
 	if (is_pipe)
-		return !PeekNamedPipe(stdin_h, NULL, 0, NULL, &val, NULL) ? true : val>0;
+		return !PeekNamedPipe(stdin_h, NULL, 0, NULL, &val, NULL) ? true : val > 0;
 	else
 		return _kbhit();
 
@@ -196,7 +196,7 @@ bool input_available()
 	struct timeval timeout;
 	timeout.tv_sec = timeout.tv_usec = 0;
 
-	select(STDIN_FILENO+1, &readfds, 0, 0, &timeout);
+	select(STDIN_FILENO + 1, &readfds, 0, 0, &timeout);
 	return FD_ISSET(STDIN_FILENO, &readfds);
 
 #endif

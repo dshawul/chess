@@ -19,16 +19,16 @@
 
 namespace {
 
-const int IndexMax = 64*64*2*24;	// wk * bk * stm * wp
-uint64_t bitbase[IndexMax/64];
-enum {ILLEGAL=0, UNKNOWN=1, DRAW=2, WIN=4};
+const int IndexMax = 64 * 64 * 2 * 24;	// wk * bk * stm * wp
+uint64_t bitbase[IndexMax / 64];
+enum {ILLEGAL = 0, UNKNOWN = 1, DRAW = 2, WIN = 4};
 
 int encode(int wk, int bk, int stm, int wp)
 {
 	assert(square_ok(wk) && square_ok(bk) && color_ok(stm));
 	assert(file(wp) <= FILE_D && RANK_2 <= rank(wp) && rank(wp) <= RANK_7);
 
-	const int wp24 = 4*(RANK_7-rank(wp)) + file(wp);
+	const int wp24 = 4 * (RANK_7 - rank(wp)) + file(wp);
 	assert(wp24 < 24);
 
 	return wk ^ (bk << 6) ^ (stm << 12) ^ (wp24 << 13);
@@ -42,7 +42,7 @@ void decode(int idx, int *wk, int *bk, int *stm, int *wp)
 	*stm = idx & 1; idx >>= 1;
 
 	assert(idx < 24);
-	*wp = square(RANK_7 - idx/4, idx & 3);
+	*wp = square(RANK_7 - idx / 4, idx & 3);
 }
 
 uint8_t rules(int idx)
@@ -60,8 +60,8 @@ uint8_t rules(int idx)
 
 	// win if pawn can be promoted without getting captured
 	if (stm == WHITE) {
-		if (rank(wp) == RANK_7 && bk != wp+8 && wk != wp+8
-				&& !test_bit(KAttacks[bk] & ~KAttacks[wk], wp+8))
+		if (rank(wp) == RANK_7 && bk != wp + 8 && wk != wp + 8
+			&& !test_bit(KAttacks[bk] & ~KAttacks[wk], wp + 8))
 			return WIN;
 	} else if ( !(KAttacks[bk] & ~(KAttacks[wk] | PAttacks[WHITE][wp]))
 				|| test_bit(KAttacks[bk] & ~KAttacks[wk], wp) )
@@ -88,12 +88,12 @@ uint8_t classify(uint8_t res[], int idx)
 	// pawn moves
 	if (stm == WHITE && rank(wp) < RANK_7) {
 		// single push
-		const int sq = wp+8;
+		const int sq = wp + 8;
 		r |= res[encode(wk, bk, BLACK, sq)];
 
 		// double push
 		if (rank(wp) == RANK_2 && sq != wk && sq != bk)
-			r |= res[encode(wk, bk, BLACK, sq+8)];
+			r |= res[encode(wk, bk, BLACK, sq + 8)];
 	}
 
 	if (stm == WHITE)
@@ -141,11 +141,11 @@ void init_kpk()
 	// Pack into 64-bit entries
 	for (int idx = 0; idx < IndexMax; ++idx)
 		if (res[idx] == WIN)
-			set_bit(&bitbase[idx/64], idx % 64);
+			set_bit(&bitbase[idx / 64], idx % 64);
 }
 
 bool probe_kpk(int wk, int bk, int stm, int wp)
 {
 	const int idx = encode(wk, bk, stm, wp);
-	return test_bit(bitbase[idx/64], idx % 64);
+	return test_bit(bitbase[idx / 64], idx % 64);
 }

@@ -69,8 +69,8 @@ inline bool test_bit(Bitboard b, unsigned sq)	{ assert(square_ok(sq)); return b 
 inline Bitboard shift_bit(Bitboard b, int i) { assert(std::abs(i) < 64); return i > 0 ? b << i : b >> -i; }
 inline bool several_bits(Bitboard b) { return b & (b - 1); }
 
-inline Bitboard rank_bb(int r) { assert(rank_file_ok(r,0)); return Rank1_bb << (8 * r); }
-inline Bitboard file_bb(int f) { assert(rank_file_ok(0,f)); return FileA_bb << f; }
+inline Bitboard rank_bb(int r) { assert(rank_file_ok(r, 0)); return Rank1_bb << (8 * r); }
+inline Bitboard file_bb(int f) { assert(rank_file_ok(0, f)); return FileA_bb << f; }
 
 extern int kdist(int s1, int s2);
 
