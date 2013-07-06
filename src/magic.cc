@@ -169,8 +169,8 @@ Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
 
 		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
 			const int _sq = square(_r, _f);
-			set_bit(&result, _sq);
-			if (test_bit(occ, _sq))
+			BB::set_bit(&result, _sq);
+			if (BB::test_bit(occ, _sq))
 				break;
 		}
 	}
@@ -183,15 +183,15 @@ Bitboard init_magic_bb_occ(const int* sq, int sq_cnt, Bitboard linocc)
 	Bitboard result = 0;
 
 	for (int i = 0; i < sq_cnt; ++i)
-		if (test_bit(linocc, i))
-			set_bit(&result, sq[i]);
+		if (BB::test_bit(linocc, i))
+			BB::set_bit(&result, sq[i]);
 
 	return result;
 }
 
 }	// namespace
 
-void init_magics()
+void BB::init_magics()
 {
 	static const uintptr_t magic_bb_b_indices2[64] = {
 		4992, 2624, 256, 896, 1280, 1664, 4800, 5120,
@@ -224,7 +224,7 @@ void init_magics()
 
 		Bitboard temp = magic_bb_b_mask[i];
 		while (temp)
-			sq[sq_cnt++] = pop_lsb(&temp);
+			sq[sq_cnt++] = BB::pop_lsb(&temp);
 
 		for(temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
@@ -240,7 +240,7 @@ void init_magics()
 
 		Bitboard temp = magic_bb_r_mask[i];
 		while(temp)
-			sq[sq_cnt++] = pop_lsb(&temp);
+			sq[sq_cnt++] = BB::pop_lsb(&temp);
 
 		for(temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
@@ -251,14 +251,14 @@ void init_magics()
 	}
 }
 
-Bitboard bishop_attack(int sq, Bitboard occ)
+Bitboard BB::bishop_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	uintptr_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
 	return magic_bb_b_indices[sq][idx];
 }
 
-Bitboard rook_attack(int sq, Bitboard occ)
+Bitboard BB::rook_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	uintptr_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];

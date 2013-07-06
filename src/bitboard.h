@@ -15,9 +15,11 @@
 #pragma once
 #include "types.h"
 
-#define FileA_bb	0x0101010101010101ULL
-#define FileH_bb	(0x0101010101010101ULL << FILE_H)
-#define Rank1_bb	0x00000000000000FFULL
+namespace BB {
+
+const Bitboard FileA_bb = 0x0101010101010101ULL;
+const Bitboard FileH_bb	= FileA_bb << FILE_H;
+const Bitboard Rank1_bb	= 0x00000000000000FFULL;
 
 // PInitialRank[color], PPromotionRank[color] are the 2nd and 8-th ranks relative to color
 const Bitboard PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
@@ -130,4 +132,6 @@ inline int pop_lsb(Bitboard *b)
 	*b &= *b - 1;
 	return s;
 }
+
+}	// namespace BB
 

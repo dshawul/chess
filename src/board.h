@@ -214,7 +214,7 @@ inline int pawn_push(int color, int sq)
 inline int Board::get_color_on(int sq) const
 {
 	assert(initialized && square_ok(sq));
-	return test_bit(all[WHITE], sq) ? WHITE : (test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
+	return BB::test_bit(all[WHITE], sq) ? WHITE : (BB::test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
 }
 
 inline int Board::get_piece_on(int sq) const

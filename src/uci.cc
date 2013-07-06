@@ -119,7 +119,7 @@ void go(Board& B, std::istringstream& is)
 		// discard parameters of the go command
 		sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo - ELO_MIN) / 128.0, 1.0 / 0.9));
 		if (sl.nodes / 16 <= 256)
-			PollingFrequency = 1ULL << msb(sl.nodes / 16);
+			PollingFrequency = 1ULL << BB::msb(sl.nodes / 16);
 	} else {
 		std::string token;
 		while (is >> token) {

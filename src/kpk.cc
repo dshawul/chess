@@ -52,19 +52,19 @@ uint8_t rules(int idx)
 	decode(idx, &wk, &bk, &stm, &wp);
 
 	// pieces overlapping or kings checking each other
-	if (kdist(wk, bk) <= 1 || wp == wk || wp == bk)
+	if (BB::kdist(wk, bk) <= 1 || wp == wk || wp == bk)
 		return ILLEGAL;
 	// cannot be white's turn if black is in check
-	if (stm == WHITE && test_bit(PAttacks[WHITE][wp], bk))
+	if (stm == WHITE && BB::test_bit(BB::PAttacks[WHITE][wp], bk))
 		return ILLEGAL;
 
 	// win if pawn can be promoted without getting captured
 	if (stm == WHITE) {
 		if (rank(wp) == RANK_7 && bk != wp + 8 && wk != wp + 8
-			&& !test_bit(KAttacks[bk] & ~KAttacks[wk], wp + 8))
+			&& !BB::test_bit(BB::KAttacks[bk] & ~BB::KAttacks[wk], wp + 8))
 			return WIN;
-	} else if ( !(KAttacks[bk] & ~(KAttacks[wk] | PAttacks[WHITE][wp]))
-				|| test_bit(KAttacks[bk] & ~KAttacks[wk], wp) )
+	} else if ( !(BB::KAttacks[bk] & ~(BB::KAttacks[wk] | BB::PAttacks[WHITE][wp]))
+				|| BB::test_bit(BB::KAttacks[bk] & ~BB::KAttacks[wk], wp) )
 		return DRAW;
 
 	return UNKNOWN;
@@ -77,11 +77,11 @@ uint8_t classify(uint8_t res[], int idx)
 	decode(idx, &wk, &bk, &stm, &wp);
 
 	uint8_t r = ILLEGAL;
-	Bitboard b = KAttacks[stm ? bk : wk];
+	Bitboard b = BB::KAttacks[stm ? bk : wk];
 
 	// king moves
 	while (b) {
-		const int sq = pop_lsb(&b);
+		const int sq = BB::pop_lsb(&b);
 		r |= res[stm ? encode(wk, sq, WHITE, wp) : encode(sq, bk, BLACK, wp)];
 	}
 
@@ -141,11 +141,11 @@ void init_kpk()
 	// Pack into 64-bit entries
 	for (int idx = 0; idx < IndexMax; ++idx)
 		if (res[idx] == WIN)
-			set_bit(&bitbase[idx / 64], idx % 64);
+			BB::set_bit(&bitbase[idx / 64], idx % 64);
 }
 
 bool probe_kpk(int wk, int bk, int stm, int wp)
 {
 	const int idx = encode(wk, bk, stm, wp);
-	return test_bit(bitbase[idx / 64], idx % 64);
+	return BB::test_bit(bitbase[idx / 64], idx % 64);
 }
