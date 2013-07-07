@@ -218,7 +218,7 @@ void BB::init_magics()
 	static const int Bdir[4][2] = { { -1, -1}, { -1, 1}, { 1, -1}, { 1, 1} };
 	static const int Rdir[4][2] = { { -1, 0}, { 0, -1}, { 0, 1}, { 1, 0} };
 
-	for(int i = A1; i <= H8; i++) {
+	for (int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];
 		int sq_cnt = 0;
 
@@ -226,7 +226,7 @@ void BB::init_magics()
 		while (temp)
 			sq[sq_cnt++] = BB::pop_lsb(&temp);
 
-		for(temp = 0; temp < (1ULL << sq_cnt); temp++) {
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
 			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
 			std::uintptr_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
@@ -234,15 +234,15 @@ void BB::init_magics()
 		}
 	}
 
-	for(int i = A1; i <= H8; i++) {
+	for (int i = A1; i <= H8; i++) {
 		int sq[NB_SQUARE];
 		int sq_cnt = 0;
 
 		Bitboard temp = magic_bb_r_mask[i];
-		while(temp)
+		while (temp)
 			sq[sq_cnt++] = BB::pop_lsb(&temp);
 
-		for(temp = 0; temp < (1ULL << sq_cnt); temp++) {
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
 			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
 			std::uintptr_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
