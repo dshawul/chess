@@ -46,7 +46,7 @@ TTable::~TTable()
 	if (count)
 		aligned_free(cluster);
 
-	cluster = NULL;
+	cluster = nullptr;
 	generation = 0;
 	count = 0;
 }
@@ -90,7 +90,7 @@ const TTable::Entry *TTable::probe(Key key) const
 		if (e->key_match(key))
 			return e;
 
-	return NULL;
+	return nullptr;
 }
 
 void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move)

@@ -51,7 +51,7 @@ bool test_perft()
 		{"8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - -", 7, 178633661ull},
 		{"r2q1rk1/pP1p2pp/Q4n2/bbp1p3/Np6/1B3NBn/pPPP1PPP/R3K2R b KQ - 0 1", 6, 706045033ull},
 		{"rnbqkb1r/pp1p1ppp/2p5/4P3/2B5/8/PPP1NnPP/RNBQK2R w KQkq - 0 6", 5, 70202861ull},
-		{NULL, 0, 0}
+		{nullptr, 0, 0}
 	};
 
 	std::uint64_t total = 0;
@@ -97,7 +97,7 @@ void bench(int depth)
 		"r2q1rk1/1b1nbppp/4p3/3pP3/p1pP4/PpP2N1P/1P3PP1/R1BQRNK1 b 0 1",
 		"6k1/5pp1/7p/p1p2n1P/P4N2/6P1/1P3P1K/8 w - - 0 35",
 		"r4rk1/1pp1q1pp/p2p4/3Pn3/1PP1Pp2/P7/3QB1PP/2R2RK1 b 0 1",
-		NULL
+		nullptr
 	};
 
 	Board B;

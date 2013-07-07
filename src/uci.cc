@@ -183,7 +183,7 @@ bool input_available()
 		return true;
 
 	if (is_pipe)
-		return !PeekNamedPipe(stdin_h, NULL, 0, NULL, &val, NULL) ? true : val > 0;
+		return !PeekNamedPipe(stdin_h, nullptr, 0, nullptr, &val, nullptr) ? true : val > 0;
 	else
 		return _kbhit();
 

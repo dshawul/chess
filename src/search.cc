@@ -438,7 +438,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 			return alpha;
 	}
 
-	MoveSort MS(&B, depth, ss, &H, NULL);
+	MoveSort MS(&B, depth, ss, &H, nullptr);
 	int see;
 	const int fut_base = ss->eval + vEP / 2;
 

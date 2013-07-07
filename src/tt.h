@@ -47,7 +47,7 @@ struct TTable {
 		Entry entry[4];
 	};
 
-	TTable(): count(0), cluster(NULL) {}
+	TTable(): count(0), cluster(nullptr) {}
 	~TTable();
 
 	void alloc(std::uint64_t size);
