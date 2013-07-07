@@ -18,7 +18,7 @@
 
 void History::clear()
 {
-	memset(h, 0, sizeof(h));
+	std::memset(h, 0, sizeof(h));
 }
 
 int History::get(const Board& B, move_t m) const

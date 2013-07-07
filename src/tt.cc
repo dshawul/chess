@@ -73,7 +73,7 @@ void TTable::alloc(std::uint64_t size)
 
 void TTable::clear()
 {
-	memset(cluster, 0, count * sizeof(Cluster));
+	std::memset(cluster, 0, count * sizeof(Cluster));
 	generation = 0;
 }
 

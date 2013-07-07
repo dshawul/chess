@@ -64,7 +64,7 @@ struct Refutation {
 	Pack r[count];
 
 	void clear() {
-		memset(this, 0, sizeof(this));
+		std::memset(this, 0, sizeof(this));
 	}
 
 	move_t get_refutation(Key dm_key) const {

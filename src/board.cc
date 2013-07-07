@@ -27,10 +27,10 @@ void Board::clear()
 	king_pos[WHITE] = king_pos[BLACK] = 0;
 
 	for (int sq = A1; sq <= H8; piece_on[sq++] = NO_PIECE);
-	memset(b, 0, sizeof(b));
+	std::memset(b, 0, sizeof(b));
 
 	sp = sp0 = game_stack;
-	memset(sp, 0, sizeof(GameInfo));
+	std::memset(sp, 0, sizeof(GameInfo));
 	sp->epsq = NO_SQUARE;
 	move_count = 1;
 

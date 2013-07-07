@@ -35,7 +35,7 @@ struct PawnCache {
 	};
 
 	PawnCache() {
-		memset(buf, 0, sizeof(buf));
+		std::memset(buf, 0, sizeof(buf));
 	}
 
 	Entry &probe(Key key) {
