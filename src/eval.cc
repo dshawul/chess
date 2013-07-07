@@ -290,7 +290,7 @@ void EvalInfo::eval_passer_interaction(int sq)
 	const int L = (us ? 7 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);					// Quadratic part	0..20
 
-	if (Q && !BB::test_bit(B->st().occ, pawn_push(us, sq))) {
+	if (Q && !BB::test_bit(B->st().occ, BB::pawn_push(us, sq))) {
 		const Bitboard path = BB::SquaresInFront[us][sq];
 		const Bitboard b = BB::file_bb(file(sq)) & BB::rook_attack(sq, B->st().occ);
 
@@ -359,7 +359,7 @@ void EvalInfo::eval_shelter_storm()
 		if (b) {
 			sq = us ? BB::msb(b) : BB::lsb(b);
 			r = us ? 7 - rank(sq) : rank(sq);
-			half = BB::test_bit(our_pawns, pawn_push(them, sq));
+			half = BB::test_bit(our_pawns, BB::pawn_push(them, sq));
 		} else {
 			r = RANK_1;		// actually we penalize for the semi open file here
 			half = false;
@@ -371,7 +371,7 @@ void EvalInfo::eval_shelter_storm()
 void EvalInfo::eval_passer(int sq, Eval *res)
 {
 	const int r = rank(sq), f = file(sq);
-	const int next_sq = pawn_push(us, sq);
+	const int next_sq = BB::pawn_push(us, sq);
 	const Bitboard besides = our_pawns & BB::AdjacentFiles[f];
 
 	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
@@ -386,7 +386,7 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 		res->eg += BB::kdist(next_sq, their_ksq) * 2 * Q;
 		res->eg -= BB::kdist(next_sq, our_ksq) * Q;
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
-			res->eg -= BB::kdist(pawn_push(us, next_sq), our_ksq) * Q / 2;
+			res->eg -= BB::kdist(BB::pawn_push(us, next_sq), our_ksq) * Q / 2;
 	}
 
 	// support by friendly pawn
@@ -401,11 +401,11 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 			// also pawns that are 1 double push away if on 5-th (relative) rank
 			// for simplicity neglect en-passant refutation of the double push
 			if (L == 3)
-				b |= BB::PAttacks[them][pawn_push(them, sq)];
+				b |= BB::PAttacks[them][BB::pawn_push(them, sq)];
 
 			while (b) {
 				const int tsq = BB::pop_lsb(&b);
-				if (BB::test_bit(our_pawns, pawn_push(them, tsq)))
+				if (BB::test_bit(our_pawns, BB::pawn_push(them, tsq)))
 					res->eg += 2 * L;	// 1 push away from defendint the passer
 			}
 		}
@@ -422,7 +422,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 	Bitboard sqs = our_pawns;
 	while (sqs) {
-		const int sq = BB::pop_lsb(&sqs), next_sq = pawn_push(us, sq);
+		const int sq = BB::pop_lsb(&sqs), next_sq = BB::pawn_push(us, sq);
 		const int r = rank(sq), f = file(sq);
 		const Bitboard besides = our_pawns & BB::AdjacentFiles[f];
 

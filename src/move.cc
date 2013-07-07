@@ -18,6 +18,7 @@
 #include <sstream>
 #include <algorithm>
 #include "move.h"
+#include "board.h"
 
 namespace {
 
@@ -152,7 +153,7 @@ int calc_see(const Board& B, move_t m)
 
 	// Determine captured piece
 	if (m.flag() == EN_PASSANT) {
-		BB::clear_bit(&occ, pawn_push(opp_color(stm), tsq));
+		BB::clear_bit(&occ, BB::pawn_push(opp_color(stm), tsq));
 		capture = PAWN;
 	} else
 		capture = B.get_piece_on(tsq);

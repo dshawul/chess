@@ -15,6 +15,7 @@
 #pragma once
 #include <cstring>
 #include "movegen.h"
+#include "move.h"
 
 struct SearchInfo {
 	move_t m, best, killer[2];

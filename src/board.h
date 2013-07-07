@@ -16,6 +16,7 @@
 #include <string>
 #include "bitboard.h"
 #include "psq.h"
+#include "move.h"
 
 #define MAX_GAME_PLY		0x400	// max number of plies for a game
 
@@ -23,82 +24,6 @@
 enum {
 	OO = 1,		// King side castle (OO = chess notation)
 	OOO = 2		// Queen side castle (OOO = chess notation)
-};
-
-enum {
-	NORMAL,
-	EN_PASSANT,
-	PROMOTION,
-	CASTLING
-};
-
-struct move_t {
-	move_t(): b(0) {}	// silence compiler warnings
-	explicit move_t(std::uint16_t _b): b(_b) {}
-	operator bool() const {
-		return b;
-	}
-
-	bool operator== (move_t m) const {
-		return b == m.b;
-	}
-
-	bool operator!= (move_t m) const {
-		return b != m.b;
-	}
-
-	/* Getters */
-
-	int fsq() const {
-		return b & 0x3f;
-	}
-
-	int tsq() const {
-		return (b >> 6) & 0x3f;
-	}
-
-	int flag() const {
-		return (b >> 14) & 3;
-	}
-
-	int prom() const {
-		assert(flag() == PROMOTION);
-		return ((b >> 12) & 3) + KNIGHT;
-	}
-
-	/* Setters */
-
-	void fsq(int fsq) {
-		assert(square_ok(fsq));
-		b &= 0xffc0;
-		b ^= fsq;
-	}
-
-	void tsq(int tsq) {
-		assert(square_ok(tsq));
-		b &= 0xf03f;
-		b ^= (tsq << 6);
-	}
-
-	void flag(int flag) {
-		assert(flag < 4);
-		b &= 0x3fff;
-		b ^= (flag << 14);
-	}
-
-	void prom(int piece) {
-		assert(KNIGHT <= piece && piece <= QUEEN);
-		b &= 0xcfff;
-		b ^= (piece - KNIGHT) << 12;
-	}
-
-private:
-	/* a move is incoded in 16 bits, as follows:
-	 * 0..5: fsq (from square)
-	 * 6..11: tsq (to square)
-	 * 12,13: prom (promotion). Uses unusual numbering for optimal compactness: Knight=0 ... Queen=3
-	 * 14,15: flag. Flags are: NORMAL=0, EN_PASSANT=1, PROMOTION=2, CASTLING=3 */
-	std::uint16_t b;
 };
 
 struct GameInfo {
@@ -133,29 +58,13 @@ struct Board {
 	Bitboard get_pieces(int color) const;
 	Bitboard get_pieces(int color, int piece) const;
 
-	Bitboard get_N() const {
-		return b[KNIGHT];
-	}
-	Bitboard get_K() const {
-		return b[KING];
-	}
-
-	Bitboard get_RQ(int color) const {
-		return (b[ROOK] | b[QUEEN]) & all[color];
-	}
-	Bitboard get_BQ(int color) const {
-		return (b[BISHOP] | b[QUEEN]) & all[color];
-	}
-	Bitboard get_NB(int color) const {
-		return (b[KNIGHT] | b[BISHOP]) & all[color];
-	}
-
-	Bitboard get_RQ() const {
-		return b[ROOK] | b[QUEEN];
-	}
-	Bitboard get_BQ() const {
-		return b[BISHOP] | b[QUEEN];
-	}
+	Bitboard get_N() const;
+	Bitboard get_K() const;
+	Bitboard get_RQ() const;
+	Bitboard get_BQ() const;
+	Bitboard get_RQ(int color) const;
+	Bitboard get_BQ(int color) const;
+	Bitboard get_NB(int color) const;
 
 	void set_fen(const std::string& fen);
 	std::string get_fen() const;
@@ -163,20 +72,14 @@ struct Board {
 	void play(move_t m);
 	void undo();
 
-	void set_unwind()	{
-		sp0 = sp;
-	}
-	void unwind()		{
-		while (sp > sp0) undo();
-	}
+	void set_unwind();
+	void unwind();
 
-	bool is_check() const {
-		return st().checkers;
-	}
+	bool is_check() const;
 	bool is_draw() const;
 
-	Key get_key() const;
-	Key get_dm_key() const;
+	Key get_key() const;	// full zobrist key of the position (including ep and crights)
+	Key get_dm_key() const;	// hash key of the last two moves
 
 private:
 	Bitboard b[NB_PIECE], all[NB_COLOR];
@@ -204,12 +107,6 @@ extern std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
 extern Bitboard hanging_pieces(const Board& B, int us);
 extern Bitboard calc_attackers(const Board& B, int sq, Bitboard occ);
-
-inline int pawn_push(int color, int sq)
-{
-	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
-	return color ? sq - 8 : sq + 8;
-}
 
 inline int Board::get_color_on(int sq) const
 {
@@ -260,8 +157,66 @@ inline int Board::get_move_count() const
 }
 
 inline Key Board::get_dm_key() const
-// Calculates the hash key of the last two moves
 {
 	const GameInfo *p = std::max(sp - 2, sp0);
 	return p->key ^ sp->key;
 }
+
+inline Bitboard Board::get_N() const
+{
+	return b[KNIGHT];
+}
+
+inline Bitboard Board::get_K() const
+{
+	return b[KING];
+}
+
+inline Bitboard Board::get_RQ(int color) const
+{
+	return (b[ROOK] | b[QUEEN]) & all[color];
+}
+
+inline Bitboard Board::get_BQ(int color) const
+{
+	return (b[BISHOP] | b[QUEEN]) & all[color];
+}
+
+inline Bitboard Board::get_NB(int color) const
+{
+	return (b[KNIGHT] | b[BISHOP]) & all[color];
+}
+
+inline Bitboard Board::get_RQ() const
+{
+	return b[ROOK] | b[QUEEN];
+}
+
+inline Bitboard Board::get_BQ() const
+{
+	return b[BISHOP] | b[QUEEN];
+}
+
+inline Key Board::get_key() const
+{
+	assert(initialized);
+	return st().key
+		   ^ (st().epsq == NO_SQUARE ? 0 : BB::zob_ep[st().epsq])
+		   ^ BB::zob_castle[st().crights];
+}
+
+inline void Board::set_unwind()
+{
+	sp0 = sp;
+}
+
+inline void Board::unwind()
+{
+	while (sp > sp0) undo();
+}
+
+inline bool Board::is_check() const
+{
+	return st().checkers;
+}
+

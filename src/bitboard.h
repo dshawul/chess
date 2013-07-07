@@ -64,6 +64,12 @@ extern Bitboard piece_attack(int piece, int sq, Bitboard occ);
 // pretty print a bitboard (for debugging)
 extern void print_bitboard(std::ostream& ostrm, Bitboard b);
 
+inline int pawn_push(int color, int sq)
+{
+	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
+	return color ? sq - 8 : sq + 8;
+}
+
 inline void set_bit(Bitboard *b, unsigned sq)
 {
 	assert(square_ok(sq));

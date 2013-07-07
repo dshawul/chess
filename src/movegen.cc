@@ -14,6 +14,7 @@
 */
 #include <chrono>
 #include "movegen.h"
+#include "board.h"
 
 namespace {
 
@@ -38,7 +39,7 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
 		BB::clear_bit(&occ, m.fsq());
-		BB::clear_bit(&occ, pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
+		BB::clear_bit(&occ, BB::pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
 		BB::set_bit(&occ, m.tsq());
 		// test for check by a sliding enemy piece
 		if ((B.get_RQ(them) & BB::RPseudoAttacks[kpos] & BB::rook_attack(kpos, occ))

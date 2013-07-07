@@ -13,7 +13,10 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "move.h"
+#include "types.h"
+
+struct Board;
+struct move_t;
 
 #define MAX_MOVES	0x80	// max number of legal moves
 
