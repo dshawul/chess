@@ -14,15 +14,16 @@
 */
 #pragma once
 
-namespace UCI {
+namespace uci {
 
 extern void loop();
-extern bool stop_received();
+extern bool stop();
 
 // UCI option values
-extern int Hash;			// in MB
-extern int Contempt;		// in cp
+extern int Hash;		// in MB
+extern int Contempt;	// in cp
 extern bool LimitStrength;
+extern const int ELO_MIN, ELO_MAX;
 extern int Elo;
 
-}	// namespace UCI
+}	// namespace uci

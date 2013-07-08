@@ -17,15 +17,11 @@
 */
 #include <cstring>
 #include "eval.h"
+#include "kpk.h"
+
+namespace {
 
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
-
-void init_eval()
-{
-	for (int us = WHITE; us <= BLACK; ++us)
-		for (int sq = A1; sq <= H8; ++sq)
-			KingDistanceToSafety[us][sq] = std::min(BB::kdist(sq, us ? E8 : E1), BB::kdist(sq, us ? B8 : B1));
-}
 
 struct PawnCache {
 	struct Entry {
@@ -102,11 +98,11 @@ void EvalInfo::eval_material()
 	e[us] += B->st().psq[us];
 
 	// Bishop pair
-	if (BB::several_bits(B->get_pieces(us, BISHOP)))
+	if (bb::several_bits(B->get_pieces(us, BISHOP)))
 		e[us] += {40, 50};
 
 	// Rook pair penalty
-	if (BB::several_bits(B->get_pieces(us, ROOK)))
+	if (bb::several_bits(B->get_pieces(us, ROOK)))
 		e[us] -= {12, 12};
 }
 
@@ -142,7 +138,7 @@ void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
 		{0, 4, 5, 4, 2, 0}		// EndGame
 	};
 
-	const int count = mob_count[p0][BB::count_bit(tss)];
+	const int count = mob_count[p0][bb::count_bit(tss)];
 	e[us].op += count * mob_unit[OPENING][p];
 	e[us].eg += count * mob_unit[ENDGAME][p];
 }
@@ -158,7 +154,7 @@ void EvalInfo::eval_mobility()
 	// Knight mobility
 	fss = B->get_pieces(us, KNIGHT);
 	while (fss) {
-		tss = BB::NAttacks[BB::pop_lsb(&fss)] & mob_targets;
+		tss = bb::NAttacks[bb::pop_lsb(&fss)] & mob_targets;
 		score_mobility(us, KNIGHT, KNIGHT, tss);
 	}
 
@@ -166,9 +162,9 @@ void EvalInfo::eval_mobility()
 	fss = B->get_RQ(us);
 	occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
 	while (fss) {
-		fsq = BB::pop_lsb(&fss);
+		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
-		tss = BB::rook_attack(fsq, occ) & mob_targets;
+		tss = bb::rook_attack(fsq, occ) & mob_targets;
 		score_mobility(us, ROOK, piece, tss);
 	}
 
@@ -176,9 +172,9 @@ void EvalInfo::eval_mobility()
 	fss = B->get_BQ(us);
 	occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
 	while (fss) {
-		fsq = BB::pop_lsb(&fss);
+		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
-		tss = BB::bishop_attack(fsq, occ) & mob_targets;
+		tss = bb::bishop_attack(fsq, occ) & mob_targets;
 		score_mobility(us, BISHOP, piece, tss);
 	}
 }
@@ -189,9 +185,9 @@ void EvalInfo::score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard def
 	static const int AttackWeight[NB_PIECE] = {0, 3, 3, 4, 0, 0};
 
 	if (sq_attackers) {
-		int count = BB::count_bit(sq_attackers);
+		int count = bb::count_bit(sq_attackers);
 		*total_weight += AttackWeight[p0] * count;
-		if (BB::test_bit(defended, sq)) count--;
+		if (bb::test_bit(defended, sq)) count--;
 		*total_count += count;
 	}
 }
@@ -210,48 +206,48 @@ void EvalInfo::eval_safety()
 	Bitboard sq_attackers, attacked, occ, fss;
 
 	// Knight attacks
-	attacked = B->st().attacks[them][KNIGHT] & (BB::KAttacks[our_ksq] | BB::NAttacks[our_ksq]) & ~solid;
+	attacked = B->st().attacks[them][KNIGHT] & (bb::KAttacks[our_ksq] | bb::NAttacks[our_ksq]) & ~solid;
 	if (attacked) {
 		fss = B->get_pieces(them, KNIGHT);
 		while (attacked) {
-			sq = BB::pop_lsb(&attacked);
-			sq_attackers = BB::NAttacks[sq] & fss;
+			sq = bb::pop_lsb(&attacked);
+			sq_attackers = bb::NAttacks[sq] & fss;
 			score_attacks(KNIGHT, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	}
 
 	// Lateral attacks
-	attacked = B->st().attacks[them][ROOK] & BB::KAttacks[our_ksq] & ~solid;
+	attacked = B->st().attacks[them][ROOK] & bb::KAttacks[our_ksq] & ~solid;
 	if (attacked) {
 		fss = B->get_RQ(them);
 		occ = B->st().occ & ~fss;	// rooks and queens see through each other
 		while (attacked) {
-			sq = BB::pop_lsb(&attacked);
-			sq_attackers = fss & BB::rook_attack(sq, occ);
+			sq = bb::pop_lsb(&attacked);
+			sq_attackers = fss & bb::rook_attack(sq, occ);
 			score_attacks(ROOK, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
-	} else if ( (fss = BB::RPseudoAttacks[our_ksq] & B->get_RQ(them)) )
+	} else if ( (fss = bb::RPseudoAttacks[our_ksq] & B->get_RQ(them)) )
 		// hidden attackers: increment count when the attacking line contains at most one pawn
 		while (fss) {
-			sq = BB::pop_lsb(&fss);
-			total_count += !BB::several_bits((our_pawns | their_pawns) & BB::Between[our_ksq][sq]);
+			sq = bb::pop_lsb(&fss);
+			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::Between[our_ksq][sq]);
 		}
 
 	// Diagonal attacks
-	attacked = B->st().attacks[them][BISHOP] & BB::KAttacks[our_ksq] & ~solid;
+	attacked = B->st().attacks[them][BISHOP] & bb::KAttacks[our_ksq] & ~solid;
 	if (attacked) {
 		fss = B->get_BQ(them);
 		occ = B->st().occ & ~fss;	// bishops and queens see through each other
 		while (attacked) {
-			sq = BB::pop_lsb(&attacked);
-			sq_attackers = fss & BB::bishop_attack(sq, occ);
+			sq = bb::pop_lsb(&attacked);
+			sq_attackers = fss & bb::bishop_attack(sq, occ);
 			score_attacks(BISHOP, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
-	} else if ( (fss = BB::BPseudoAttacks[our_ksq] & B->get_BQ(them)) )
+	} else if ( (fss = bb::BPseudoAttacks[our_ksq] & B->get_BQ(them)) )
 		// hidden attackers: increment count when the attacking diagonal contains at most one pawn
 		while (fss) {
-			sq = BB::pop_lsb(&fss);
-			total_count += !BB::several_bits((our_pawns | their_pawns) & BB::Between[our_ksq][sq]);
+			sq = bb::pop_lsb(&fss);
+			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::Between[our_ksq][sq]);
 		}
 
 	// Adjust for king's "distance to safety"
@@ -259,8 +255,8 @@ void EvalInfo::eval_safety()
 
 	if (total_weight) {
 		// if king cannot retreat increase penalty
-		if ( BB::Shield[them][our_ksq]
-			 && (BB::Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+		if ( bb::Shield[them][our_ksq]
+			 && (bb::Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
 			++total_count;
 
 		e[us].op -= total_count * total_weight;
@@ -277,8 +273,8 @@ void EvalInfo::eval_passer_interaction(int sq)
 	if (!B->st().piece_psq[them]) {
 		// opponent has no pieces
 		const int psq = square(us ? RANK_1 : RANK_8, file(sq));
-		const int pd = BB::kdist(sq, psq);
-		const int kd = BB::kdist(B->get_king_pos(them), psq) - (them == B->get_turn());
+		const int pd = bb::kdist(sq, psq);
+		const int kd = bb::kdist(B->get_king_pos(them), psq) - (them == B->get_turn());
 
 		if (kd > pd) {	// unstoppable passer
 			e[us].eg += vR;	// on top of the bonus from do_eval_pawns()
@@ -290,9 +286,9 @@ void EvalInfo::eval_passer_interaction(int sq)
 	const int L = (us ? 7 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);					// Quadratic part	0..20
 
-	if (Q && !BB::test_bit(B->st().occ, BB::pawn_push(us, sq))) {
-		const Bitboard path = BB::SquaresInFront[us][sq];
-		const Bitboard b = BB::file_bb(file(sq)) & BB::rook_attack(sq, B->st().occ);
+	if (Q && !bb::test_bit(B->st().occ, bb::pawn_push(us, sq))) {
+		const Bitboard path = bb::SquaresInFront[us][sq];
+		const Bitboard b = bb::file_bb(file(sq)) & bb::rook_attack(sq, B->st().occ);
 
 		std::uint64_t defended, attacked;
 		if (B->get_RQ(them) & b) {
@@ -330,7 +326,7 @@ void EvalInfo::eval_pawns()
 	// piece-dependant passed pawn scoring
 	Bitboard b = h.passers;
 	while (b)
-		eval_passer_interaction(BB::pop_lsb(&b));
+		eval_passer_interaction(bb::pop_lsb(&b));
 }
 
 void EvalInfo::eval_shelter_storm()
@@ -349,17 +345,17 @@ void EvalInfo::eval_shelter_storm()
 		bool half;
 
 		// Pawn shelter
-		b = our_pawns & BB::file_bb(f);
-		r = b ? (us ? 7 - rank(BB::msb(b)) : rank(BB::lsb(b))) : 0;
+		b = our_pawns & bb::file_bb(f);
+		r = b ? (us ? 7 - rank(bb::msb(b)) : rank(bb::lsb(b))) : 0;
 		half = f != kf;
 		e[us].op -= ShelterPenalty[r] >> half;
 
 		// Pawn storm
-		b = their_pawns & BB::file_bb(f);
+		b = their_pawns & bb::file_bb(f);
 		if (b) {
-			sq = us ? BB::msb(b) : BB::lsb(b);
+			sq = us ? bb::msb(b) : bb::lsb(b);
 			r = us ? 7 - rank(sq) : rank(sq);
-			half = BB::test_bit(our_pawns, BB::pawn_push(them, sq));
+			half = bb::test_bit(our_pawns, bb::pawn_push(them, sq));
 		} else {
 			r = RANK_1;		// actually we penalize for the semi open file here
 			half = false;
@@ -371,8 +367,8 @@ void EvalInfo::eval_shelter_storm()
 void EvalInfo::eval_passer(int sq, Eval *res)
 {
 	const int r = rank(sq), f = file(sq);
-	const int next_sq = BB::pawn_push(us, sq);
-	const Bitboard besides = our_pawns & BB::AdjacentFiles[f];
+	const int next_sq = bb::pawn_push(us, sq);
+	const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
 
 	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);						// Quadratic part	0..20
@@ -383,29 +379,29 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 
 	if (Q) {
 		// adjustment for king distance
-		res->eg += BB::kdist(next_sq, their_ksq) * 2 * Q;
-		res->eg -= BB::kdist(next_sq, our_ksq) * Q;
+		res->eg += bb::kdist(next_sq, their_ksq) * 2 * Q;
+		res->eg -= bb::kdist(next_sq, our_ksq) * Q;
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
-			res->eg -= BB::kdist(BB::pawn_push(us, next_sq), our_ksq) * Q / 2;
+			res->eg -= bb::kdist(bb::pawn_push(us, next_sq), our_ksq) * Q / 2;
 	}
 
 	// support by friendly pawn
-	if (besides & BB::PawnSpan[them][next_sq]) {
-		if (BB::PAttacks[them][next_sq] & our_pawns)
+	if (besides & bb::PawnSpan[them][next_sq]) {
+		if (bb::PAttacks[them][next_sq] & our_pawns)
 			res->eg += 8 * L;	// besides is good, as it allows a further push
-		else if (BB::PAttacks[them][sq] & our_pawns)
+		else if (bb::PAttacks[them][sq] & our_pawns)
 			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
-		else if (!(BB::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
+		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
 			// pawns that are 1 push away
-			Bitboard b = BB::PAttacks[them][sq];
+			Bitboard b = bb::PAttacks[them][sq];
 			// also pawns that are 1 double push away if on 5-th (relative) rank
 			// for simplicity neglect en-passant refutation of the double push
 			if (L == 3)
-				b |= BB::PAttacks[them][BB::pawn_push(them, sq)];
+				b |= bb::PAttacks[them][bb::pawn_push(them, sq)];
 
 			while (b) {
-				const int tsq = BB::pop_lsb(&b);
-				if (BB::test_bit(our_pawns, BB::pawn_push(them, tsq)))
+				const int tsq = bb::pop_lsb(&b);
+				if (bb::test_bit(our_pawns, bb::pawn_push(them, tsq)))
 					res->eg += 2 * L;	// 1 push away from defendint the passer
 			}
 		}
@@ -422,19 +418,19 @@ Bitboard EvalInfo::do_eval_pawns()
 
 	Bitboard sqs = our_pawns;
 	while (sqs) {
-		const int sq = BB::pop_lsb(&sqs), next_sq = BB::pawn_push(us, sq);
+		const int sq = bb::pop_lsb(&sqs), next_sq = bb::pawn_push(us, sq);
 		const int r = rank(sq), f = file(sq);
-		const Bitboard besides = our_pawns & BB::AdjacentFiles[f];
+		const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
 
-		const bool chained = besides & (BB::rank_bb(r) | BB::rank_bb(us ? r + 1 : r - 1));
-		const bool hole = !chained && !(BB::PawnSpan[them][next_sq] & our_pawns)
-						  && BB::test_bit(B->st().attacks[them][PAWN], next_sq);
+		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
+		const bool hole = !chained && !(bb::PawnSpan[them][next_sq] & our_pawns)
+						  && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
 
-		const bool open = !(BB::SquaresInFront[us][sq] & (our_pawns | their_pawns));
-		const bool passed = open && !(BB::PawnSpan[us][sq] & their_pawns);
+		const bool open = !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
+		const bool passed = open && !(bb::PawnSpan[us][sq] & their_pawns);
 		const bool candidate = chained && open && !passed
-							   && !BB::several_bits(BB::PawnSpan[us][sq] & their_pawns);
+							   && !bb::several_bits(bb::PawnSpan[us][sq] & their_pawns);
 
 		if (chained)
 			e[us].op += Chained;
@@ -451,7 +447,7 @@ Bitboard EvalInfo::do_eval_pawns()
 			eval_passer(sq, &tmp);
 			e[us] += {tmp.op / 2, tmp.eg / 2};
 		} else if (passed) {
-			BB::set_bit(&passers, sq);
+			bb::set_bit(&passers, sq);
 			eval_passer(sq, &e[us]);
 		}
 	}
@@ -474,8 +470,8 @@ void EvalInfo::eval_pieces()
 	// Rook on open file
 	fss = B->get_pieces(us, ROOK);
 	while (fss) {
-		const int rsq = BB::pop_lsb(&fss);
-		const Bitboard ahead = BB::SquaresInFront[us][rsq];
+		const int rsq = bb::pop_lsb(&fss);
+		const Bitboard ahead = bb::SquaresInFront[us][rsq];
 		if (!(our_pawns & ahead)) {
 			int bonus = RookOpen;
 			if (!(their_pawns & ahead))
@@ -485,11 +481,11 @@ void EvalInfo::eval_pieces()
 	}
 
 	// Rook blocked by uncastled King
-	fss = B->get_pieces(us, ROOK) & BB::PPromotionRank[them];
+	fss = B->get_pieces(us, ROOK) & bb::PPromotionRank[them];
 	while (fss) {
-		const int rsq = BB::pop_lsb(&fss);
-		if (BB::test_bit(BB::Between[rsq][us ? E8 : E1], our_ksq)) {
-			if (our_pawns & BB::SquaresInFront[us][rsq] & BB::HalfBoard[us])
+		const int rsq = bb::pop_lsb(&fss);
+		if (bb::test_bit(bb::Between[rsq][us ? E8 : E1], our_ksq)) {
+			if (our_pawns & bb::SquaresInFront[us][rsq] & bb::HalfBoard[us])
 				e[us].op -= RookTrapped >> can_castle;
 			else
 				e[us].op -= (RookTrapped / 2) >> can_castle;
@@ -502,7 +498,7 @@ void EvalInfo::eval_pieces()
 	fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
 	while (fss) {
 		// escape squares = not defended by enemy pawns
-		tss = BB::NAttacks[BB::pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];
+		tss = bb::NAttacks[bb::pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];
 		// If escape square(s) are attacked and not defended by a pawn, then the knight is likely
 		// to be trapped and we penalize it
 		if (!(tss & ~(B->st().attacks[them][NO_PIECE] & ~B->st().attacks[us][PAWN])))
@@ -516,12 +512,12 @@ void EvalInfo::eval_pieces()
 	// Bishop trapped
 	fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
 	while (fss) {
-		const int fsq = BB::pop_lsb(&fss);
+		const int fsq = bb::pop_lsb(&fss);
 		// See if the retreat path of the bishop is blocked by a defended pawn
-		if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & BB::PAttacks[them][fsq]) {
+		if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & bb::PAttacks[them][fsq]) {
 			e[us].op -= vOP;
 			// in the endgame, we only penalize if there's no escape via the 8th rank
-			if (BB::PAttacks[us][fsq] & B->st().attacks[them][KING])
+			if (bb::PAttacks[us][fsq] & B->st().attacks[them][KING])
 				e[us].eg -= vEP;
 		}
 	}
@@ -532,7 +528,7 @@ void EvalInfo::eval_pieces()
 							& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
-		const int victim = B->get_piece_on(BB::pop_lsb(&hanging));
+		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
 		e[us].op -= 4 + Material[victim].op / 32;
 		e[us].eg -= 8 + Material[victim].eg / 32;
 	}
@@ -556,7 +552,7 @@ bool kpk_draw(const Board& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
-	int wp = BB::lsb(B.get_pieces(us, PAWN));
+	int wp = bb::lsb(B.get_pieces(us, PAWN));
 	int stm = B.get_turn();
 
 	if (us == BLACK) {
@@ -571,30 +567,41 @@ bool kpk_draw(const Board& B)
 		wp = file_mirror(wp);
 	}
 
-	return !probe_kpk(wk, bk, stm, wp);
+	return !kpk::probe(wk, bk, stm, wp);
 }
 
 bool kbpk_draw(const Board& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int our_king = B.get_king_pos(us), their_king = B.get_king_pos(opp_color(us));
-	int pawn = BB::lsb(B.get_pieces(us, PAWN)), bishop = BB::lsb(B.get_pieces(us, BISHOP));
+	int pawn = bb::lsb(B.get_pieces(us, PAWN)), bishop = bb::lsb(B.get_pieces(us, BISHOP));
 	int prom_sq = square(us ? RANK_1 : RANK_8, file(pawn));
 	int stm = B.get_turn();
 
 	return (file(pawn) == FILE_A || file(pawn) == FILE_H)
 		   && color_of(bishop) != color_of(prom_sq)
-		   && BB::kdist(their_king, prom_sq) < BB::kdist(our_king, prom_sq) - (stm == us)
-		   && BB::kdist(their_king, prom_sq) - (stm != us) <= BB::kdist(pawn, prom_sq);
+		   && bb::kdist(their_king, prom_sq) < bb::kdist(our_king, prom_sq) - (stm == us)
+		   && bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
 }
 
-#define KPK		0x110000000001
-#define KKP		0x110000000010
-#define KBPK	0x110000010001
-#define KKBP	0x110000100010
+}	// namespace
+
+void init_eval()
+{
+	kpk::init();
+
+	for (int us = WHITE; us <= BLACK; ++us)
+		for (int sq = A1; sq <= H8; ++sq)
+			KingDistanceToSafety[us][sq] = std::min(bb::kdist(sq, us ? E8 : E1), bb::kdist(sq, us ? B8 : B1));
+}
 
 int eval(const Board& B)
 {
+	static const Key KPK = 0x110000000001ull;
+	static const Key KKP = 0x110000000010ull;
+	static const Key KBPK = 0x110000010001ull;
+	static const Key KKBP = 0x110000100010ull;
+
 	assert(!B.is_check());
 
 	// Recognize some known draws
@@ -623,19 +630,19 @@ int stand_pat_penalty(const Board& B)
 {
 	Bitboard b = hanging_pieces(B, B.get_turn());
 
-	if (BB::several_bits(b)) {
+	if (bb::several_bits(b)) {
 		// Several pieces are hanging. Take the lowest one and return half its value.
 		int piece = KING;
 		while (b) {
-			const int sq = BB::pop_lsb(&b);
+			const int sq = bb::pop_lsb(&b);
 			const int p = B.get_piece_on(sq);
 			piece = std::min(piece, p);
 		}
 		return Material[piece].op / 2;
 	} else if (b & B.st().pinned) {
 		// Only one piece hanging, but also pinned. Return half its value.
-		assert(BB::count_bit(b) == 1);
-		const int sq = BB::lsb(b), piece = B.get_piece_on(sq);
+		assert(bb::count_bit(b) == 1);
+		const int sq = bb::lsb(b), piece = B.get_piece_on(sq);
 		return Material[piece].op / 2;
 	}
 

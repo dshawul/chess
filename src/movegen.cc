@@ -27,7 +27,7 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 	int kpos = B.get_king_pos(us);
 
 	// filter self check through fsq
-	if (BB::test_bit(B.st().pinned, fsq) && !BB::test_bit(BB::Direction[kpos][fsq], tsq))
+	if (bb::test_bit(B.st().pinned, fsq) && !bb::test_bit(bb::Direction[kpos][fsq], tsq))
 		return mlist;
 
 	move_t m;
@@ -38,17 +38,17 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 		m.flag(EN_PASSANT);
 		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
-		BB::clear_bit(&occ, m.fsq());
-		BB::clear_bit(&occ, BB::pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
-		BB::set_bit(&occ, m.tsq());
+		bb::clear_bit(&occ, m.fsq());
+		bb::clear_bit(&occ, bb::pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
+		bb::set_bit(&occ, m.tsq());
 		// test for check by a sliding enemy piece
-		if ((B.get_RQ(them) & BB::RPseudoAttacks[kpos] & BB::rook_attack(kpos, occ))
-			|| (B.get_BQ(them) & BB::BPseudoAttacks[kpos] & BB::bishop_attack(kpos, occ)))
+		if ((B.get_RQ(them) & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
+			|| (B.get_BQ(them) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)))
 			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 	} else
 		m.flag(NORMAL);
 
-	if (BB::test_bit(BB::PPromotionRank[us], tsq)) {
+	if (bb::test_bit(bb::PPromotionRank[us], tsq)) {
 		// promotion(s)
 		m.flag(PROMOTION);
 		m.prom(QUEEN); *mlist++ = m;
@@ -76,11 +76,11 @@ move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
 	m.fsq(fsq);
 	m.flag(NORMAL);
 
-	if (BB::test_bit(B.st().pinned, fsq))
-		tss &= BB::Direction[kpos][fsq];
+	if (bb::test_bit(B.st().pinned, fsq))
+		tss &= bb::Direction[kpos][fsq];
 
 	while (tss) {
-		m.tsq(BB::pop_lsb(&tss));
+		m.tsq(bb::pop_lsb(&tss));
 		*mlist++ = m;
 	}
 
@@ -101,24 +101,24 @@ move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool ki
 	// Knight Moves
 	fss = B.get_pieces(us, KNIGHT);
 	while (fss) {
-		int fsq = BB::pop_lsb(&fss);
-		Bitboard tss = BB::NAttacks[fsq] & targets;
+		int fsq = bb::pop_lsb(&fss);
+		Bitboard tss = bb::NAttacks[fsq] & targets;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// Rook Queen moves
 	fss = B.get_RQ(us);
 	while (fss) {
-		int fsq = BB::pop_lsb(&fss);
-		Bitboard tss = targets & BB::rook_attack(fsq, B.st().occ);
+		int fsq = bb::pop_lsb(&fss);
+		Bitboard tss = targets & bb::rook_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
 	// Bishop Queen moves
 	fss = B.get_BQ(us);
 	while (fss) {
-		int fsq = BB::pop_lsb(&fss);
-		Bitboard tss = targets & BB::bishop_attack(fsq, B.st().occ);
+		int fsq = bb::pop_lsb(&fss);
+		Bitboard tss = targets & bb::bishop_attack(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
@@ -126,7 +126,7 @@ move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool ki
 	if (king_moves) {
 		int fsq = B.get_king_pos(us);
 		// here we also filter direct self checks, which shouldn't be sent to serialize_moves
-		Bitboard tss = BB::KAttacks[fsq] & targets & ~B.st().attacked;
+		Bitboard tss = bb::KAttacks[fsq] & targets & ~B.st().attacked;
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
@@ -187,17 +187,17 @@ move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub
 	Bitboard tss, tss_sp, tss_dp, tss_lc, tss_rc, fssd;
 
 	// single pushes
-	tss_sp = BB::shift_bit(fss, sp_inc) & ~B.st().occ;
+	tss_sp = bb::shift_bit(fss, sp_inc) & ~B.st().occ;
 
 	// double pushes
-	fssd = fss & BB::PInitialRank[us]			// pawns on their initial rank
-		   & ~BB::shift_bit(B.st().occ, -sp_inc)	// can push once
-		   & ~BB::shift_bit(B.st().occ, -dp_inc);	// can push twice
-	tss_dp = BB::shift_bit(fssd, dp_inc);			// double push fssd
+	fssd = fss & bb::PInitialRank[us]			// pawns on their initial rank
+		   & ~bb::shift_bit(B.st().occ, -sp_inc)	// can push once
+		   & ~bb::shift_bit(B.st().occ, -dp_inc);	// can push twice
+	tss_dp = bb::shift_bit(fssd, dp_inc);			// double push fssd
 
 	// captures (including en passant if epsq != NO_SQUARE)
-	tss_lc = BB::shift_bit(fss & ~BB::FileA_bb, lc_inc) & enemies;	// right captures
-	tss_rc = BB::shift_bit(fss & ~BB::FileH_bb, rc_inc) & enemies;	// right captures
+	tss_lc = bb::shift_bit(fss & ~bb::FileA_bb, lc_inc) & enemies;	// right captures
+	tss_rc = bb::shift_bit(fss & ~bb::FileH_bb, rc_inc) & enemies;	// right captures
 
 	// total
 	tss = (tss_sp | tss_dp | tss_lc | tss_rc) & targets;
@@ -205,16 +205,16 @@ move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub
 	/* Then we loop on the tss and find the possible from square(s) */
 
 	while (tss) {
-		const int tsq = BB::pop_lsb(&tss);
+		const int tsq = bb::pop_lsb(&tss);
 
-		if (BB::test_bit(tss_sp, tsq))		// can we single push to tsq ?
+		if (bb::test_bit(tss_sp, tsq))		// can we single push to tsq ?
 			mlist = make_pawn_moves(B, tsq - sp_inc, tsq, mlist, sub_promotions);
-		else if (BB::test_bit(tss_dp, tsq))	// can we double push to tsq ?
+		else if (bb::test_bit(tss_dp, tsq))	// can we double push to tsq ?
 			mlist = make_pawn_moves(B, tsq - dp_inc, tsq, mlist, sub_promotions);
 		else {	// can we capture tsq ?
-			if (BB::test_bit(tss_lc, tsq))	// can we left capture tsq ?
+			if (bb::test_bit(tss_lc, tsq))	// can we left capture tsq ?
 				mlist = make_pawn_moves(B, tsq - lc_inc, tsq, mlist, sub_promotions);
-			if (BB::test_bit(tss_rc, tsq))	// can we right capture tsq ?
+			if (bb::test_bit(tss_rc, tsq))	// can we right capture tsq ?
 				mlist = make_pawn_moves(B, tsq - rc_inc, tsq, mlist, sub_promotions);
 		}
 	}
@@ -231,29 +231,29 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	const int us = B.get_turn();
 	const int kpos = B.get_king_pos(us);
 	const Bitboard checkers = B.st().checkers;
-	const int csq = BB::lsb(checkers);			// checker square
+	const int csq = bb::lsb(checkers);			// checker square
 	const int cpiece = B.get_piece_on(csq);	// checker piece
 	Bitboard tss;
 
 	// normal king escapes
-	tss = BB::KAttacks[kpos] & ~B.get_pieces(us) & ~B.st().attacked;
+	tss = bb::KAttacks[kpos] & ~B.get_pieces(us) & ~B.st().attacked;
 
 	// The king must also get out of all sliding checkers' firing lines
 	Bitboard _checkers = checkers;
 	while (_checkers) {
-		const int _csq = BB::pop_lsb(&_checkers);
+		const int _csq = bb::pop_lsb(&_checkers);
 		const int _cpiece = B.get_piece_on(_csq);
 		if (is_slider(_cpiece))
-			tss &= ~BB::Direction[_csq][kpos];
+			tss &= ~bb::Direction[_csq][kpos];
 	}
 
 	// generate King escapes
 	mlist = make_piece_moves(B, kpos, tss, mlist);
 
-	if (!BB::several_bits(B.st().checkers)) {
+	if (!bb::several_bits(B.st().checkers)) {
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
-			  ? BB::Between[kpos][csq]	// cover the check (inc capture the sliding checker)
+			  ? bb::Between[kpos][csq]	// cover the check (inc capture the sliding checker)
 			  : checkers;				// capture the checker
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
@@ -277,26 +277,26 @@ move_t *gen_quiet_checks(const Board& B, move_t *mlist)
 	Bitboard fss, tss;
 
 	// Pawn push checks (single push only)
-	if (B.get_pieces(us, PAWN) & BB::NAttacks[ksq] & BB::PawnSpan[them][ksq]) {
-		tss = BB::PAttacks[them][ksq] & ~occ;
+	if (B.get_pieces(us, PAWN) & bb::NAttacks[ksq] & bb::PawnSpan[them][ksq]) {
+		tss = bb::PAttacks[them][ksq] & ~occ;
 		if (tss)
 			mlist = gen_pawn_moves(B, tss, mlist, false);
 	}
 
 	// Piece quiet checks (direct + discovered)
 	for (int piece = KNIGHT; piece <= QUEEN; piece++) {
-		const Bitboard check_squares = BB::piece_attack(piece, ksq, occ);
+		const Bitboard check_squares = bb::piece_attack(piece, ksq, occ);
 		fss = B.get_pieces(us, piece);
 
 		while (fss) {
-			const int fsq = BB::pop_lsb(&fss);
+			const int fsq = bb::pop_lsb(&fss);
 			// possible destinations of piece on fsq
-			Bitboard attacks = BB::piece_attack(piece, fsq, occ);
+			Bitboard attacks = bb::piece_attack(piece, fsq, occ);
 			// direct checks
 			tss = attacks & check_squares;
 			// revealed checks
-			if (BB::test_bit(B.st().dcheckers, fsq))
-				tss |= attacks & ~BB::Direction[ksq][fsq];
+			if (bb::test_bit(B.st().dcheckers, fsq))
+				tss |= attacks & ~bb::Direction[ksq][fsq];
 			// exclude captures
 			tss &= ~occ;
 

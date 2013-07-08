@@ -42,42 +42,42 @@ int move_is_check(const Board& B, move_t m)
 	int kpos = B.get_king_pos(them);
 
 	// test discovered check
-	if ( (BB::test_bit(B.st().dcheckers, fsq))		// discovery checker
-		 && (!BB::test_bit(BB::Direction[kpos][fsq], tsq)))	// move out of its dc-ray
+	if ( (bb::test_bit(B.st().dcheckers, fsq))		// discovery checker
+		 && (!bb::test_bit(bb::Direction[kpos][fsq], tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (flag != PROMOTION) {
 		const int piece = B.get_piece_on(fsq);
-		Bitboard tss = piece == PAWN ? BB::PAttacks[us][tsq]
-					   : BB::piece_attack(piece, tsq, B.st().occ);
-		if (BB::test_bit(tss, kpos))
+		Bitboard tss = piece == PAWN ? bb::PAttacks[us][tsq]
+					   : bb::piece_attack(piece, tsq, B.st().occ);
+		if (bb::test_bit(tss, kpos))
 			return 1;
 	}
 
 	if (flag == EN_PASSANT) {
 		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
-		BB::clear_bit(&occ, fsq);
-		BB::clear_bit(&occ, tsq + (us ? 8 : -8));
-		BB::set_bit(&occ, tsq);
+		bb::clear_bit(&occ, fsq);
+		bb::clear_bit(&occ, tsq + (us ? 8 : -8));
+		bb::set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
-		if ((B.get_RQ(us) & BB::RPseudoAttacks[kpos] & BB::rook_attack(kpos, occ))
-			|| (B.get_BQ(us) & BB::BPseudoAttacks[kpos] & BB::bishop_attack(kpos, occ)))
+		if ((B.get_RQ(us) & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
+			|| (B.get_BQ(us) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)))
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
 		int rook_sq = (fsq + tsq) / 2;
 		Bitboard occ = B.st().occ;
-		BB::clear_bit(&occ, fsq);
+		bb::clear_bit(&occ, fsq);
 		Bitboard RQ = B.get_RQ(us);
-		BB::set_bit(&RQ, rook_sq);
-		if (RQ & BB::RPseudoAttacks[kpos] & BB::rook_attack(kpos, occ))
+		bb::set_bit(&RQ, rook_sq);
+		if (RQ & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
 	} else if (flag == PROMOTION) {
 		// test check by the promoted piece
 		Bitboard occ = B.st().occ;
-		BB::clear_bit(&occ, fsq);
-		if (BB::test_bit(BB::piece_attack(m.prom(), tsq, occ), kpos))
+		bb::clear_bit(&occ, fsq);
+		if (bb::test_bit(bb::piece_attack(m.prom(), tsq, occ), kpos))
 			return 1;	// direct check by the promoted piece
 	}
 
@@ -96,10 +96,10 @@ bool move_is_pawn_threat(const Board& B, move_t m)
 	if (B.get_piece_on(m.fsq()) == PAWN) {
 		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
 
-		if (BB::test_bit(BB::HalfBoard[them], sq)) {
+		if (bb::test_bit(bb::HalfBoard[them], sq)) {
 			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
-			return !(BB::PawnSpan[us][sq] & their_pawns)
-				   && !(BB::SquaresInFront[us][sq] & (our_pawns | their_pawns));
+			return !(bb::PawnSpan[us][sq] & their_pawns)
+				   && !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		}
 	}
 
@@ -153,14 +153,14 @@ int calc_see(const Board& B, move_t m)
 
 	// Determine captured piece
 	if (m.flag() == EN_PASSANT) {
-		BB::clear_bit(&occ, BB::pawn_push(opp_color(stm), tsq));
+		bb::clear_bit(&occ, bb::pawn_push(opp_color(stm), tsq));
 		capture = PAWN;
 	} else
 		capture = B.get_piece_on(tsq);
 	assert(capture != KING);
 
 	swap_list[0] = see_val[capture];
-	BB::clear_bit(&occ, fsq);
+	bb::clear_bit(&occ, fsq);
 
 	// Handle promotion
 	if (m.flag() == PROMOTION) {
@@ -170,7 +170,7 @@ int calc_see(const Board& B, move_t m)
 		capture = B.get_piece_on(fsq);
 
 	// If the opponent has no attackers we are finished
-	attackers = BB::test_bit(B.st().attacked, tsq) ? calc_attackers(B, tsq, occ) : 0;
+	attackers = bb::test_bit(B.st().attacked, tsq) ? calc_attackers(B, tsq, occ) : 0;
 	stm = opp_color(stm);
 	stm_attackers = attackers & B.get_pieces(stm);
 	if (!stm_attackers)
@@ -189,17 +189,17 @@ int calc_see(const Board& B, move_t m)
 			assert(piece < KING);
 
 		// remove the piece (from wherever it came)
-		BB::clear_bit(&occ, BB::lsb(stm_attackers & B.get_pieces(stm, piece)));
+		bb::clear_bit(&occ, bb::lsb(stm_attackers & B.get_pieces(stm, piece)));
 		// scan for new X-ray attacks through the vacated square
-		attackers |= (B.get_RQ() & BB::RPseudoAttacks[tsq] & BB::rook_attack(tsq, occ))
-					 | (B.get_BQ() & BB::BPseudoAttacks[tsq] & BB::bishop_attack(tsq, occ));
+		attackers |= (B.get_RQ() & bb::RPseudoAttacks[tsq] & bb::rook_attack(tsq, occ))
+					 | (B.get_BQ() & bb::BPseudoAttacks[tsq] & bb::bishop_attack(tsq, occ));
 		// cut out pieces we've already done
 		attackers &= occ;
 
 		// add the new entry to the swap list (beware of promoting pawn captures)
 		assert(sl_idx < 32);
 		swap_list[sl_idx] = -swap_list[sl_idx - 1] + see_val[capture];
-		if (piece == PAWN && BB::test_bit(BB::PPromotionRank[stm], tsq)) {
+		if (piece == PAWN && bb::test_bit(bb::PPromotionRank[stm], tsq)) {
 			swap_list[sl_idx] += see_val[QUEEN] - see_val[PAWN];
 			capture = QUEEN;
 		} else
@@ -252,16 +252,16 @@ bool refute(const Board& B, move_t m1, move_t m2)
 		return true;
 
 	// block the threat path
-	if (BB::test_bit(BB::Between[m2fsq][m2tsq], m1tsq))
+	if (bb::test_bit(bb::Between[m2fsq][m2tsq], m1tsq))
 		return true;
 
 	// defend the threatened square
 	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op) {
 		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
-		const Bitboard b = m1piece == PAWN ? BB::PAttacks[B.get_turn()][m1tsq]
-						   : BB::piece_attack(m1piece, m1tsq, B.st().occ);
+		const Bitboard b = m1piece == PAWN ? bb::PAttacks[B.get_turn()][m1tsq]
+						   : bb::piece_attack(m1piece, m1tsq, B.st().occ);
 
-		if (BB::test_bit(b, m2tsq))
+		if (bb::test_bit(b, m2tsq))
 			return true;
 	}
 

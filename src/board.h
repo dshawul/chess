@@ -111,7 +111,7 @@ extern Bitboard calc_attackers(const Board& B, int sq, Bitboard occ);
 inline int Board::get_color_on(int sq) const
 {
 	assert(initialized && square_ok(sq));
-	return BB::test_bit(all[WHITE], sq) ? WHITE : (BB::test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
+	return bb::test_bit(all[WHITE], sq) ? WHITE : (bb::test_bit(all[BLACK], sq) ? BLACK : NO_COLOR);
 }
 
 inline int Board::get_piece_on(int sq) const
@@ -201,8 +201,8 @@ inline Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
-		   ^ (st().epsq == NO_SQUARE ? 0 : BB::zob_ep[st().epsq])
-		   ^ BB::zob_castle[st().crights];
+		   ^ (st().epsq == NO_SQUARE ? 0 : bb::zob_ep[st().epsq])
+		   ^ bb::zob_castle[st().crights];
 }
 
 inline void Board::set_unwind()

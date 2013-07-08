@@ -16,7 +16,7 @@
 #include "bitboard.h"
 #include "prng.h"
 
-namespace BB {
+namespace bb {
 
 bool BitboardInitialized = false;
 
@@ -35,41 +35,211 @@ Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
-}	// namespace BB
+}	// namespace bb
 
 namespace {
 
 void safe_add_bit(Bitboard *b, int r, int f)
 {
 	if (rank_file_ok(r, f))
-		BB::set_bit(b, square(r, f));
+		bb::set_bit(b, square(r, f));
 }
 
 int KingDistance[NB_SQUARE][NB_SQUARE];
 
+const int magic_bb_r_shift[NB_SQUARE] = {
+	52, 53, 53, 53, 53, 53, 53, 52,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 54, 54, 54, 54, 53,
+	53, 54, 54, 53, 53, 53, 53, 53
+};
+
+const Bitboard magic_bb_r_magics[NB_SQUARE] = {
+	0x0080001020400080ull, 0x0040001000200040ull, 0x0080081000200080ull, 0x0080040800100080ull,
+	0x0080020400080080ull, 0x0080010200040080ull, 0x0080008001000200ull, 0x0080002040800100ull,
+	0x0000800020400080ull, 0x0000400020005000ull, 0x0000801000200080ull, 0x0000800800100080ull,
+	0x0000800400080080ull, 0x0000800200040080ull, 0x0000800100020080ull, 0x0000800040800100ull,
+	0x0000208000400080ull, 0x0000404000201000ull, 0x0000808010002000ull, 0x0000808008001000ull,
+	0x0000808004000800ull, 0x0000808002000400ull, 0x0000010100020004ull, 0x0000020000408104ull,
+	0x0000208080004000ull, 0x0000200040005000ull, 0x0000100080200080ull, 0x0000080080100080ull,
+	0x0000040080080080ull, 0x0000020080040080ull, 0x0000010080800200ull, 0x0000800080004100ull,
+	0x0000204000800080ull, 0x0000200040401000ull, 0x0000100080802000ull, 0x0000080080801000ull,
+	0x0000040080800800ull, 0x0000020080800400ull, 0x0000020001010004ull, 0x0000800040800100ull,
+	0x0000204000808000ull, 0x0000200040008080ull, 0x0000100020008080ull, 0x0000080010008080ull,
+	0x0000040008008080ull, 0x0000020004008080ull, 0x0000010002008080ull, 0x0000004081020004ull,
+	0x0000204000800080ull, 0x0000200040008080ull, 0x0000100020008080ull, 0x0000080010008080ull,
+	0x0000040008008080ull, 0x0000020004008080ull, 0x0000800100020080ull, 0x0000800041000080ull,
+	0x00FFFCDDFCED714Aull, 0x007FFCDDFCED714Aull, 0x003FFFCDFFD88096ull, 0x0000040810002101ull,
+	0x0001000204080011ull, 0x0001000204000801ull, 0x0001000082000401ull, 0x0001FFFAABFAD1A2ull
+};
+
+const Bitboard magic_bb_r_mask[NB_SQUARE] = {
+	0x000101010101017Eull, 0x000202020202027Cull, 0x000404040404047Aull, 0x0008080808080876ull,
+	0x001010101010106Eull, 0x002020202020205Eull, 0x004040404040403Eull, 0x008080808080807Eull,
+	0x0001010101017E00ull, 0x0002020202027C00ull, 0x0004040404047A00ull, 0x0008080808087600ull,
+	0x0010101010106E00ull, 0x0020202020205E00ull, 0x0040404040403E00ull, 0x0080808080807E00ull,
+	0x00010101017E0100ull, 0x00020202027C0200ull, 0x00040404047A0400ull, 0x0008080808760800ull,
+	0x00101010106E1000ull, 0x00202020205E2000ull, 0x00404040403E4000ull, 0x00808080807E8000ull,
+	0x000101017E010100ull, 0x000202027C020200ull, 0x000404047A040400ull, 0x0008080876080800ull,
+	0x001010106E101000ull, 0x002020205E202000ull, 0x004040403E404000ull, 0x008080807E808000ull,
+	0x0001017E01010100ull, 0x0002027C02020200ull, 0x0004047A04040400ull, 0x0008087608080800ull,
+	0x0010106E10101000ull, 0x0020205E20202000ull, 0x0040403E40404000ull, 0x0080807E80808000ull,
+	0x00017E0101010100ull, 0x00027C0202020200ull, 0x00047A0404040400ull, 0x0008760808080800ull,
+	0x00106E1010101000ull, 0x00205E2020202000ull, 0x00403E4040404000ull, 0x00807E8080808000ull,
+	0x007E010101010100ull, 0x007C020202020200ull, 0x007A040404040400ull, 0x0076080808080800ull,
+	0x006E101010101000ull, 0x005E202020202000ull, 0x003E404040404000ull, 0x007E808080808000ull,
+	0x7E01010101010100ull, 0x7C02020202020200ull, 0x7A04040404040400ull, 0x7608080808080800ull,
+	0x6E10101010101000ull, 0x5E20202020202000ull, 0x3E40404040404000ull, 0x7E80808080808000ull
+};
+
+const int magic_bb_b_shift[NB_SQUARE] = {
+	58, 59, 59, 59, 59, 59, 59, 58,
+	59, 59, 59, 59, 59, 59, 59, 59,
+	59, 59, 57, 57, 57, 57, 59, 59,
+	59, 59, 57, 55, 55, 57, 59, 59,
+	59, 59, 57, 55, 55, 57, 59, 59,
+	59, 59, 57, 57, 57, 57, 59, 59,
+	59, 59, 59, 59, 59, 59, 59, 59,
+	58, 59, 59, 59, 59, 59, 59, 58
+};
+
+const Bitboard magic_bb_b_magics[NB_SQUARE] = {
+	0x0002020202020200ull, 0x0002020202020000ull, 0x0004010202000000ull, 0x0004040080000000ull,
+	0x0001104000000000ull, 0x0000821040000000ull, 0x0000410410400000ull, 0x0000104104104000ull,
+	0x0000040404040400ull, 0x0000020202020200ull, 0x0000040102020000ull, 0x0000040400800000ull,
+	0x0000011040000000ull, 0x0000008210400000ull, 0x0000004104104000ull, 0x0000002082082000ull,
+	0x0004000808080800ull, 0x0002000404040400ull, 0x0001000202020200ull, 0x0000800802004000ull,
+	0x0000800400A00000ull, 0x0000200100884000ull, 0x0000400082082000ull, 0x0000200041041000ull,
+	0x0002080010101000ull, 0x0001040008080800ull, 0x0000208004010400ull, 0x0000404004010200ull,
+	0x0000840000802000ull, 0x0000404002011000ull, 0x0000808001041000ull, 0x0000404000820800ull,
+	0x0001041000202000ull, 0x0000820800101000ull, 0x0000104400080800ull, 0x0000020080080080ull,
+	0x0000404040040100ull, 0x0000808100020100ull, 0x0001010100020800ull, 0x0000808080010400ull,
+	0x0000820820004000ull, 0x0000410410002000ull, 0x0000082088001000ull, 0x0000002011000800ull,
+	0x0000080100400400ull, 0x0001010101000200ull, 0x0002020202000400ull, 0x0001010101000200ull,
+	0x0000410410400000ull, 0x0000208208200000ull, 0x0000002084100000ull, 0x0000000020880000ull,
+	0x0000001002020000ull, 0x0000040408020000ull, 0x0004040404040000ull, 0x0002020202020000ull,
+	0x0000104104104000ull, 0x0000002082082000ull, 0x0000000020841000ull, 0x0000000000208800ull,
+	0x0000000010020200ull, 0x0000000404080200ull, 0x0000040404040400ull, 0x0002020202020200ull
+};
+
+const Bitboard magic_bb_b_mask[NB_SQUARE] = {
+	0x0040201008040200ull, 0x0000402010080400ull, 0x0000004020100A00ull, 0x0000000040221400ull,
+	0x0000000002442800ull, 0x0000000204085000ull, 0x0000020408102000ull, 0x0002040810204000ull,
+	0x0020100804020000ull, 0x0040201008040000ull, 0x00004020100A0000ull, 0x0000004022140000ull,
+	0x0000000244280000ull, 0x0000020408500000ull, 0x0002040810200000ull, 0x0004081020400000ull,
+	0x0010080402000200ull, 0x0020100804000400ull, 0x004020100A000A00ull, 0x0000402214001400ull,
+	0x0000024428002800ull, 0x0002040850005000ull, 0x0004081020002000ull, 0x0008102040004000ull,
+	0x0008040200020400ull, 0x0010080400040800ull, 0x0020100A000A1000ull, 0x0040221400142200ull,
+	0x0002442800284400ull, 0x0004085000500800ull, 0x0008102000201000ull, 0x0010204000402000ull,
+	0x0004020002040800ull, 0x0008040004081000ull, 0x00100A000A102000ull, 0x0022140014224000ull,
+	0x0044280028440200ull, 0x0008500050080400ull, 0x0010200020100800ull, 0x0020400040201000ull,
+	0x0002000204081000ull, 0x0004000408102000ull, 0x000A000A10204000ull, 0x0014001422400000ull,
+	0x0028002844020000ull, 0x0050005008040200ull, 0x0020002010080400ull, 0x0040004020100800ull,
+	0x0000020408102000ull, 0x0000040810204000ull, 0x00000A1020400000ull, 0x0000142240000000ull,
+	0x0000284402000000ull, 0x0000500804020000ull, 0x0000201008040200ull, 0x0000402010080400ull,
+	0x0002040810204000ull, 0x0004081020400000ull, 0x000A102040000000ull, 0x0014224000000000ull,
+	0x0028440200000000ull, 0x0050080402000000ull, 0x0020100804020000ull, 0x0040201008040200ull
+};
+
+Bitboard magic_bb_r_db[0x19000];
+Bitboard magic_bb_b_db[0x1480];
+
+const Bitboard* magic_bb_b_indices[NB_SQUARE] = {
+	magic_bb_b_db + 4992, magic_bb_b_db + 2624, magic_bb_b_db + 256,	magic_bb_b_db + 896,
+	magic_bb_b_db + 1280, magic_bb_b_db + 1664, magic_bb_b_db + 4800, magic_bb_b_db + 5120,
+	magic_bb_b_db + 2560, magic_bb_b_db + 2656, magic_bb_b_db + 288, magic_bb_b_db + 928,
+	magic_bb_b_db + 1312, magic_bb_b_db + 1696, magic_bb_b_db + 4832, magic_bb_b_db + 4928,
+	magic_bb_b_db + 0, magic_bb_b_db + 128, magic_bb_b_db + 320,	magic_bb_b_db + 960,
+	magic_bb_b_db + 1344, magic_bb_b_db + 1728, magic_bb_b_db + 2304, magic_bb_b_db + 2432,
+	magic_bb_b_db + 32, magic_bb_b_db + 160, magic_bb_b_db + 448,	magic_bb_b_db + 2752,
+	magic_bb_b_db + 3776, magic_bb_b_db + 1856, magic_bb_b_db + 2336, magic_bb_b_db + 2464,
+	magic_bb_b_db + 64,	magic_bb_b_db + 192, magic_bb_b_db + 576, magic_bb_b_db + 3264,
+	magic_bb_b_db + 4288, magic_bb_b_db + 1984, magic_bb_b_db + 2368, magic_bb_b_db + 2496,
+	magic_bb_b_db + 96, magic_bb_b_db + 224, magic_bb_b_db + 704,	magic_bb_b_db + 1088,
+	magic_bb_b_db + 1472, magic_bb_b_db + 2112, magic_bb_b_db + 2400, magic_bb_b_db + 2528,
+	magic_bb_b_db + 2592, magic_bb_b_db + 2688, magic_bb_b_db + 832,	magic_bb_b_db + 1216,
+	magic_bb_b_db + 1600, magic_bb_b_db + 2240, magic_bb_b_db + 4864, magic_bb_b_db + 4960,
+	magic_bb_b_db + 5056, magic_bb_b_db + 2720, magic_bb_b_db + 864, magic_bb_b_db + 1248,
+	magic_bb_b_db + 1632, magic_bb_b_db + 2272, magic_bb_b_db + 4896, magic_bb_b_db + 5184
+};
+
+const Bitboard* magic_bb_r_indices[64] = {
+	magic_bb_r_db + 86016, magic_bb_r_db + 73728, magic_bb_r_db + 36864, magic_bb_r_db + 43008,
+	magic_bb_r_db + 47104, magic_bb_r_db + 51200, magic_bb_r_db + 77824, magic_bb_r_db + 94208,
+	magic_bb_r_db + 69632, magic_bb_r_db + 32768, magic_bb_r_db + 38912, magic_bb_r_db + 10240,
+	magic_bb_r_db + 14336, magic_bb_r_db + 53248, magic_bb_r_db + 57344, magic_bb_r_db + 81920,
+	magic_bb_r_db + 24576, magic_bb_r_db + 33792, magic_bb_r_db + 6144, magic_bb_r_db + 11264,
+	magic_bb_r_db + 15360, magic_bb_r_db + 18432, magic_bb_r_db + 58368, magic_bb_r_db + 61440,
+	magic_bb_r_db + 26624, magic_bb_r_db + 4096, magic_bb_r_db + 7168, magic_bb_r_db + 0,
+	magic_bb_r_db + 2048, magic_bb_r_db + 19456, magic_bb_r_db + 22528, magic_bb_r_db + 63488,
+	magic_bb_r_db + 28672, magic_bb_r_db + 5120, magic_bb_r_db + 8192, magic_bb_r_db + 1024,
+	magic_bb_r_db + 3072, magic_bb_r_db + 20480, magic_bb_r_db + 23552, magic_bb_r_db + 65536,
+	magic_bb_r_db + 30720, magic_bb_r_db + 34816, magic_bb_r_db + 9216, magic_bb_r_db + 12288,
+	magic_bb_r_db + 16384, magic_bb_r_db + 21504, magic_bb_r_db + 59392, magic_bb_r_db + 67584,
+	magic_bb_r_db + 71680, magic_bb_r_db + 35840, magic_bb_r_db + 39936, magic_bb_r_db + 13312,
+	magic_bb_r_db + 17408, magic_bb_r_db + 54272, magic_bb_r_db + 60416, magic_bb_r_db + 83968,
+	magic_bb_r_db + 90112, magic_bb_r_db + 75776, magic_bb_r_db + 40960, magic_bb_r_db + 45056,
+	magic_bb_r_db + 49152, magic_bb_r_db + 55296, magic_bb_r_db + 79872, magic_bb_r_db + 98304
+};
+
+Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
+{
+	const int r = rank(sq), f = file(sq);
+	Bitboard result = 0;
+
+	for (int i = 0; i < 4; ++i) {
+		const int dr = dir[i][0], df = dir[i][1];
+		int _r, _f;
+
+		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
+			const int _sq = square(_r, _f);
+			bb::set_bit(&result, _sq);
+			if (bb::test_bit(occ, _sq))
+				break;
+		}
+	}
+
+	return result;
+}
+
+Bitboard init_magic_bb_occ(const int* sq, int sq_cnt, Bitboard linocc)
+{
+	Bitboard result = 0;
+
+	for (int i = 0; i < sq_cnt; ++i)
+		if (bb::test_bit(linocc, i))
+			bb::set_bit(&result, sq[i]);
+
+	return result;
+}
+
 }	// namespace
 
-int BB::kdist(int s1, int s2)
+int bb::kdist(int s1, int s2)
 {
 	return KingDistance[s1][s2];
 }
 
-void BB::init_bitboard()
+void bb::init_bitboard()
 {
-	if (BB::BitboardInitialized) return;
+	if (bb::BitboardInitialized) return;
 
-	/* Zobrist: zob[c][p][s], BB::zob_turn, BB::zob_castle[cr], BB::zob_ep[s] */
+	/* Zobrist: zob[c][p][s], bb::zob_turn, bb::zob_castle[cr], bb::zob_ep[s] */
 
 	PRNG prng;
 	for (int c = WHITE; c <= BLACK; c++)
 		for (int p = PAWN; p <= KING; p++)
-			for (int sq = A1; sq <= H8; BB::zob[c][p][sq++] = prng.rand());
+			for (int sq = A1; sq <= H8; bb::zob[c][p][sq++] = prng.rand());
 
-	BB::zob_turn = prng.rand();
-	for (int crights = 0; crights < 16; BB::zob_castle[crights++] = prng.rand());
-	for (int sq = A1; sq <= H8; BB::zob_ep[sq++] = prng.rand());
+	bb::zob_turn = prng.rand();
+	for (int crights = 0; crights < 16; bb::zob_castle[crights++] = prng.rand());
+	for (int sq = A1; sq <= H8; bb::zob_ep[sq++] = prng.rand());
 
-	/* BB::NAttacks[s], BB::KAttacks[s], Pattacks[c][s] */
+	/* bb::NAttacks[s], bb::KAttacks[s], Pattacks[c][s] */
 
 	const int Kdir[8][2] = { { -1, -1}, { -1, 0}, { -1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
 	const int Ndir[8][2] = { { -2, -1}, { -2, 1}, { -1, -2}, { -1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1} };
@@ -80,20 +250,20 @@ void BB::init_bitboard()
 		const int f = file(sq);
 
 		for (int d = 0; d < 8; d++) {
-			safe_add_bit(&BB::NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
-			safe_add_bit(&BB::KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
+			safe_add_bit(&bb::NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
+			safe_add_bit(&bb::KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 		}
 
 		for (int d = 0; d < 2; d++) {
-			safe_add_bit(&BB::PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
-			safe_add_bit(&BB::PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
+			safe_add_bit(&bb::PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
+			safe_add_bit(&bb::PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
 		}
 
-		BB::BPseudoAttacks[sq] = BB::bishop_attack(sq, 0);
-		BB::RPseudoAttacks[sq] = BB::rook_attack(sq, 0);
+		bb::BPseudoAttacks[sq] = bb::bishop_attack(sq, 0);
+		bb::RPseudoAttacks[sq] = bb::rook_attack(sq, 0);
 	}
 
-	/* BB::Between[s1][s2] and BB::Direction[s1][s2] */
+	/* bb::Between[s1][s2] and bb::Direction[s1][s2] */
 
 	for (int sq = A1; sq <= H8; ++sq) {
 		int r = rank(sq);
@@ -107,38 +277,38 @@ void BB::init_bitboard()
 			for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
 				_sq = square(_r, _f);
 				mask |= 1ULL << _sq;
-				BB::Between[sq][_sq] = mask;
+				bb::Between[sq][_sq] = mask;
 			}
 
 			Bitboard direction = mask;
 
 			while (mask) {
-				_sq = BB::pop_lsb(&mask);
-				BB::Direction[sq][_sq] = direction;
+				_sq = bb::pop_lsb(&mask);
+				bb::Direction[sq][_sq] = direction;
 			}
 		}
 	}
 
-	/* AdjacentFile[f] and BB::InFront[c][r] */
+	/* AdjacentFile[f] and bb::InFront[c][r] */
 
 	for (int f = FILE_A; f <= FILE_H; f++) {
-		if (f > FILE_A) BB::AdjacentFiles[f] |= BB::file_bb(f - 1);
-		if (f < FILE_H) BB::AdjacentFiles[f] |= BB::file_bb(f + 1);
+		if (f > FILE_A) bb::AdjacentFiles[f] |= bb::file_bb(f - 1);
+		if (f < FILE_H) bb::AdjacentFiles[f] |= bb::file_bb(f + 1);
 	}
 
 	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
-		BB::InFront[WHITE][rw] = BB::InFront[WHITE][rw + 1] | BB::rank_bb(rw + 1);
-		BB::InFront[BLACK][rb] = BB::InFront[BLACK][rb - 1] | BB::rank_bb(rb - 1);
+		bb::InFront[WHITE][rw] = bb::InFront[WHITE][rw + 1] | bb::rank_bb(rw + 1);
+		bb::InFront[BLACK][rb] = bb::InFront[BLACK][rb - 1] | bb::rank_bb(rb - 1);
 	}
 
-	/* BB::SquaresInFront[c][sq], BB::PawnSpan[c][sq], BB::Shield[c][sq] */
+	/* bb::SquaresInFront[c][sq], bb::PawnSpan[c][sq], bb::Shield[c][sq] */
 
 	for (int us = WHITE; us <= BLACK; ++us) {
 		for (int sq = A1; sq <= H8; ++sq) {
 			const int r = rank(sq), f = file(sq);
-			BB::SquaresInFront[us][sq] = BB::file_bb(f) & BB::InFront[us][r];
-			BB::PawnSpan[us][sq] = BB::AdjacentFiles[f] & BB::InFront[us][r];
-			BB::Shield[us][sq] = BB::KAttacks[sq] & BB::InFront[us][r];
+			bb::SquaresInFront[us][sq] = bb::file_bb(f) & bb::InFront[us][r];
+			bb::PawnSpan[us][sq] = bb::AdjacentFiles[f] & bb::InFront[us][r];
+			bb::Shield[us][sq] = bb::KAttacks[sq] & bb::InFront[us][r];
 		}
 	}
 
@@ -148,37 +318,111 @@ void BB::init_bitboard()
 		for (int s2 = A1; s2 <= H8; ++s2)
 			KingDistance[s1][s2] = std::max(std::abs(file(s1) - file(s2)), std::abs(rank(s1) - rank(s2)));
 
-	BB::BitboardInitialized = true;
+	bb::BitboardInitialized = true;
 }
 
-void print_bitboard(std::ostream& ostrm, Bitboard b)
+void bb::print(std::ostream& ostrm, Bitboard b)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
 			int sq = square(r, f);
-			char c = BB::test_bit(b, sq) ? 'X' : '.';
+			char c = bb::test_bit(b, sq) ? 'X' : '.';
 			ostrm << ' ' << c;
 		}
 		ostrm << std::endl;
 	}
 }
 
-Bitboard BB::piece_attack(int piece, int sq, Bitboard occ)
+void bb::init_magics()
+{
+	static const std::uintptr_t magic_bb_b_indices2[64] = {
+		4992, 2624, 256, 896, 1280, 1664, 4800, 5120,
+		2560, 2656, 288, 928, 1312, 1696, 4832, 4928,
+		0, 128, 320, 960, 1344, 1728, 2304, 2432,
+		32, 160, 448, 2752, 3776, 1856, 2336, 2464,
+		64, 192, 576, 3264, 4288, 1984, 2368, 2496,
+		96, 224, 704, 1088, 1472, 2112, 2400, 2528,
+		2592, 2688, 832, 1216, 1600, 2240, 4864, 4960,
+		5056, 2720, 864, 1248, 1632, 2272, 4896, 5184
+	};
+
+	static const std::uintptr_t magic_bb_r_indices2[64] = {
+		86016, 73728, 36864, 43008, 47104, 51200, 77824, 94208,
+		69632, 32768, 38912, 10240, 14336, 53248, 57344, 81920,
+		24576, 33792, 6144, 11264, 15360, 18432, 58368, 61440,
+		26624, 4096, 7168, 0, 2048, 19456, 22528, 63488,
+		28672, 5120, 8192, 1024, 3072, 20480, 23552, 65536,
+		30720, 34816, 9216, 12288, 16384, 21504, 59392, 67584,
+		71680, 35840, 39936, 13312, 17408, 54272, 60416, 83968,
+		90112, 75776, 40960, 45056, 49152, 55296, 79872, 98304
+	};
+
+	static const int Bdir[4][2] = { { -1, -1}, { -1, 1}, { 1, -1}, { 1, 1} };
+	static const int Rdir[4][2] = { { -1, 0}, { 0, -1}, { 0, 1}, { 1, 0} };
+
+	for (int i = A1; i <= H8; i++) {
+		int sq[NB_SQUARE];
+		int sq_cnt = 0;
+
+		Bitboard temp = magic_bb_b_mask[i];
+		while (temp)
+			sq[sq_cnt++] = bb::pop_lsb(&temp);
+
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
+			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
+			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
+			std::uintptr_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
+			p[idx] = calc_sliding_attacks(i, tempocc, Bdir);
+		}
+	}
+
+	for (int i = A1; i <= H8; i++) {
+		int sq[NB_SQUARE];
+		int sq_cnt = 0;
+
+		Bitboard temp = magic_bb_r_mask[i];
+		while (temp)
+			sq[sq_cnt++] = bb::pop_lsb(&temp);
+
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
+			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
+			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
+			std::uintptr_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
+			p[idx] = calc_sliding_attacks(i, tempocc, Rdir);
+		}
+	}
+}
+
+Bitboard bb::bishop_attack(int sq, Bitboard occ)
+{
+	assert(square_ok(sq));
+	std::uintptr_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
+	return magic_bb_b_indices[sq][idx];
+}
+
+Bitboard bb::rook_attack(int sq, Bitboard occ)
+{
+	assert(square_ok(sq));
+	std::uintptr_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];
+	return magic_bb_r_indices[sq][idx];
+}
+
+Bitboard bb::piece_attack(int piece, int sq, Bitboard occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
-	assert(BB::BitboardInitialized);
+	assert(bb::BitboardInitialized);
 	assert(KNIGHT <= piece && piece <= KING && square_ok(sq));
 
 	if (piece == KNIGHT)
-		return BB::NAttacks[sq];
+		return bb::NAttacks[sq];
 	else if (piece == BISHOP)
-		return BB::bishop_attack(sq, occ);
+		return bb::bishop_attack(sq, occ);
 	else if (piece == ROOK)
-		return BB::rook_attack(sq, occ);
+		return bb::rook_attack(sq, occ);
 	else if (piece == QUEEN)
-		return BB::bishop_attack(sq, occ) | BB::rook_attack(sq, occ);
+		return bb::bishop_attack(sq, occ) | bb::rook_attack(sq, occ);
 	else
-		return BB::KAttacks[sq];
+		return bb::KAttacks[sq];
 }
 

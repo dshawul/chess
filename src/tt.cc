@@ -54,7 +54,7 @@ TTable::~TTable()
 void TTable::alloc(std::uint64_t size)
 {
 	// calculate the number of clusters allocate (count must be a power of two)
-	size_t new_count = 1ULL << BB::msb(size / sizeof(Cluster));
+	size_t new_count = 1ULL << bb::msb(size / sizeof(Cluster));
 
 	// nothing to do if already allocated to the given size
 	if (new_count == count)

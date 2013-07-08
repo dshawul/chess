@@ -12,27 +12,10 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include "test.h"
-#include "eval.h"
-#include "uci.h"
+namespace kpk {
 
-std::uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
+extern void init();
+bool probe(int wk, int bk, int stm, int wp);
 
-int main (int argc, char **argv)
-{
-	bb::init_magics();
-	bb::init_bitboard();
-	init_psq();
-	init_eval();
+}	// namespace kpk
 
-	if (argc == 2) {
-		if (std::string(argv[1]) == "bench")
-			bench(12);
-		else if (std::string(argv[1]) == "perft")
-			test_perft();
-
-		if (dbg_cnt1 || dbg_cnt2)
-			std::cout << dbg_cnt1 << '\n' << dbg_cnt2 << std::endl;
-	} else
-		uci::loop();
-}

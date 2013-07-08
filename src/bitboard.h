@@ -15,7 +15,7 @@
 #pragma once
 #include "types.h"
 
-namespace BB {
+namespace bb {
 
 const Bitboard FileA_bb = 0x0101010101010101ULL;
 const Bitboard FileH_bb	= FileA_bb << FILE_H;
@@ -61,8 +61,8 @@ extern Bitboard rook_attack(int sq, Bitboard occ);
 // squares attacked by piece on sq, for a given occupancy
 extern Bitboard piece_attack(int piece, int sq, Bitboard occ);
 
-// pretty print a bitboard (for debugging)
-extern void print_bitboard(std::ostream& ostrm, Bitboard b);
+// print bitboard (ASCII style)
+extern void print(std::ostream& ostrm, Bitboard b);
 
 inline int pawn_push(int color, int sq)
 {
@@ -139,5 +139,4 @@ inline int pop_lsb(Bitboard *b)
 	return s;
 }
 
-}	// namespace BB
-
+}	// namespace bb

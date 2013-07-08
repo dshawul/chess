@@ -20,7 +20,7 @@ const std::string PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
 void Board::clear()
 {
-	assert(BB::BitboardInitialized);
+	assert(bb::BitboardInitialized);
 
 	turn = WHITE;
 	all[WHITE] = all[BLACK] = 0;
@@ -68,8 +68,8 @@ void Board::set_fen(const std::string& _fen)
 	fen >> c;
 	turn = c == 'w' ? WHITE : BLACK;
 	if (turn) {
-		sp->key ^= BB::zob_turn;
-		sp->kpkey ^= BB::zob_turn;
+		sp->key ^= bb::zob_turn;
+		sp->kpkey ^= bb::zob_turn;
 	}
 	fen >> c;
 
@@ -96,7 +96,7 @@ void Board::set_fen(const std::string& _fen)
 	calc_attacks(us);
 	sp->attacked = calc_attacks(them);
 
-	sp->checkers = BB::test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
+	sp->checkers = bb::test_bit(st().attacked, king_pos[us]) ? calc_checkers(us) : 0ULL;
 
 	assert(verify_keys());
 	assert(verify_psq());
@@ -209,7 +209,7 @@ void Board::play(move_t m)
 		sp->rule50 = 0;
 		const int inc_pp = us ? -8 : 8;
 		// set the epsq if double push, and ep square is attacked by enemy pawns
-		sp->epsq = tsq == fsq + 2 * inc_pp && BB::test_bit(st().attacks[them][PAWN], fsq + inc_pp)
+		sp->epsq = tsq == fsq + 2 * inc_pp && bb::test_bit(st().attacks[them][PAWN], fsq + inc_pp)
 				   ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
 		if (m.flag() == EN_PASSANT)
@@ -254,8 +254,8 @@ move_played:
 	if (turn == WHITE)
 		++move_count;
 
-	sp->key ^= BB::zob_turn;
-	sp->kpkey ^= BB::zob_turn;
+	sp->key ^= bb::zob_turn;
+	sp->kpkey ^= bb::zob_turn;
 
 	sp->capture = capture;
 	sp->pinned = hidden_checkers(1, them);
@@ -264,7 +264,7 @@ move_played:
 	sp->attacked = calc_attacks(us);
 	calc_attacks(them);
 
-	sp->checkers = BB::test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
+	sp->checkers = bb::test_bit(st().attacked, king_pos[them]) ? calc_checkers(them) : 0ULL;
 
 	assert(verify_keys());
 	assert(verify_psq());
@@ -325,29 +325,29 @@ Bitboard Board::calc_attacks(int color) const
 
 	// Pawn
 	fss = get_pieces(color, PAWN);
-	r |= sp->attacks[color][PAWN] = BB::shift_bit((fss & ~BB::FileA_bb), color ? -9 : 7)
-									| BB::shift_bit((fss & ~BB::FileH_bb), color ? -7 : 9);
+	r |= sp->attacks[color][PAWN] = bb::shift_bit((fss & ~bb::FileA_bb), color ? -9 : 7)
+									| bb::shift_bit((fss & ~bb::FileH_bb), color ? -7 : 9);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
 	fss = get_pieces(color, KNIGHT);
 	while (fss)
-		r |= sp->attacks[color][KNIGHT] |= BB::NAttacks[BB::pop_lsb(&fss)];
+		r |= sp->attacks[color][KNIGHT] |= bb::NAttacks[bb::pop_lsb(&fss)];
 
 	// Bishop + Queen (diagonal)
 	sp->attacks[color][BISHOP] = 0;
 	fss = get_BQ(color);
 	while (fss)
-		r |= sp->attacks[color][BISHOP] |= BB::bishop_attack(BB::pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][BISHOP] |= bb::bishop_attack(bb::pop_lsb(&fss), st().occ);
 
 	// Rook + Queen (lateral)
 	sp->attacks[color][ROOK] = 0;
 	fss = get_RQ(color);
 	while (fss)
-		r |= sp->attacks[color][ROOK] |= BB::rook_attack(BB::pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][ROOK] |= bb::rook_attack(bb::pop_lsb(&fss), st().occ);
 
 	// King
-	r |= sp->attacks[color][KING] = BB::KAttacks[get_king_pos(color)];
+	r |= sp->attacks[color][KING] = bb::KAttacks[get_king_pos(color)];
 
 	//All
 	return sp->attacks[color][NO_PIECE] = r;
@@ -363,14 +363,14 @@ Bitboard Board::hidden_checkers(bool find_pins, int color) const
 	const int ksq = king_pos[kside];
 
 	// Pinners are only sliders with X-ray attacks to ksq
-	pinners = (get_RQ(aside) & BB::RPseudoAttacks[ksq]) | (get_BQ(aside) & BB::BPseudoAttacks[ksq]);
+	pinners = (get_RQ(aside) & bb::RPseudoAttacks[ksq]) | (get_BQ(aside) & bb::BPseudoAttacks[ksq]);
 
 	while (pinners) {
-		int sq = BB::pop_lsb(&pinners);
-		Bitboard b = BB::Between[ksq][sq] & ~(1ULL << sq) & st().occ;
+		int sq = bb::pop_lsb(&pinners);
+		Bitboard b = bb::Between[ksq][sq] & ~(1ULL << sq) & st().occ;
 		// NB: if b == 0 then we're in check
 
-		if (!BB::several_bits(b) && (b & all[color]))
+		if (!bb::several_bits(b) && (b & all[color]))
 			result |= b;
 	}
 	return result;
@@ -382,13 +382,13 @@ Bitboard Board::calc_checkers(int kcolor) const
 	const int kpos = king_pos[kcolor];
 	const int them = opp_color(kcolor);
 
-	const Bitboard RQ = get_RQ(them) & BB::RPseudoAttacks[kpos];
-	const Bitboard BQ = get_BQ(them) & BB::BPseudoAttacks[kpos];
+	const Bitboard RQ = get_RQ(them) & bb::RPseudoAttacks[kpos];
+	const Bitboard BQ = get_BQ(them) & bb::BPseudoAttacks[kpos];
 
-	return (RQ & BB::rook_attack(kpos, st().occ))
-		   | (BQ & BB::bishop_attack(kpos, st().occ))
-		   | (get_pieces(them, KNIGHT) & BB::NAttacks[kpos])
-		   | (get_pieces(them, PAWN) & BB::PAttacks[kcolor][kpos]);
+	return (RQ & bb::rook_attack(kpos, st().occ))
+		   | (BQ & bb::bishop_attack(kpos, st().occ))
+		   | (get_pieces(them, KNIGHT) & bb::NAttacks[kpos])
+		   | (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
 }
 
 void Board::set_square(int color, int piece, int sq, bool play)
@@ -397,21 +397,21 @@ void Board::set_square(int color, int piece, int sq, bool play)
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
 	assert(get_piece_on(sq) == NO_PIECE);
 
-	BB::set_bit(&b[piece], sq);
-	BB::set_bit(&all[color], sq);
+	bb::set_bit(&b[piece], sq);
+	bb::set_bit(&all[color], sq);
 	piece_on[sq] = piece;
 
 	if (play) {
-		BB::set_bit(&sp->occ, sq);
+		bb::set_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
 		sp->psq[color] += e;
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] += e.op;
 		else
-			sp->kpkey ^= BB::zob[color][piece][sq];
+			sp->kpkey ^= bb::zob[color][piece][sq];
 
-		sp->key ^= BB::zob[color][piece][sq];
+		sp->key ^= bb::zob[color][piece][sq];
 		sp->mat_key += 1ULL << (8 * piece + 4 * color);
 	}
 }
@@ -422,39 +422,39 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
 	assert(get_piece_on(sq) == piece);
 
-	BB::clear_bit(&b[piece], sq);
-	BB::clear_bit(&all[color], sq);
+	bb::clear_bit(&b[piece], sq);
+	bb::clear_bit(&all[color], sq);
 	piece_on[sq] = NO_PIECE;
 
 	if (play) {
-		BB::clear_bit(&sp->occ, sq);
+		bb::clear_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
 		sp->psq[color] -= e;
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] -= e.op;
 		else
-			sp->kpkey ^= BB::zob[color][piece][sq];
+			sp->kpkey ^= bb::zob[color][piece][sq];
 
-		sp->key ^= BB::zob[color][piece][sq];
+		sp->key ^= bb::zob[color][piece][sq];
 		sp->mat_key -= 1ULL << (8 * piece + 4 * color);
 	}
 }
 
 bool Board::verify_keys() const
 {
-	const Key base = get_turn() ? BB::zob_turn : 0;
+	const Key base = get_turn() ? bb::zob_turn : 0;
 	Key key = base, kpkey = base, mat_key = 0;
 
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
-			mat_key += (std::uint64_t)BB::count_bit(sqs) << (8 * piece + 4 * color);
+			mat_key += (std::uint64_t)bb::count_bit(sqs) << (8 * piece + 4 * color);
 			while (sqs) {
-				const int sq = BB::pop_lsb(&sqs);
-				key ^= BB::zob[color][piece][sq];
+				const int sq = bb::pop_lsb(&sqs);
+				key ^= bb::zob[color][piece][sq];
 				if (piece == PAWN || piece == KING)
-					kpkey ^= BB::zob[color][piece][sq];
+					kpkey ^= bb::zob[color][piece][sq];
 			}
 		}
 
@@ -473,7 +473,7 @@ bool Board::verify_psq() const
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
 			while (sqs) {
-				const Eval& e = get_psq(color, piece, BB::pop_lsb(&sqs));
+				const Eval& e = get_psq(color, piece, bb::pop_lsb(&sqs));
 				psq[color] += e;
 				if (KNIGHT <= piece && piece <= QUEEN)
 					piece_psq[color] += e.op;
@@ -505,7 +505,7 @@ bool Board::is_draw() const
 	// insufficient material
 	if ( get_pieces(WHITE) == (get_NB(WHITE) | get_pieces(WHITE, KING))
 		 && get_pieces(BLACK) == (get_NB(BLACK) | get_pieces(BLACK, KING))
-		 && !BB::several_bits(get_NB(WHITE)) && !BB::several_bits(get_NB(BLACK)) )
+		 && !bb::several_bits(get_NB(WHITE)) && !bb::several_bits(get_NB(BLACK)) )
 		return true;
 
 	return false;
@@ -529,11 +529,11 @@ Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 
-	return (B.get_RQ() & BB::RPseudoAttacks[sq] & BB::rook_attack(sq, occ))
-		   | (B.get_BQ() & BB::BPseudoAttacks[sq] & BB::bishop_attack(sq, occ))
-		   | (BB::NAttacks[sq] & B.get_N())
-		   | (BB::KAttacks[sq] & B.get_K())
-		   | (BB::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
-		   | (BB::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
+	return (B.get_RQ() & bb::RPseudoAttacks[sq] & bb::rook_attack(sq, occ))
+		   | (B.get_BQ() & bb::BPseudoAttacks[sq] & bb::bishop_attack(sq, occ))
+		   | (bb::NAttacks[sq] & B.get_N())
+		   | (bb::KAttacks[sq] & B.get_K())
+		   | (bb::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
+		   | (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 }
 

@@ -11,11 +11,9 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
- *
- * Credits:
- * - Passed pawn scoring is inspired by Stockfish, by Marco Costalba.
 */
 #include "bitboard.h"
+#include "kpk.h"
 
 namespace {
 
@@ -52,19 +50,19 @@ std::uint8_t rules(int idx)
 	decode(idx, &wk, &bk, &stm, &wp);
 
 	// pieces overlapping or kings checking each other
-	if (BB::kdist(wk, bk) <= 1 || wp == wk || wp == bk)
+	if (bb::kdist(wk, bk) <= 1 || wp == wk || wp == bk)
 		return ILLEGAL;
 	// cannot be white's turn if black is in check
-	if (stm == WHITE && BB::test_bit(BB::PAttacks[WHITE][wp], bk))
+	if (stm == WHITE && bb::test_bit(bb::PAttacks[WHITE][wp], bk))
 		return ILLEGAL;
 
 	// win if pawn can be promoted without getting captured
 	if (stm == WHITE) {
 		if (rank(wp) == RANK_7 && bk != wp + 8 && wk != wp + 8
-			&& !BB::test_bit(BB::KAttacks[bk] & ~BB::KAttacks[wk], wp + 8))
+			&& !bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp + 8))
 			return WIN;
-	} else if ( !(BB::KAttacks[bk] & ~(BB::KAttacks[wk] | BB::PAttacks[WHITE][wp]))
-				|| BB::test_bit(BB::KAttacks[bk] & ~BB::KAttacks[wk], wp) )
+	} else if ( !(bb::KAttacks[bk] & ~(bb::KAttacks[wk] | bb::PAttacks[WHITE][wp]))
+				|| bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp) )
 		return DRAW;
 
 	return UNKNOWN;
@@ -77,11 +75,11 @@ std::uint8_t classify(std::uint8_t res[], int idx)
 	decode(idx, &wk, &bk, &stm, &wp);
 
 	std::uint8_t r = ILLEGAL;
-	Bitboard b = BB::KAttacks[stm ? bk : wk];
+	Bitboard b = bb::KAttacks[stm ? bk : wk];
 
 	// king moves
 	while (b) {
-		const int sq = BB::pop_lsb(&b);
+		const int sq = bb::pop_lsb(&b);
 		r |= res[stm ? encode(wk, sq, WHITE, wp) : encode(sq, bk, BLACK, wp)];
 	}
 
@@ -118,7 +116,7 @@ bool kpk_ok(std::uint8_t res[])
 
 }	// namespace
 
-void init_kpk()
+void kpk::init()
 {
 	// 192 KB on the stack
 	std::uint8_t res[IndexMax];
@@ -135,17 +133,17 @@ void init_kpk()
 			repeat |= (res[idx] == UNKNOWN && classify(res, idx) != UNKNOWN);
 	}
 
-	// it's so easy to screw up the KPK that I don't even trust myself with it...
 	assert(kpk_ok(res));
 
 	// Pack into 64-bit entries
 	for (int idx = 0; idx < IndexMax; ++idx)
 		if (res[idx] == WIN)
-			BB::set_bit(&bitbase[idx / 64], idx % 64);
+			bb::set_bit(&bitbase[idx / 64], idx % 64);
 }
 
-bool probe_kpk(int wk, int bk, int stm, int wp)
+bool kpk::probe(int wk, int bk, int stm, int wp)
 {
 	const int idx = encode(wk, bk, stm, wp);
-	return BB::test_bit(bitbase[idx / 64], idx % 64);
+	return bb::test_bit(bitbase[idx / 64], idx % 64);
 }
+
