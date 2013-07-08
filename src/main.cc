@@ -20,8 +20,7 @@ std::uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
 
 int main (int argc, char **argv)
 {
-	bb::init_magics();
-	bb::init_bitboard();
+	bb::init();
 	init_psq();
 	eval::init();
 

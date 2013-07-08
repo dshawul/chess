@@ -217,6 +217,66 @@ Bitboard init_magic_bb_occ(const int* sq, int sq_cnt, Bitboard linocc)
 	return result;
 }
 
+void init_magics()
+{
+	static const std::uintptr_t magic_bb_b_indices2[64] = {
+		4992, 2624, 256, 896, 1280, 1664, 4800, 5120,
+		2560, 2656, 288, 928, 1312, 1696, 4832, 4928,
+		0, 128, 320, 960, 1344, 1728, 2304, 2432,
+		32, 160, 448, 2752, 3776, 1856, 2336, 2464,
+		64, 192, 576, 3264, 4288, 1984, 2368, 2496,
+		96, 224, 704, 1088, 1472, 2112, 2400, 2528,
+		2592, 2688, 832, 1216, 1600, 2240, 4864, 4960,
+		5056, 2720, 864, 1248, 1632, 2272, 4896, 5184
+	};
+
+	static const std::uintptr_t magic_bb_r_indices2[64] = {
+		86016, 73728, 36864, 43008, 47104, 51200, 77824, 94208,
+		69632, 32768, 38912, 10240, 14336, 53248, 57344, 81920,
+		24576, 33792, 6144, 11264, 15360, 18432, 58368, 61440,
+		26624, 4096, 7168, 0, 2048, 19456, 22528, 63488,
+		28672, 5120, 8192, 1024, 3072, 20480, 23552, 65536,
+		30720, 34816, 9216, 12288, 16384, 21504, 59392, 67584,
+		71680, 35840, 39936, 13312, 17408, 54272, 60416, 83968,
+		90112, 75776, 40960, 45056, 49152, 55296, 79872, 98304
+	};
+
+	static const int Bdir[4][2] = { { -1, -1}, { -1, 1}, { 1, -1}, { 1, 1} };
+	static const int Rdir[4][2] = { { -1, 0}, { 0, -1}, { 0, 1}, { 1, 0} };
+
+	for (int i = A1; i <= H8; i++) {
+		int sq[NB_SQUARE];
+		int sq_cnt = 0;
+
+		Bitboard temp = magic_bb_b_mask[i];
+		while (temp)
+			sq[sq_cnt++] = bb::pop_lsb(&temp);
+
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
+			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
+			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
+			std::uintptr_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
+			p[idx] = calc_sliding_attacks(i, tempocc, Bdir);
+		}
+	}
+
+	for (int i = A1; i <= H8; i++) {
+		int sq[NB_SQUARE];
+		int sq_cnt = 0;
+
+		Bitboard temp = magic_bb_r_mask[i];
+		while (temp)
+			sq[sq_cnt++] = bb::pop_lsb(&temp);
+
+		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
+			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
+			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
+			std::uintptr_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
+			p[idx] = calc_sliding_attacks(i, tempocc, Rdir);
+		}
+	}
+}
+
 }	// namespace
 
 int bb::kdist(int s1, int s2)
@@ -224,9 +284,11 @@ int bb::kdist(int s1, int s2)
 	return KingDistance[s1][s2];
 }
 
-void bb::init_bitboard()
+void bb::init()
 {
 	if (bb::BitboardInitialized) return;
+
+	init_magics();
 
 	/* Zobrist: zob[c][p][s], bb::zob_turn, bb::zob_castle[cr], bb::zob_ep[s] */
 
@@ -330,66 +392,6 @@ void bb::print(std::ostream& ostrm, Bitboard b)
 			ostrm << ' ' << c;
 		}
 		ostrm << std::endl;
-	}
-}
-
-void bb::init_magics()
-{
-	static const std::uintptr_t magic_bb_b_indices2[64] = {
-		4992, 2624, 256, 896, 1280, 1664, 4800, 5120,
-		2560, 2656, 288, 928, 1312, 1696, 4832, 4928,
-		0, 128, 320, 960, 1344, 1728, 2304, 2432,
-		32, 160, 448, 2752, 3776, 1856, 2336, 2464,
-		64, 192, 576, 3264, 4288, 1984, 2368, 2496,
-		96, 224, 704, 1088, 1472, 2112, 2400, 2528,
-		2592, 2688, 832, 1216, 1600, 2240, 4864, 4960,
-		5056, 2720, 864, 1248, 1632, 2272, 4896, 5184
-	};
-
-	static const std::uintptr_t magic_bb_r_indices2[64] = {
-		86016, 73728, 36864, 43008, 47104, 51200, 77824, 94208,
-		69632, 32768, 38912, 10240, 14336, 53248, 57344, 81920,
-		24576, 33792, 6144, 11264, 15360, 18432, 58368, 61440,
-		26624, 4096, 7168, 0, 2048, 19456, 22528, 63488,
-		28672, 5120, 8192, 1024, 3072, 20480, 23552, 65536,
-		30720, 34816, 9216, 12288, 16384, 21504, 59392, 67584,
-		71680, 35840, 39936, 13312, 17408, 54272, 60416, 83968,
-		90112, 75776, 40960, 45056, 49152, 55296, 79872, 98304
-	};
-
-	static const int Bdir[4][2] = { { -1, -1}, { -1, 1}, { 1, -1}, { 1, 1} };
-	static const int Rdir[4][2] = { { -1, 0}, { 0, -1}, { 0, 1}, { 1, 0} };
-
-	for (int i = A1; i <= H8; i++) {
-		int sq[NB_SQUARE];
-		int sq_cnt = 0;
-
-		Bitboard temp = magic_bb_b_mask[i];
-		while (temp)
-			sq[sq_cnt++] = bb::pop_lsb(&temp);
-
-		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
-			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
-			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
-			std::uintptr_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
-			p[idx] = calc_sliding_attacks(i, tempocc, Bdir);
-		}
-	}
-
-	for (int i = A1; i <= H8; i++) {
-		int sq[NB_SQUARE];
-		int sq_cnt = 0;
-
-		Bitboard temp = magic_bb_r_mask[i];
-		while (temp)
-			sq[sq_cnt++] = bb::pop_lsb(&temp);
-
-		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
-			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
-			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
-			std::uintptr_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
-			p[idx] = calc_sliding_attacks(i, tempocc, Rdir);
-		}
 	}
 }
 

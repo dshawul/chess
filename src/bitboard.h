@@ -27,6 +27,8 @@ const Bitboard PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000
 
 const Bitboard HalfBoard[NB_COLOR] = { 0x00000000FFFFFFFFULL, 0xFFFFFFFF00000000ULL };
 
+// Initialize: bitboards, magics
+extern void init();
 extern bool BitboardInitialized;
 
 // Zobrist keys
@@ -49,10 +51,6 @@ extern Bitboard Shield[NB_COLOR][NB_SQUARE];
 extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 extern Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 extern Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
-
-// Initialize: bitboards, magics
-extern void init_bitboard();
-extern void init_magics();
 
 // Squares attacked by a bishop/rook for a given board occupancy
 extern Bitboard bishop_attack(int sq, Bitboard occ);
