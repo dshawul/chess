@@ -584,9 +584,32 @@ bool kbpk_draw(const Board& B)
 		   && bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
 }
 
+int stand_pat_penalty(const Board& B)
+{
+	Bitboard b = hanging_pieces(B, B.get_turn());
+
+	if (bb::several_bits(b)) {
+		// Several pieces are hanging. Take the lowest one and return half its value.
+		int piece = KING;
+		while (b) {
+			const int sq = bb::pop_lsb(&b);
+			const int p = B.get_piece_on(sq);
+			piece = std::min(piece, p);
+		}
+		return Material[piece].op / 2;
+	} else if (b & B.st().pinned) {
+		// Only one piece hanging, but also pinned. Return half its value.
+		assert(bb::count_bit(b) == 1);
+		const int sq = bb::lsb(b), piece = B.get_piece_on(sq);
+		return Material[piece].op / 2;
+	}
+
+	return 0;
+}
+
 }	// namespace
 
-void init_eval()
+void eval::init()
 {
 	kpk::init();
 
@@ -595,7 +618,7 @@ void init_eval()
 			KingDistanceToSafety[us][sq] = std::min(bb::kdist(sq, us ? E8 : E1), bb::kdist(sq, us ? B8 : B1));
 }
 
-int eval(const Board& B)
+int eval::symmetric_eval(const Board& B)
 {
 	static const Key KPK = 0x110000000001ull;
 	static const Key KKP = 0x110000000010ull;
@@ -626,31 +649,9 @@ int eval(const Board& B)
 	return ei.interpolate();
 }
 
-int stand_pat_penalty(const Board& B)
-{
-	Bitboard b = hanging_pieces(B, B.get_turn());
-
-	if (bb::several_bits(b)) {
-		// Several pieces are hanging. Take the lowest one and return half its value.
-		int piece = KING;
-		while (b) {
-			const int sq = bb::pop_lsb(&b);
-			const int p = B.get_piece_on(sq);
-			piece = std::min(piece, p);
-		}
-		return Material[piece].op / 2;
-	} else if (b & B.st().pinned) {
-		// Only one piece hanging, but also pinned. Return half its value.
-		assert(bb::count_bit(b) == 1);
-		const int sq = bb::lsb(b), piece = B.get_piece_on(sq);
-		return Material[piece].op / 2;
-	}
-
-	return 0;
-}
-
-int asymmetric_eval(const Board& B)
+int eval::asymmetric_eval(const Board& B)
 {
 	static const int TEMPO = 4;
 	return TEMPO - stand_pat_penalty(B);
 }
+

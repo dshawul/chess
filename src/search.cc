@@ -211,10 +211,10 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 		ss->eval = tte->eval;
 		ss->best = tte->move;
 	} else
-		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval(B));
+		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
 	// Stand pat score (adjusted for tempo and hanging pieces)
-	const int stand_pat = ss->eval + asymmetric_eval(B);
+	const int stand_pat = ss->eval + eval::asymmetric_eval(B);
 
 	// Eval pruning
 	if ( depth <= 3 && node_type != PV
@@ -428,11 +428,11 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 		ss->eval = tte->eval;
 		ss->best = tte->move;
 	} else
-		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval(B));
+		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
 	// stand pat
 	if (!in_check) {
-		best_score = ss->eval + asymmetric_eval(B);
+		best_score = ss->eval + eval::asymmetric_eval(B);
 		alpha = std::max(alpha, best_score);
 		if (alpha >= beta)
 			return alpha;

@@ -85,8 +85,10 @@ void uci::loop()
 			std::cout << "readyok" << std::endl;
 		} else if (token == "setoption")
 			setoption(is);
-		else if (token == "eval")
-			std::cout << B << "eval = " << eval(B) << std::endl;
+		else if (token == "eval") {
+			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B);
+			std::cout << B << "eval = " << e << std::endl;
+		}
 	}
 }
 

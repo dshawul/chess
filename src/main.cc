@@ -23,7 +23,7 @@ int main (int argc, char **argv)
 	bb::init_magics();
 	bb::init_bitboard();
 	init_psq();
-	init_eval();
+	eval::init();
 
 	if (argc == 2) {
 		if (std::string(argv[1]) == "bench")
