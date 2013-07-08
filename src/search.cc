@@ -107,8 +107,8 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 	// Calculate the value of a draw by chess rules, for both colors (contempt option)
 	const int us = B.get_turn(), them = opp_color(us);
-	DrawScore[us] = -Contempt;
-	DrawScore[them] = +Contempt;
+	DrawScore[us] = -UCI::Contempt;
+	DrawScore[them] = +UCI::Contempt;
 
 	const int max_depth = sl.depth ? std::min(MAX_PLY - 1, sl.depth) : MAX_PLY - 1;
 
@@ -510,7 +510,7 @@ void node_poll(Board &B)
 				 (high_resolution_clock::now() - start).count() > time_allowed)
 			abort = true;
 		// abort when UCI "stop" command is received (involves some non standard I/O)
-		else if (stop_received())
+		else if (UCI::stop_received())
 			abort = true;
 
 		if (abort)

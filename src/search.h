@@ -30,4 +30,3 @@ extern std::uint64_t PollingFrequency;	// must be a power of two
 
 move_t bestmove(Board& B, const SearchLimits& sl);
 
-extern int Contempt;

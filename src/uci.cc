@@ -27,12 +27,15 @@
 #include <sys/time.h>
 #endif
 
-/* Default values for UCI options */
+namespace UCI {
+
 int Hash = 16;
 int Contempt = 25;
-bool UCI_LimitStrength = false;
-static const int ELO_MIN = 1500, ELO_MAX = 2700;
-int UCI_Elo = ELO_MIN;
+const int ELO_MIN = 1500, ELO_MAX = 2700;
+bool LimitStrength = false;
+int Elo = ELO_MIN;
+
+}	// namespace UCI
 
 namespace {
 
@@ -42,9 +45,11 @@ void position(Board& B, std::istringstream& is);
 void go(Board& B, std::istringstream& is);
 void setoption(std::istringstream& is);
 
+bool input_available();
+
 }	// namespace
 
-void loop()
+void UCI::loop()
 {
 	Board B;
 	std::string cmd, token;
@@ -61,12 +66,12 @@ void loop()
 			std::cout << "id name DiscoCheck 4.2.1\n"
 					  << "id author Lucas Braesch\n"
 					  /* Declare UCI options here */
-					  << "option name Hash type spin default " << Hash << " min 1 max 8192\n"
+					  << "option name Hash type spin default " << UCI::Hash << " min 1 max 8192\n"
 					  << "option name Clear Hash type button\n"
-					  << "option name Contempt type spin default " << Contempt << " min 0 max 100\n"
-					  << "option name UCI_LimitStrength type check default " << UCI_LimitStrength << '\n'
-					  << "option name UCI_Elo type spin default " << UCI_Elo
-					  << " min " << ELO_MIN << " max " << ELO_MAX <<  "\n"
+					  << "option name Contempt type spin default " << UCI::Contempt << " min 0 max 100\n"
+					  << "option name UCI_LimitStrength type check default " << UCI::LimitStrength << '\n'
+					  << "option name UCI_Elo type spin default " << UCI::Elo
+					  << " min " << UCI::ELO_MIN << " max " << UCI::ELO_MAX <<  "\n"
 					  /* end of UCI options */
 					  << "uciok" << std::endl;
 		else if (token == "ucinewgame")
@@ -76,7 +81,7 @@ void loop()
 		else if (token == "go")
 			go(B, is);
 		else if (token == "isready") {
-			TT.alloc(Hash << 20);
+			TT.alloc(UCI::Hash << 20);
 			std::cout << "readyok" << std::endl;
 		} else if (token == "setoption")
 			setoption(is);
@@ -85,7 +90,18 @@ void loop()
 	}
 }
 
+bool UCI::stop_received()
+{
+	std::string token;
+
+	if (input_available())
+		getline(std::cin, token);
+
+	return token == "stop";
+}
+
 namespace {
+
 void position(Board& B, std::istringstream& is)
 {
 	move_t m;
@@ -115,9 +131,9 @@ void go(Board& B, std::istringstream& is)
 	SearchLimits sl;
 	PollingFrequency = 256;
 
-	if (UCI_LimitStrength) {
+	if (UCI::LimitStrength) {
 		// discard parameters of the go command
-		sl.nodes = pow(2.0, 8.0 + pow((UCI_Elo - ELO_MIN) / 128.0, 1.0 / 0.9));
+		sl.nodes = pow(2.0, 8.0 + pow((UCI::Elo - UCI::ELO_MIN) / 128.0, 1.0 / 0.9));
 		if (sl.nodes / 16 <= 256)
 			PollingFrequency = 1ULL << BB::msb(sl.nodes / 16);
 	} else {
@@ -153,16 +169,15 @@ void setoption(std::istringstream& is)
 
 	/* UCI option 'name' has been modified. Handle here. */
 	if (name == "Hash")
-		is >> Hash;
+		is >> UCI::Hash;
 	else if (name == "ClearHash")
 		TT.clear();
 	else if (name == "Contempt")
-		is >> Contempt;
+		is >> UCI::Contempt;
 	else if (name == "UCI_LimitStrength")
-		is >> UCI_LimitStrength;
+		is >> UCI::LimitStrength;
 	else if (name == "UCI_Elo")
-		is >> UCI_Elo;
-}
+		is >> UCI::Elo;
 }
 
 bool input_available()
@@ -202,12 +217,5 @@ bool input_available()
 #endif
 }
 
-bool stop_received()
-{
-	std::string token;
+}	// namespace
 
-	if (input_available())
-		getline(std::cin, token);
-
-	return token == "stop";
-}
