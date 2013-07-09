@@ -20,7 +20,8 @@
 #pragma once
 #include <cinttypes>
 
-struct PRNG {
+class PRNG {
+public:
 	PRNG() {
 		init();
 	}
@@ -47,3 +48,4 @@ private:
 		return (x << k) | (x >> (64 - k));
 	}
 };
+

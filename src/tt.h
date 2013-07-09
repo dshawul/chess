@@ -17,7 +17,8 @@
 
 enum { PV = 0, All = -1, Cut = +1 };
 
-struct TTable {
+class TTable {
+public:
 	struct Entry {
 		Key key_type;	// bit 0..1 for node_type+1, and 2..63 for key's 62 MSB
 		mutable std::uint8_t generation;
@@ -69,3 +70,4 @@ private:
 	std::uint8_t generation;
 	Cluster *cluster;
 };
+

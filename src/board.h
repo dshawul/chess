@@ -46,7 +46,8 @@ struct GameInfo {
 	}
 };
 
-struct Board {
+class Board {
+public:
 	const GameInfo& st() const;
 
 	int get_turn() const;

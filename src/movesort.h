@@ -35,7 +35,8 @@ struct SearchInfo {
  * - when a move fails high, its history score is incremented by depth*depth.
  * - for all other moves searched before, decrement their history score by depth*depth.
  * */
-struct History {
+class History {
+public:
 	static const int Max = 2000;
 
 	void clear();
@@ -54,23 +55,15 @@ private:
  * root sp0).
  * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
  * */
-struct Refutation {
-
-	struct Pack {
-		std::uint64_t dm_key: 48;
-		move_t move;
-	};
-
-	static const int count = 0x10000;
-	Pack r[count];
-
+class Refutation {
+public:
 	void clear() {
 		std::memset(this, 0, sizeof(this));
 	}
 
 	move_t get_refutation(Key dm_key) const {
 		const size_t idx = dm_key & (count - 1);
-		Pack tmp = {dm_key, move_t(0)};
+		Entry tmp = {dm_key, move_t(0)};
 		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
 	}
 
@@ -78,10 +71,19 @@ struct Refutation {
 		const size_t idx = dm_key & (count - 1);
 		r[idx] = {dm_key, m};
 	}
+
+private:
+	struct Entry {
+		std::uint64_t dm_key: 48;
+		move_t move;
+	};
+
+	static const int count = 0x10000;
+	Entry r[count];
 };
 
-struct MoveSort {
-
+class MoveSort {
+public:
 	enum GenType {
 		GEN_ALL,				// all legal moves
 		GEN_CAPTURES_CHECKS,	// captures and quiet checks
@@ -122,3 +124,4 @@ private:
 	void annotate(const move_t *mlist);
 	void score(MoveSort::Token *t);
 };
+

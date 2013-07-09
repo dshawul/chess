@@ -23,7 +23,8 @@ namespace {
 
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
 
-struct PawnCache {
+class PawnCache {
+public:
 	struct Entry {
 		Key key;
 		Eval eval_white;
@@ -45,7 +46,8 @@ private:
 
 PawnCache PC;
 
-struct EvalInfo {
+class EvalInfo {
+public:
 	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16) {
 		e[WHITE] = e[BLACK] = {0, 0};
 	}
