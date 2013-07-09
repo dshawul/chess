@@ -16,27 +16,6 @@
 #include "bitboard.h"
 #include "prng.h"
 
-namespace bb {
-
-bool BitboardInitialized = false;
-
-Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
-
-Bitboard Between[NB_SQUARE][NB_SQUARE];
-Bitboard Direction[NB_SQUARE][NB_SQUARE];
-
-Bitboard InFront[NB_COLOR][8];
-Bitboard AdjacentFiles[8];
-Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
-Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
-Bitboard Shield[NB_COLOR][NB_SQUARE];
-
-Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
-Bitboard PAttacks[NB_COLOR][NB_SQUARE];
-Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
-
-}	// namespace bb
-
 namespace {
 
 void safe_add_bit(Bitboard *b, int r, int f)
@@ -279,29 +258,48 @@ void init_magics()
 
 }	// namespace
 
-int bb::kdist(int s1, int s2)
+namespace bb {
+
+bool BitboardInitialized = false;
+
+Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
+
+Bitboard Between[NB_SQUARE][NB_SQUARE];
+Bitboard Direction[NB_SQUARE][NB_SQUARE];
+
+Bitboard InFront[NB_COLOR][8];
+Bitboard AdjacentFiles[8];
+Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
+Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+Bitboard Shield[NB_COLOR][NB_SQUARE];
+
+Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
+Bitboard PAttacks[NB_COLOR][NB_SQUARE];
+Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
+
+int kdist(int s1, int s2)
 {
 	return KingDistance[s1][s2];
 }
 
-void bb::init()
+void init()
 {
-	if (bb::BitboardInitialized) return;
+	if (BitboardInitialized) return;
 
 	init_magics();
 
-	/* Zobrist: zob[c][p][s], bb::zob_turn, bb::zob_castle[cr], bb::zob_ep[s] */
+	/* Zobrist: zob[c][p][s], zob_turn, zob_castle[cr], zob_ep[s] */
 
 	PRNG prng;
 	for (int c = WHITE; c <= BLACK; c++)
 		for (int p = PAWN; p <= KING; p++)
-			for (int sq = A1; sq <= H8; bb::zob[c][p][sq++] = prng.rand());
+			for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand());
 
-	bb::zob_turn = prng.rand();
-	for (int crights = 0; crights < 16; bb::zob_castle[crights++] = prng.rand());
-	for (int sq = A1; sq <= H8; bb::zob_ep[sq++] = prng.rand());
+	zob_turn = prng.rand();
+	for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand());
+	for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand());
 
-	/* bb::NAttacks[s], bb::KAttacks[s], Pattacks[c][s] */
+	/* NAttacks[s], KAttacks[s], Pattacks[c][s] */
 
 	const int Kdir[8][2] = { { -1, -1}, { -1, 0}, { -1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1} };
 	const int Ndir[8][2] = { { -2, -1}, { -2, 1}, { -1, -2}, { -1, 2}, {1, -2}, {1, 2}, {2, -1}, {2, 1} };
@@ -312,20 +310,20 @@ void bb::init()
 		const int f = file(sq);
 
 		for (int d = 0; d < 8; d++) {
-			safe_add_bit(&bb::NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
-			safe_add_bit(&bb::KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
+			safe_add_bit(&NAttacks[sq], r + Ndir[d][0], f + Ndir[d][1]);
+			safe_add_bit(&KAttacks[sq], r + Kdir[d][0], f + Kdir[d][1]);
 		}
 
 		for (int d = 0; d < 2; d++) {
-			safe_add_bit(&bb::PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
-			safe_add_bit(&bb::PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
+			safe_add_bit(&PAttacks[WHITE][sq], r + Pdir[d][0], f + Pdir[d][1]);
+			safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
 		}
 
-		bb::BPseudoAttacks[sq] = bb::bishop_attack(sq, 0);
-		bb::RPseudoAttacks[sq] = bb::rook_attack(sq, 0);
+		BPseudoAttacks[sq] = bishop_attack(sq, 0);
+		RPseudoAttacks[sq] = rook_attack(sq, 0);
 	}
 
-	/* bb::Between[s1][s2] and bb::Direction[s1][s2] */
+	/* Between[s1][s2] and Direction[s1][s2] */
 
 	for (int sq = A1; sq <= H8; ++sq) {
 		int r = rank(sq);
@@ -339,38 +337,38 @@ void bb::init()
 			for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
 				_sq = square(_r, _f);
 				mask |= 1ULL << _sq;
-				bb::Between[sq][_sq] = mask;
+				Between[sq][_sq] = mask;
 			}
 
 			Bitboard direction = mask;
 
 			while (mask) {
-				_sq = bb::pop_lsb(&mask);
-				bb::Direction[sq][_sq] = direction;
+				_sq = pop_lsb(&mask);
+				Direction[sq][_sq] = direction;
 			}
 		}
 	}
 
-	/* AdjacentFile[f] and bb::InFront[c][r] */
+	/* AdjacentFile[f] and InFront[c][r] */
 
 	for (int f = FILE_A; f <= FILE_H; f++) {
-		if (f > FILE_A) bb::AdjacentFiles[f] |= bb::file_bb(f - 1);
-		if (f < FILE_H) bb::AdjacentFiles[f] |= bb::file_bb(f + 1);
+		if (f > FILE_A) AdjacentFiles[f] |= file_bb(f - 1);
+		if (f < FILE_H) AdjacentFiles[f] |= file_bb(f + 1);
 	}
 
 	for (int rw = RANK_7, rb = RANK_2; rw >= RANK_1; rw--, rb++) {
-		bb::InFront[WHITE][rw] = bb::InFront[WHITE][rw + 1] | bb::rank_bb(rw + 1);
-		bb::InFront[BLACK][rb] = bb::InFront[BLACK][rb - 1] | bb::rank_bb(rb - 1);
+		InFront[WHITE][rw] = InFront[WHITE][rw + 1] | rank_bb(rw + 1);
+		InFront[BLACK][rb] = InFront[BLACK][rb - 1] | rank_bb(rb - 1);
 	}
 
-	/* bb::SquaresInFront[c][sq], bb::PawnSpan[c][sq], bb::Shield[c][sq] */
+	/* SquaresInFront[c][sq], PawnSpan[c][sq], Shield[c][sq] */
 
 	for (int us = WHITE; us <= BLACK; ++us) {
 		for (int sq = A1; sq <= H8; ++sq) {
 			const int r = rank(sq), f = file(sq);
-			bb::SquaresInFront[us][sq] = bb::file_bb(f) & bb::InFront[us][r];
-			bb::PawnSpan[us][sq] = bb::AdjacentFiles[f] & bb::InFront[us][r];
-			bb::Shield[us][sq] = bb::KAttacks[sq] & bb::InFront[us][r];
+			SquaresInFront[us][sq] = file_bb(f) & InFront[us][r];
+			PawnSpan[us][sq] = AdjacentFiles[f] & InFront[us][r];
+			Shield[us][sq] = KAttacks[sq] & InFront[us][r];
 		}
 	}
 
@@ -380,51 +378,53 @@ void bb::init()
 		for (int s2 = A1; s2 <= H8; ++s2)
 			KingDistance[s1][s2] = std::max(std::abs(file(s1) - file(s2)), std::abs(rank(s1) - rank(s2)));
 
-	bb::BitboardInitialized = true;
+	BitboardInitialized = true;
 }
 
-void bb::print(std::ostream& ostrm, Bitboard b)
+void print(std::ostream& ostrm, Bitboard b)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
 			int sq = square(r, f);
-			char c = bb::test_bit(b, sq) ? 'X' : '.';
+			char c = test_bit(b, sq) ? 'X' : '.';
 			ostrm << ' ' << c;
 		}
 		ostrm << std::endl;
 	}
 }
 
-Bitboard bb::bishop_attack(int sq, Bitboard occ)
+Bitboard bishop_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	std::uintptr_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
 	return magic_bb_b_indices[sq][idx];
 }
 
-Bitboard bb::rook_attack(int sq, Bitboard occ)
+Bitboard rook_attack(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	std::uintptr_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];
 	return magic_bb_r_indices[sq][idx];
 }
 
-Bitboard bb::piece_attack(int piece, int sq, Bitboard occ)
+Bitboard piece_attack(int piece, int sq, Bitboard occ)
 /* Generic attack function for pieces (not pawns). Typically, this is used in a block that loops on
  * piece, so inling this allows some optimizations in the calling code, thanks to loop unrolling */
 {
-	assert(bb::BitboardInitialized);
+	assert(BitboardInitialized);
 	assert(KNIGHT <= piece && piece <= KING && square_ok(sq));
 
 	if (piece == KNIGHT)
-		return bb::NAttacks[sq];
+		return NAttacks[sq];
 	else if (piece == BISHOP)
-		return bb::bishop_attack(sq, occ);
+		return bishop_attack(sq, occ);
 	else if (piece == ROOK)
-		return bb::rook_attack(sq, occ);
+		return rook_attack(sq, occ);
 	else if (piece == QUEEN)
-		return bb::bishop_attack(sq, occ) | bb::rook_attack(sq, occ);
+		return bishop_attack(sq, occ) | rook_attack(sq, occ);
 	else
-		return bb::KAttacks[sq];
+		return KAttacks[sq];
 }
+
+}	// namespace bb
 
