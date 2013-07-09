@@ -18,7 +18,7 @@
 
 namespace {
 
-move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool sub_promotions)
+move::move_t *make_pawn_moves(const board::Position& B, int fsq, int tsq, move::move_t *mlist, bool sub_promotions)
 /* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
  * indirect self checks (through fsq, or through the ep captured square) */
 {
@@ -30,12 +30,12 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 	if (bb::test_bit(B.st().pinned, fsq) && !bb::test_bit(bb::Direction[kpos][fsq], tsq))
 		return mlist;
 
-	move_t m;
+	move::move_t m;
 	m.fsq(fsq);
 	m.tsq(tsq);
 
 	if (tsq == B.st().epsq) {
-		m.flag(EN_PASSANT);
+		m.flag(move::EN_PASSANT);
 		Bitboard occ = B.st().occ;
 		// play the ep capture on occ
 		bb::clear_bit(&occ, m.fsq());
@@ -46,16 +46,16 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 			|| (B.get_BQ(them) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)))
 			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 	} else
-		m.flag(NORMAL);
+		m.flag(move::NORMAL);
 
 	if (bb::test_bit(bb::PPromotionRank[us], tsq)) {
 		// promotion(s)
-		m.flag(PROMOTION);
+		m.flag(move::PROMOTION);
 		m.prom(QUEEN); *mlist++ = m;
 		if (sub_promotions) {
 			m.prom(KNIGHT);	*mlist++ = m;
-			m.prom(ROOK);	*mlist++ = m;
-			m.prom(BISHOP);	*mlist++ = m;
+			m.prom(ROOK); *mlist++ = m;
+			m.prom(BISHOP); *mlist++ = m;
 		}
 	} else
 		// non promotions: normal or en-passant
@@ -64,7 +64,7 @@ move_t *make_pawn_moves(const Board& B, int fsq, int tsq, move_t *mlist, bool su
 	return mlist;
 }
 
-move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
+move::move_t *make_piece_moves(const board::Position& B, int fsq, Bitboard tss, move::move_t *mlist)
 /* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
  * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
  * other words, we never put our King in check before calling this function */
@@ -72,9 +72,9 @@ move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
 	assert(square_ok(fsq));
 	const int kpos = B.get_king_pos(B.get_turn());
 
-	move_t m;
+	move::move_t m;
 	m.fsq(fsq);
-	m.flag(NORMAL);
+	m.flag(move::NORMAL);
 
 	if (bb::test_bit(B.st().pinned, fsq))
 		tss &= bb::Direction[kpos][fsq];
@@ -89,7 +89,9 @@ move_t *make_piece_moves(const Board& B, int fsq, Bitboard tss, move_t *mlist)
 
 }	// namespace
 
-move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool king_moves)
+namespace movegen {
+
+move::move_t *gen_piece_moves(const board::Position& B, Bitboard targets, move::move_t *mlist, bool king_moves)
 /* Generates piece moves, when the board is not in check. Uses targets to filter the tss, eg.
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
@@ -133,7 +135,7 @@ move_t *gen_piece_moves(const Board& B, Bitboard targets, move_t *mlist, bool ki
 	return mlist;
 }
 
-move_t *gen_castling(const Board& B, move_t *mlist)
+move::move_t *gen_castling(const board::Position& B, move::move_t *mlist)
 /* Generates castling moves, when the board is not in check. The only function that doesn't go
  * through serialize_moves, as castling moves are very peculiar, and we don't want to pollute
  * serialize_moves with this over-specific code */
@@ -141,11 +143,11 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 	assert(!B.is_check());
 	const int us = B.get_turn();
 
-	move_t m;
+	move::move_t m;
 	m.fsq(B.get_king_pos(us));
-	m.flag(CASTLING);
+	m.flag(move::CASTLING);
 
-	if (B.st().crights & (OO << (2 * us))) {
+	if (B.st().crights & (board::OO << (2 * us))) {
 		Bitboard safe = 3ULL << (m.fsq() + 1);	// must not be attacked
 		Bitboard empty = safe;					// must be empty
 
@@ -154,7 +156,7 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 			*mlist++ = m;
 		}
 	}
-	if (B.st().crights & (OOO << (2 * us))) {
+	if (B.st().crights & (board::OOO << (2 * us))) {
 		Bitboard safe = 3ULL << (m.fsq() - 2);	// must not be attacked
 		Bitboard empty = safe | (1ULL << (m.fsq() - 3));	// must be empty
 
@@ -167,7 +169,8 @@ move_t *gen_castling(const Board& B, move_t *mlist)
 	return mlist;
 }
 
-move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub_promotions)
+move::move_t *gen_pawn_moves(const board::Position& B, Bitboard targets, move::move_t *mlist,
+							 bool sub_promotions)
 /* Generates pawn moves, when the board is not in check. These are of course: double and single
  * pushes, normal captures, en passant captures. Promotions are considered in serialize_moves (so
  * for under-promotion pruning, modify only serialize_moves) */
@@ -222,7 +225,7 @@ move_t *gen_pawn_moves(const Board& B, Bitboard targets, move_t *mlist, bool sub
 	return mlist;
 }
 
-move_t *gen_evasion(const Board& B, move_t *mlist)
+move::move_t *gen_evasion(const board::Position& B, move::move_t *mlist)
 /* Generates evasions, when the board is in check. These are of 2 kinds: the king moves, or a piece
  * covers the check. Note that cover means covering the ]ksq,checker_sq], so it includes capturing
  * the checking piece. */
@@ -267,7 +270,7 @@ move_t *gen_evasion(const Board& B, move_t *mlist)
 	return mlist;
 }
 
-move_t *gen_quiet_checks(const Board& B, move_t *mlist)
+move::move_t *gen_quiet_checks(const board::Position& B, move::move_t *mlist)
 /* Generates non capturing checks by pieces (not pawns nor the king) */
 {
 	assert(!B.is_check());
@@ -307,7 +310,7 @@ move_t *gen_quiet_checks(const Board& B, move_t *mlist)
 	return mlist;
 }
 
-move_t *gen_moves(const Board& B, move_t *mlist)
+move::move_t *gen_moves(const board::Position& B, move::move_t *mlist)
 /* Generates all moves in the position, using all the other specific move generators. This function
  * is quite fast but not flexible, and only used for debugging (eg. computing perft values) */
 {
@@ -326,4 +329,6 @@ move_t *gen_moves(const Board& B, move_t *mlist)
 		return mlist;
 	}
 }
+
+}	// namespace movegen
 

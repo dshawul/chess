@@ -24,7 +24,7 @@ public:
 		mutable std::uint8_t generation;
 		int8_t depth;
 		int16_t score, eval;
-		move_t move;
+		move::move_t move;
 
 		int node_type() const {
 			return (key_type & 3) - 1;
@@ -34,7 +34,7 @@ public:
 			return (key_type & ~3ULL) == (k & ~3ULL);
 		}
 
-		void save(Key k, std::uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move_t m) {
+		void save(Key k, std::uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move::move_t m) {
 			key_type = (k & ~3ULL) ^ (nt + 1);
 			generation = g;
 			depth = d;
@@ -63,7 +63,7 @@ public:
 	void prefetch(Key key) const {
 		__builtin_prefetch((char *)&cluster[key & (count - 1)]);
 	}
-	void store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move);
+	void store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move::move_t move);
 
 private:
 	size_t count;

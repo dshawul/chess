@@ -48,7 +48,7 @@ PawnCache PC;
 
 class EvalInfo {
 public:
-	explicit EvalInfo(const Board *_B): B(_B), eval_factor(16) {
+	explicit EvalInfo(const board::Position *_B): B(_B), eval_factor(16) {
 		e[WHITE] = e[BLACK] = {0, 0};
 	}
 
@@ -63,7 +63,7 @@ public:
 	int interpolate() const;
 
 private:
-	const Board *B;
+	const board::Position *B;
 	Eval e[NB_COLOR];
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
@@ -550,7 +550,7 @@ int EvalInfo::interpolate() const
 	return eval * eval_factor / 16;
 }
 
-bool kpk_draw(const Board& B)
+bool kpk_draw(const board::Position& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
@@ -572,7 +572,7 @@ bool kpk_draw(const Board& B)
 	return !kpk::probe(wk, bk, stm, wp);
 }
 
-bool kbpk_draw(const Board& B)
+bool kbpk_draw(const board::Position& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int our_king = B.get_king_pos(us), their_king = B.get_king_pos(opp_color(us));
@@ -586,7 +586,7 @@ bool kbpk_draw(const Board& B)
 		   && bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
 }
 
-int stand_pat_penalty(const Board& B)
+int stand_pat_penalty(const board::Position& B)
 {
 	Bitboard b = hanging_pieces(B, B.get_turn());
 
@@ -620,7 +620,7 @@ void eval::init()
 			KingDistanceToSafety[us][sq] = std::min(bb::kdist(sq, us ? E8 : E1), bb::kdist(sq, us ? B8 : B1));
 }
 
-int eval::symmetric_eval(const Board& B)
+int eval::symmetric_eval(const board::Position& B)
 {
 	static const Key KPK = 0x110000000001ull;
 	static const Key KKP = 0x110000000010ull;
@@ -651,7 +651,7 @@ int eval::symmetric_eval(const Board& B)
 	return ei.interpolate();
 }
 
-int eval::asymmetric_eval(const Board& B)
+int eval::asymmetric_eval(const board::Position& B)
 {
 	static const int TEMPO = 4;
 	return TEMPO - stand_pat_penalty(B);

@@ -21,18 +21,18 @@ void History::clear()
 	std::memset(h, 0, sizeof(h));
 }
 
-int History::get(const Board& B, move_t m) const
+int History::get(const board::Position& B, move::move_t m) const
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
-	assert(!move_is_cop(B, m) && piece_ok(piece));
+	assert(!move::is_cop(B, m) && piece_ok(piece));
 
 	return h[B.get_turn()][piece][tsq];
 }
 
-void History::add(const Board& B, move_t m, int bonus)
+void History::add(const board::Position& B, move::move_t m, int bonus)
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
-	assert(!move_is_cop(B, m) && piece_ok(piece));
+	assert(!move::is_cop(B, m) && piece_ok(piece));
 
 	int &v = h[B.get_turn()][piece][tsq];
 	v += bonus;
@@ -43,7 +43,7 @@ void History::add(const Board& B, move_t m, int bonus)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
 }
 
-MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
+MoveSort::MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,
 				   const History *_H, const Refutation *_R)
 	: B(_B), ss(_ss), H(_H), R(_R), idx(0), depth(_depth)
 {
@@ -53,35 +53,35 @@ MoveSort::MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
 	if (B->is_check())
 		type = GEN_ALL;
 
-	refutation = R ? R->get_refutation(B->get_dm_key()) : move_t(0);
+	refutation = R ? R->get_refutation(B->get_dm_key()) : move::move_t(0);
 
-	move_t mlist[MAX_MOVES];
+	move::move_t mlist[MAX_MOVES];
 	count = generate(type, mlist) - mlist;
 	annotate(mlist);
 }
 
-move_t *MoveSort::generate(GenType type, move_t *mlist)
+move::move_t *MoveSort::generate(GenType type, move::move_t *mlist)
 {
 	if (type == GEN_ALL)
-		return gen_moves(*B, mlist);
+		return movegen::gen_moves(*B, mlist);
 	else {
 		// If we are in check, then type must be ALL (see constructor)
 		assert(!B->is_check());
 
-		move_t *end = mlist;
+		move::move_t *end = mlist;
 		Bitboard enemies = B->get_pieces(opp_color(B->get_turn()));
 
-		end = gen_piece_moves(*B, enemies, end, true);
-		end = gen_pawn_moves(*B, enemies | B->st().epsq_bb() | bb::PPromotionRank[B->get_turn()], end, false);
+		end = movegen::gen_piece_moves(*B, enemies, end, true);
+		end = movegen::gen_pawn_moves(*B, enemies | B->st().epsq_bb() | bb::PPromotionRank[B->get_turn()], end, false);
 
 		if (type == GEN_CAPTURES_CHECKS)
-			end = gen_quiet_checks(*B, end);
+			end = movegen::gen_quiet_checks(*B, end);
 
 		return end;
 	}
 }
 
-void MoveSort::annotate(const move_t *mlist)
+void MoveSort::annotate(const move::move_t *mlist)
 {
 	for (int i = idx; i < count; ++i) {
 		list[i].m = mlist[i];
@@ -95,11 +95,11 @@ void MoveSort::score(MoveSort::Token *t)
 
 	if (t->m == ss->best)
 		t->score = INF;
-	else if (move_is_cop(*B, t->m))
+	else if (move::is_cop(*B, t->m))
 		if (type == GEN_ALL) {
 			// equal and winning captures, by SEE, in front of quiet moves
 			// losing captures, after all quiet moves
-			t->see = calc_see(*B, t->m);
+			t->see = move::see(*B, t->m);
 			t->score = t->see >= 0 ? t->see + History::Max : t->see - History::Max;
 		} else
 			t->score = mvv_lva(*B, t->m);
@@ -116,20 +116,20 @@ void MoveSort::score(MoveSort::Token *t)
 	}
 }
 
-move_t MoveSort::next(int *see)
+move::move_t MoveSort::next(int *see)
 {
 	if (idx < count) {
 		std::swap(list[idx], *std::max_element(&list[idx], &list[count]));
 		const Token& t = list[idx++];
 		*see = t.see == -INF
-			   ? calc_see(*B, t.m)	// compute SEE
+			   ? move::see(*B, t.m)	// compute SEE
 			   : t.see;				// use SEE cache
 		return t.m;
 	} else
-		return move_t(0);
+		return move::move_t(0);
 }
 
-move_t MoveSort::previous()
+move::move_t MoveSort::previous()
 {
-	return idx > 0 ? list[--idx].m : move_t(0);
+	return idx > 0 ? list[--idx].m : move::move_t(0);
 }

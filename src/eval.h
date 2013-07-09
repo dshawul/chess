@@ -18,7 +18,7 @@
 namespace eval {
 
 extern void init();
-extern int symmetric_eval(const Board& B);
-extern int asymmetric_eval(const Board& B);
+extern int symmetric_eval(const board::Position& B);
+extern int asymmetric_eval(const board::Position& B);
 
 }	// namespace eval

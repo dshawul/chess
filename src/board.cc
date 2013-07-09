@@ -16,9 +16,11 @@
 #include <cstring>
 #include "board.h"
 
+namespace board {
+
 const std::string PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
-void Board::clear()
+void Position::clear()
 {
 	assert(bb::BitboardInitialized);
 
@@ -30,14 +32,14 @@ void Board::clear()
 	std::memset(b, 0, sizeof(b));
 
 	sp = sp0 = game_stack;
-	std::memset(sp, 0, sizeof(GameInfo));
+	std::memset(sp, 0, sizeof(UndoInfo));
 	sp->epsq = NO_SQUARE;
 	move_count = 1;
 
 	initialized = true;
 }
 
-void Board::set_fen(const std::string& _fen)
+void Position::set_fen(const std::string& _fen)
 {
 	clear();
 
@@ -102,7 +104,7 @@ void Board::set_fen(const std::string& _fen)
 	assert(verify_psq());
 }
 
-std::string Board::get_fen() const
+std::string Position::get_fen() const
 {
 	assert(initialized);
 	std::ostringstream fen;
@@ -159,7 +161,7 @@ std::string Board::get_fen() const
 	return fen.str();
 }
 
-std::ostream& operator<< (std::ostream& ostrm, const Board& B)
+std::ostream& operator<< (std::ostream& ostrm, const Position& B)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
@@ -176,11 +178,11 @@ std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 	return ostrm << B.get_fen() << std::endl;
 }
 
-void Board::play(move_t m)
+void Position::play(move::move_t m)
 {
 	assert(initialized);
 	++sp;
-	memcpy(sp, sp - 1, sizeof(GameInfo));
+	memcpy(sp, sp - 1, sizeof(UndoInfo));
 	sp->last_move = m;
 	sp->rule50++;
 
@@ -203,7 +205,7 @@ void Board::play(move_t m)
 
 	// move our piece
 	clear_square(us, piece, fsq);
-	set_square(us, m.flag() == PROMOTION ? m.prom() : piece, tsq);
+	set_square(us, m.flag() == move::PROMOTION ? m.prom() : piece, tsq);
 
 	if (piece == PAWN) {
 		sp->rule50 = 0;
@@ -212,7 +214,7 @@ void Board::play(move_t m)
 		sp->epsq = tsq == fsq + 2 * inc_pp && bb::test_bit(st().attacks[them][PAWN], fsq + inc_pp)
 				   ? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
-		if (m.flag() == EN_PASSANT)
+		if (m.flag() == move::EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
 	} else {
 		sp->epsq = NO_SQUARE;
@@ -228,7 +230,7 @@ void Board::play(move_t m)
 			king_pos[us] = tsq;
 			sp->crights &= ~((OO | OOO) << (2 * us));
 
-			if (m.flag() == CASTLING) {
+			if (m.flag() == move::CASTLING) {
 				// rook jump
 				if (tsq == fsq + 2) {			// OO
 					clear_square(us, ROOK, us ? H8 : H1);
@@ -270,14 +272,14 @@ move_played:
 	assert(verify_psq());
 }
 
-void Board::undo()
+void Position::undo()
 {
 	assert(initialized);
-	const move_t m = st().last_move;
+	const move::move_t m = st().last_move;
 	const int us = opp_color(turn), them = turn;
 
 	const int fsq = m.fsq(), tsq = m.tsq();
-	const int piece = m.flag() == PROMOTION ? PAWN : piece_on[tsq];
+	const int piece = m.flag() == move::PROMOTION ? PAWN : piece_on[tsq];
 	const int capture = st().capture;
 
 	if (!m) {
@@ -297,7 +299,7 @@ void Board::undo()
 		// update king_pos
 		king_pos[us] = fsq;
 
-		if (m.flag() == CASTLING) {
+		if (m.flag() == move::CASTLING) {
 			// undo rook jump
 			if (tsq == fsq + 2) {			// OO
 				clear_square(us, ROOK, us ? F8 : F1, false);
@@ -307,7 +309,7 @@ void Board::undo()
 				set_square(us, ROOK, us ? A8 : A1, false);
 			}
 		}
-	} else if (m.flag() == EN_PASSANT)	// restore the en passant captured pawn
+	} else if (m.flag() == move::EN_PASSANT)	// restore the en passant captured pawn
 		set_square(them, PAWN, tsq + (us ? 8 : -8), false);
 
 move_undone:
@@ -318,7 +320,7 @@ move_undone:
 	--sp;
 }
 
-Bitboard Board::calc_attacks(int color) const
+Bitboard Position::calc_attacks(int color) const
 {
 	assert(initialized);
 	Bitboard fss, r = 0;
@@ -353,7 +355,7 @@ Bitboard Board::calc_attacks(int color) const
 	return sp->attacks[color][NO_PIECE] = r;
 }
 
-Bitboard Board::hidden_checkers(bool find_pins, int color) const
+Bitboard Position::hidden_checkers(bool find_pins, int color) const
 {
 	assert(initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
 	const int aside = color ^ find_pins, kside = opp_color(aside);
@@ -376,7 +378,7 @@ Bitboard Board::hidden_checkers(bool find_pins, int color) const
 	return result;
 }
 
-Bitboard Board::calc_checkers(int kcolor) const
+Bitboard Position::calc_checkers(int kcolor) const
 {
 	assert(initialized && color_ok(kcolor));
 	const int kpos = king_pos[kcolor];
@@ -391,7 +393,7 @@ Bitboard Board::calc_checkers(int kcolor) const
 		   | (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
 }
 
-void Board::set_square(int color, int piece, int sq, bool play)
+void Position::set_square(int color, int piece, int sq, bool play)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -416,7 +418,7 @@ void Board::set_square(int color, int piece, int sq, bool play)
 	}
 }
 
-void Board::clear_square(int color, int piece, int sq, bool play)
+void Position::clear_square(int color, int piece, int sq, bool play)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -441,7 +443,7 @@ void Board::clear_square(int color, int piece, int sq, bool play)
 	}
 }
 
-bool Board::verify_keys() const
+bool Position::verify_keys() const
 {
 	const Key base = get_turn() ? bb::zob_turn : 0;
 	Key key = base, kpkey = base, mat_key = 0;
@@ -461,7 +463,7 @@ bool Board::verify_keys() const
 	return key == st().key && kpkey == st().kpkey && mat_key == st().mat_key;
 }
 
-bool Board::verify_psq() const
+bool Position::verify_psq() const
 {
 	Eval psq[NB_COLOR];
 	int piece_psq[NB_COLOR];
@@ -487,7 +489,7 @@ bool Board::verify_psq() const
 	return true;
 }
 
-bool Board::is_draw() const
+bool Position::is_draw() const
 {
 	// 3-fold repetition
 	for (int i = 4, rep = 1; i <= std::min(st().rule50, int(sp - game_stack)); i += 2) {
@@ -511,7 +513,7 @@ bool Board::is_draw() const
 	return false;
 }
 
-Bitboard hanging_pieces(const Board& B, int us)
+Bitboard hanging_pieces(const Position& B, int us)
 {
 	const int them = opp_color(us);
 
@@ -525,7 +527,7 @@ Bitboard hanging_pieces(const Board& B, int us)
 		   | (our_pieces & B.st().attacks[them][PAWN]);
 }
 
-Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
+Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 
@@ -536,4 +538,6 @@ Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 		   | (bb::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
 		   | (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 }
+
+}	// namespace board
 

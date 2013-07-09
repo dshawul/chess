@@ -31,7 +31,9 @@ std::string square_to_string(int sq)
 
 }	// namespace
 
-int move_is_check(const Board& B, move_t m)
+namespace move {
+
+int is_check(const board::Position& B, move_t m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
  * (check through a newly revealed sliding attacker, once the ep capture square has been vacated)
@@ -84,14 +86,14 @@ int move_is_check(const Board& B, move_t m)
 	return 0;
 }
 
-bool move_is_cop(const Board& B, move_t m)
+bool is_cop(const board::Position& B, move_t m)
 {
 	return piece_ok(B.get_piece_on(m.tsq()))
 		   || m.flag() == EN_PASSANT
 		   || m.flag() == PROMOTION;
 }
 
-bool move_is_pawn_threat(const Board& B, move_t m)
+bool is_pawn_threat(const board::Position& B, move_t m)
 {
 	if (B.get_piece_on(m.fsq()) == PAWN) {
 		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
@@ -106,7 +108,7 @@ bool move_is_pawn_threat(const Board& B, move_t m)
 	return false;
 }
 
-move_t string_to_move(const Board& B, const std::string& s)
+move_t string_to_move(const board::Position& B, const std::string& s)
 {
 	move_t m;
 	m.fsq(square(s[1] - '1', s[0] - 'a'));
@@ -118,7 +120,7 @@ move_t string_to_move(const Board& B, const std::string& s)
 
 	if (s[4]) {
 		m.flag(PROMOTION);
-		m.prom(PieceLabel[BLACK].find(s[4]));
+		m.prom(board::PieceLabel[BLACK].find(s[4]));
 	} else if (B.get_piece_on(m.fsq()) == KING && (m.fsq() + 2 == m.tsq() || m.tsq() + 2 == m.fsq()))
 		m.flag(CASTLING);
 
@@ -133,12 +135,12 @@ std::string move_to_string(move_t m)
 	s << square_to_string(m.tsq());
 
 	if (m.flag() == PROMOTION)
-		s << PieceLabel[BLACK][m.prom()];
+		s << board::PieceLabel[BLACK][m.prom()];
 
 	return s.str();
 }
 
-int calc_see(const Board& B, move_t m)
+int see(const board::Position& B, move_t m)
 // Iterative SEE based on Glaurung. Adapted and improved to handle promotions, promoting recaptures
 // and en-passant captures.
 {
@@ -225,7 +227,7 @@ int calc_see(const Board& B, move_t m)
 	return swap_list[0];
 }
 
-int mvv_lva(const Board& B, move_t m)
+int mvv_lva(const board::Position& B, move_t m)
 {
 	// Queen is the best capture available (King can't be captured since move is legal)
 	static const int victim[NB_PIECE + 1] = {1, 2, 2, 3, 4, 0, 0};
@@ -239,7 +241,7 @@ int mvv_lva(const Board& B, move_t m)
 	return victim_value * 8 + attacker_value;
 }
 
-bool refute(const Board& B, move_t m1, move_t m2)
+bool refute(const board::Position& B, move_t m1, move_t m2)
 {
 	if (!m2)
 		return false;
@@ -267,3 +269,6 @@ bool refute(const Board& B, move_t m1, move_t m2)
 
 	return false;
 }
+
+}	// namespace move
+

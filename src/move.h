@@ -15,6 +15,12 @@
 #pragma once
 #include "types.h"
 
+namespace board {
+struct Position;
+}
+
+namespace move {
+
 enum {
 	NORMAL,
 	EN_PASSANT,
@@ -49,23 +55,18 @@ private:
 	std::uint16_t b;
 };
 
-struct Board;
-
 enum { NO_CHECK, NORMAL_CHECK, DISCO_CHECK };
 
-extern int move_is_check(const Board& B, move_t m);
-extern bool move_is_cop(const Board& B, move_t m);	// capture or promotion
-extern bool move_is_pawn_threat(const Board& B, move_t m);
+extern int is_check(const board::Position& B, move_t m);
+extern bool is_cop(const board::Position& B, move_t m);	// capture or promotion
+extern bool is_pawn_threat(const board::Position& B, move_t m);
+extern bool refute(const board::Position& B, move_t m1, move_t m2);
 
-extern move_t string_to_move(const Board& B, const std::string& s);
+extern move_t string_to_move(const board::Position& B, const std::string& s);
 extern std::string move_to_string(move_t m);
 
-extern int calc_see(const Board& B, move_t m);
-extern bool test_see();
-
-extern int mvv_lva(const Board& B, move_t m);
-
-extern bool refute(const Board& B, move_t m1, move_t m2);
+extern int see(const board::Position& B, move_t m);
+extern int mvv_lva(const board::Position& B, move_t m);
 
 /* move_t member function */
 
@@ -132,4 +133,6 @@ inline void move_t::prom(int piece)
 	b &= 0xcfff;
 	b ^= (piece - KNIGHT) << 12;
 }
+
+}	// namespace move
 

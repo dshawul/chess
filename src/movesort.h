@@ -18,13 +18,13 @@
 #include "move.h"
 
 struct SearchInfo {
-	move_t m, best, killer[2];
+	move::move_t m, best, killer[2];
 	int ply, reduction, eval;
 	bool skip_null, null_child;
 
 	void clear(int _ply) {
 		ply = _ply;
-		m = best = killer[0] = killer[1] = move_t(0);
+		m = best = killer[0] = killer[1] = move::move_t(0);
 		eval = reduction = 0;
 		skip_null = null_child = false;
 	}
@@ -40,8 +40,8 @@ public:
 	static const int Max = 2000;
 
 	void clear();
-	void add(const Board& B, move_t m, int bonus);
-	int get(const Board& B, move_t m) const;
+	void add(const board::Position& B, move::move_t m, int bonus);
+	int get(const board::Position& B, move::move_t m) const;
 
 private:
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
@@ -51,7 +51,7 @@ private:
  * - used for quiet move ordering, and as an LMR guard.
  * - move pair (m1, m2) -> move m3 that refuted the sequence (m1, m2) last time it was visited by the
  * search.
- * - dm_key is the zobrist key of the last 2 moves (see Board::get_dm_key(), in particular floor at
+ * - dm_key is the zobrist key of the last 2 moves (see board::Position::get_dm_key(), in particular floor at
  * root sp0).
  * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
  * */
@@ -61,13 +61,13 @@ public:
 		std::memset(this, 0, sizeof(this));
 	}
 
-	move_t get_refutation(Key dm_key) const {
+	move::move_t get_refutation(Key dm_key) const {
 		const size_t idx = dm_key & (count - 1);
-		Entry tmp = {dm_key, move_t(0)};
-		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move_t(0);
+		Entry tmp = {dm_key, move::move_t(0)};
+		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move::move_t(0);
 	}
 
-	void set_refutation(Key dm_key, move_t m) {
+	void set_refutation(Key dm_key, move::move_t m) {
 		const size_t idx = dm_key & (count - 1);
 		r[idx] = {dm_key, m};
 	}
@@ -75,7 +75,7 @@ public:
 private:
 	struct Entry {
 		std::uint64_t dm_key: 48;
-		move_t move;
+		move::move_t move;
 	};
 
 	static const int count = 0x10000;
@@ -91,7 +91,7 @@ public:
 	};
 
 	struct Token {
-		move_t m;
+		move::move_t m;
 		int score, see;
 
 		bool operator< (const Token& t) const {
@@ -99,29 +99,29 @@ public:
 		}
 	};
 
-	MoveSort(const Board* _B, int _depth, const SearchInfo *_ss,
+	MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,
 			 const History *_H, const Refutation *_R);
 
-	move_t next(int *see);
-	move_t previous();
+	move::move_t next(int *see);
+	move::move_t previous();
 
 	int get_count() const {
 		return count;
 	}
 
 private:
-	const Board *B;
+	const board::Position *B;
 	GenType type;
 	const SearchInfo *ss;
 	const History *H;
 	const Refutation *R;
-	move_t refutation;
+	move::move_t refutation;
 
 	Token list[MAX_MOVES];
 	int idx, count, depth;
 
-	move_t *generate(GenType type, move_t *mlist);
-	void annotate(const move_t *mlist);
+	move::move_t *generate(GenType type, move::move_t *mlist);
+	void annotate(const move::move_t *mlist);
 	void score(MoveSort::Token *t);
 };
 

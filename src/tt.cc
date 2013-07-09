@@ -93,7 +93,7 @@ const TTable::Entry *TTable::probe(Key key) const
 	return nullptr;
 }
 
-void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move_t move)
+void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move::move_t move)
 {
 	Entry *e = cluster[key & (count - 1)].entry, *replace = e;
 

@@ -41,8 +41,8 @@ namespace {
 
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-void position(Board& B, std::istringstream& is);
-void go(Board& B, std::istringstream& is);
+void position(board::Position& B, std::istringstream& is);
+void go(board::Position& B, std::istringstream& is);
 void setoption(std::istringstream& is);
 
 bool input_available();
@@ -51,7 +51,7 @@ bool input_available();
 
 void uci::loop()
 {
-	Board B;
+	board::Position B;
 	std::string cmd, token;
 	std::cout << std::boolalpha;
 
@@ -104,9 +104,9 @@ bool uci::stop()
 
 namespace {
 
-void position(Board& B, std::istringstream& is)
+void position(board::Position& B, std::istringstream& is)
 {
-	move_t m;
+	move::move_t m;
 	std::string token, fen;
 	is >> token;
 
@@ -123,12 +123,12 @@ void position(Board& B, std::istringstream& is)
 
 	// Parse move list (if any)
 	while (is >> token) {
-		m = string_to_move(B, token);
+		m = move::string_to_move(B, token);
 		B.play(m);
 	}
 }
 
-void go(Board& B, std::istringstream& is)
+void go(board::Position& B, std::istringstream& is)
 {
 	SearchLimits sl;
 	PollingFrequency = 256;
@@ -156,8 +156,8 @@ void go(Board& B, std::istringstream& is)
 		}
 	}
 
-	move_t m = bestmove(B, sl);
-	std::cout << "bestmove " << move_to_string(m) << std::endl;
+	move::move_t m = bestmove(B, sl);
+	std::cout << "bestmove " << move::move_to_string(m) << std::endl;
 }
 
 void setoption(std::istringstream& is)

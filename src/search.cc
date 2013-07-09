@@ -40,7 +40,7 @@ std::uint64_t node_limit;
 int time_limit[2], time_allowed;
 time_point<high_resolution_clock> start;
 
-void node_poll(Board& B);
+void node_poll(board::Position& B);
 void time_alloc(const SearchLimits& sl, int result[2]);
 
 History H;
@@ -76,13 +76,13 @@ const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
-move_t best;
-int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+move::move_t best;
+int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 
 }	// namespace
 
-move_t bestmove(Board& B, const SearchLimits& sl)
+move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 {
 	start = high_resolution_clock::now();
 
@@ -93,7 +93,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
-	best = move_t(0);
+	best = move::move_t(0);
 
 	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
 	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
@@ -103,7 +103,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 	H.clear();
 	R.clear();
 	TT.new_search();
-	B.set_unwind();		// remember the Board state
+	B.set_unwind();		// remember the board::Position state
 
 	// Calculate the value of a draw by chess rules, for both colors (contempt option)
 	const int us = B.get_turn(), them = opp_color(us);
@@ -117,7 +117,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 		int score, delta = 16;
 		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
-		time_allowed = time_limit[0] >> (best && calc_see(B, best) > 0);
+		time_allowed = time_limit[0] >> (best && move::see(B, best) > 0);
 
 		for (;;) {
 			// Aspiration loop
@@ -171,7 +171,7 @@ move_t bestmove(Board& B, const SearchLimits& sl)
 
 namespace {
 
-int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
@@ -186,7 +186,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	const bool root = !ss->ply, in_check = B.is_check();
 	const int old_alpha = alpha, static_node_type = node_type;
 	int best_score = -INF;
-	ss->best = move_t(0);
+	ss->best = move::move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -235,14 +235,14 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	}
 
 	// Null move pruning
-	move_t threat_move = move_t(0);
+	move::move_t threat_move = move::move_t(0);
 	if ( ss->eval >= beta	// eval symmetry prevents double null moves
 		 && !ss->skip_null && node_type != PV
 		 && !in_check && !is_mate_score(beta)
 		 && B.st().piece_psq[B.get_turn()] ) {
 		const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
-		B.play(move_t(0));
+		B.play(move::move_t(0));
 		(ss + 1)->null_child = true;
 		int score = -search(B, -beta, -alpha, depth - reduction, All, ss + 1);
 		(ss + 1)->null_child = false;
@@ -268,16 +268,16 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	}
 
 	MoveSort MS(&B, depth, ss, &H, &R);
-	const move_t refutation = R.get_refutation(B.get_dm_key());
+	const move::move_t refutation = R.get_refutation(B.get_dm_key());
 
 	int cnt = 0, LMR = 0, see;
 	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 		++cnt;
-		const int check = move_is_check(B, ss->m);
+		const int check = move::is_check(B, ss->m);
 
 		// check extension
 		int new_depth;
-		if (check && (check == DISCO_CHECK || see >= 0) )
+		if (check && (check == move::DISCO_CHECK || see >= 0) )
 			// extend relevant checks
 			new_depth = depth;
 		else if (MS.get_count() == 1)
@@ -288,7 +288,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 
 		// move properties
 		const bool first = cnt == 1;
-		const bool capture = move_is_cop(B, ss->m);
+		const bool capture = move::is_cop(B, ss->m);
 		const int hscore = capture ? 0 : H.get(B, ss->m);
 		const bool bad_quiet = !capture && (hscore < 0 || (hscore == 0 && see < 0));
 		const bool bad_capture = capture && see < 0;
@@ -297,8 +297,8 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 							   || ss->m == ss->killer[0]
 							   || ss->m == ss->killer[1]
 							   || ss->m == refutation
-							   || (move_is_pawn_threat(B, ss->m) && see >= 0)
-							   || (ss->m.flag() == CASTLING);
+							   || (move::is_pawn_threat(B, ss->m) && see >= 0)
+							   || (ss->m.flag() == move::CASTLING);
 
 		if (!capture && !dangerous && !in_check && !root) {
 			// Move count pruning
@@ -379,7 +379,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
 	// best move is quiet: update killers and history
-	if (ss->best && !move_is_cop(B, ss->best)) {
+	if (ss->best && !move::is_cop(B, ss->best)) {
 		// update killers on a LIFO basis
 		if (ss->killer[0] != ss->best) {
 			ss->killer[1] = ss->killer[0];
@@ -388,11 +388,11 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 
 		// update history table
 		// mark ss->best as good, and all other moves searched as bad
-		move_t m;
+		move::move_t m;
 		int bonus = std::min(depth * depth, (int)History::Max);
 		if (hanging) bonus /= 2;
 		while ( (m = MS.previous()) )
-			if (!move_is_cop(B, m))
+			if (!move::is_cop(B, m))
 				H.add(B, m, m == ss->best ? bonus : -bonus);
 
 		// update double move refutation hash table
@@ -402,7 +402,7 @@ int search(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *
 	return best_score;
 }
 
-int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(depth <= 0);
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
@@ -413,7 +413,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 
 	const bool in_check = B.is_check();
 	int best_score = -INF, old_alpha = alpha;
-	ss->best = move_t(0);
+	ss->best = move::move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -443,15 +443,15 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 	const int fut_base = ss->eval + vEP / 2;
 
 	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
-		int check = move_is_check(B, ss->m);
+		int check = move::is_check(B, ss->m);
 
 		// Futility pruning
 		if (!check && !in_check && node_type != PV) {
 			// opt_score = current eval + some margin + max material gain of the move
 			const int opt_score = fut_base
 								  + Material[B.get_piece_on(ss->m.tsq())].eg
-								  + (ss->m.flag() == EN_PASSANT ? vEP : 0)
-								  + (ss->m.flag() == PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+								  + (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
+								  + (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 			// still can't raise alpha, skip
 			if (opt_score <= alpha) {
@@ -467,7 +467,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 		}
 
 		// SEE pruning
-		if (!in_check && check != DISCO_CHECK && see < 0)
+		if (!in_check && check != move::DISCO_CHECK && see < 0)
 			continue;
 
 		// recursion
@@ -497,7 +497,7 @@ int qsearch(Board& B, int alpha, int beta, int depth, int node_type, SearchInfo 
 	return best_score;
 }
 
-void node_poll(Board &B)
+void node_poll(board::Position &B)
 {
 	if (!(++node_count & (PollingFrequency - 1)) && can_abort) {
 		bool abort = false;
