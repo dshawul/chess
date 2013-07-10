@@ -261,7 +261,8 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 	// Internal Iterative Deepening
 	if ( (!tte || !tte->move || tte->depth <= 0)
-		 && depth >= (node_type == PV ? 4 : 7) ) {
+		 && depth >= (node_type == PV ? 4 : 7)
+		 && !in_check ) {
 		ss->skip_null = true;
 		search(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss);
 		ss->skip_null = false;
