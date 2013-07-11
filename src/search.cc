@@ -187,7 +187,6 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	const int old_alpha = alpha, static_node_type = node_type;
 	int best_score = -INF;
 	ss->best = move::move_t(0);
-	move::move_t threat_move(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -215,23 +214,18 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
 	// Stand pat score (adjusted for tempo and hanging pieces)
-	int stand_pat;
-	if (in_check) {
-		stand_pat = -INF;
-		goto generate_moves;
-	} else
-		stand_pat = ss->eval + eval::asymmetric_eval(B);
+	const int stand_pat = ss->eval + eval::asymmetric_eval(B);
 
 	// Eval pruning
 	if ( depth <= 3 && node_type != PV
-		 && !is_mate_score(beta)
+		 && !in_check && !is_mate_score(beta)
 		 && stand_pat >= beta + EvalMargin[depth]
 		 && B.st().piece_psq[B.get_turn()] )
 		return stand_pat;
 
 	// Razoring
 	if ( depth <= 3 && node_type != PV
-		 && !is_mate_score(beta) ) {
+		 && !in_check && !is_mate_score(beta) ) {
 		const int threshold = beta - RazorMargin[depth];
 		if (ss->eval < threshold) {
 			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1);
@@ -241,9 +235,10 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	}
 
 	// Null move pruning
+	move::move_t threat_move = move::move_t(0);
 	if ( ss->eval >= beta	// eval symmetry prevents double null moves
 		 && !ss->skip_null && node_type != PV
-		 && !is_mate_score(beta)
+		 && !in_check && !is_mate_score(beta)
 		 && B.st().piece_psq[B.get_turn()] ) {
 		const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
@@ -266,13 +261,13 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 	// Internal Iterative Deepening
 	if ( (!tte || !tte->move || tte->depth <= 0)
-		 && depth >= (node_type == PV ? 4 : 7) ) {
+		 && depth >= (node_type == PV ? 4 : 7)
+		 && !in_check ) {
 		ss->skip_null = true;
 		search(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss);
 		ss->skip_null = false;
 	}
 
-generate_moves:
 	MoveSort MS(&B, depth, ss, &H, &R);
 	const move::move_t refutation = R.get_refutation(B.get_dm_key());
 
