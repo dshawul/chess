@@ -176,14 +176,12 @@ move::move_t *gen_pawn_moves(const board::Position& B, Bitboard targets, move::m
  * for under-promotion pruning, modify only serialize_moves) */
 {
 	const int us = B.get_turn(), them = opp_color(us);
-	const int
-	lc_inc = us ? -9 : 7,	// left capture increment
-	rc_inc = us ? -7 : 9,	// right capture increment
-	sp_inc = us ? -8 : 8,	// single push increment
-	dp_inc = 2 * sp_inc;	// double push increment
-	const Bitboard
-	fss = B.get_pieces(us, PAWN),
-	enemies = B.get_pieces(them) | B.st().epsq_bb();
+	const int lc_inc = us ? -NB_FILE - 1 : NB_FILE - 1;	// left capture increment
+	const int rc_inc = us ? -NB_FILE + 1 : NB_FILE + 1;	// right capture increment
+	const int sp_inc = us ? -NB_FILE : NB_FILE;		// single push increment
+	const int dp_inc = 2 * sp_inc;					// double push increment
+	const Bitboard fss = B.get_pieces(us, PAWN);
+	const Bitboard enemies = B.get_pieces(them) | B.st().epsq_bb();	// capture targets, incl. epsq
 
 	/* First we calculate the to squares (tss) */
 

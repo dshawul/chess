@@ -33,12 +33,12 @@ enum {
 	NO_SQUARE
 };
 
-enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8 };
-enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H };
+enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, NB_RANK };
+enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NB_FILE };
 
 inline bool rank_file_ok(int r, int f)
 {
-	return 0 <= r && r < 8 && 0 <= f && f < 8;
+	return 0 <= r && r < NB_RANK && 0 <= f && f < NB_FILE;
 }
 
 inline bool square_ok(int sq)
@@ -49,19 +49,19 @@ inline bool square_ok(int sq)
 inline int rank(int sq)
 {
 	assert(square_ok(sq));
-	return int(int(sq) / 8);
+	return sq / NB_FILE;
 }
 
 inline int file(int sq)
 {
 	assert(square_ok(sq));
-	return int(int(sq) % 8);
+	return sq % NB_FILE;
 }
 
 inline int square(int r, int f)
 {
 	assert(rank_file_ok(r, f));
-	return int(8 * int(r) + int(f));
+	return NB_FILE * r + f;
 }
 
 inline int rank_mirror(int sq)

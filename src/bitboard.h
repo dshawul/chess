@@ -41,8 +41,8 @@ extern Bitboard Between[NB_SQUARE][NB_SQUARE];
 extern Bitboard Direction[NB_SQUARE][NB_SQUARE];
 
 // Bitboards to detect passed pawns
-extern Bitboard InFront[NB_COLOR][8];
-extern Bitboard AdjacentFiles[8];
+extern Bitboard InFront[NB_COLOR][NB_RANK];
+extern Bitboard AdjacentFiles[NB_FILE];
 extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
 extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
 extern Bitboard Shield[NB_COLOR][NB_SQUARE];
@@ -65,7 +65,7 @@ extern void print(std::ostream& ostrm, Bitboard b);
 inline int pawn_push(int color, int sq)
 {
 	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
-	return color ? sq - 8 : sq + 8;
+	return color ? sq - NB_FILE : sq + NB_FILE;
 }
 
 inline void set_bit(Bitboard *b, unsigned sq)
@@ -100,7 +100,7 @@ inline bool several_bits(Bitboard b)
 inline Bitboard rank_bb(int r)
 {
 	assert(rank_file_ok(r, 0));
-	return Rank1_bb << (8 * r);
+	return Rank1_bb << (NB_FILE * r);
 }
 
 inline Bitboard file_bb(int f)

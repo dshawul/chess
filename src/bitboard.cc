@@ -267,8 +267,8 @@ Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[
 Bitboard Between[NB_SQUARE][NB_SQUARE];
 Bitboard Direction[NB_SQUARE][NB_SQUARE];
 
-Bitboard InFront[NB_COLOR][8];
-Bitboard AdjacentFiles[8];
+Bitboard InFront[NB_COLOR][NB_RANK];
+Bitboard AdjacentFiles[NB_FILE];
 Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
 Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
 Bitboard Shield[NB_COLOR][NB_SQUARE];

@@ -16,20 +16,15 @@
 #include "types.h"
 
 // game phase
-enum {
-	OPENING,
-	ENDGAME,
-	NB_PHASE
-};
+enum { OPENING, ENDGAME, NB_PHASE };
 
 // material values
-#define vOP 80
-#define vEP 100
-#define vN 330
-#define vB 330
-#define vR 545
-#define vQ 1000
-#define vK 20000 // only for SEE
+enum {
+	vOP = 80, vEP = 100,
+	vN = 330, vB = 330,
+	vR = 545, vQ = 1000,
+	vK = 20000 // only for SEE
+};
 
 // Bind opening and endgame scores together, for coding simplicity, and performance (cache)
 struct Eval {

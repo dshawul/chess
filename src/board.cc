@@ -327,8 +327,8 @@ Bitboard Position::calc_attacks(int color) const
 
 	// Pawn
 	fss = get_pieces(color, PAWN);
-	r |= sp->attacks[color][PAWN] = bb::shift_bit((fss & ~bb::FileA_bb), color ? -9 : 7)
-									| bb::shift_bit((fss & ~bb::FileH_bb), color ? -7 : 9);
+	r |= sp->attacks[color][PAWN] = bb::shift_bit((fss & ~bb::FileA_bb), color ? -NB_FILE - 1 : +NB_FILE - 1)
+									| bb::shift_bit((fss & ~bb::FileH_bb), color ? -NB_FILE + 1 : +NB_FILE + 1);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
