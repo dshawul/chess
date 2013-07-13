@@ -26,7 +26,7 @@ enum {
 	vK = 20000 // only for SEE
 };
 
-// Bind opening and endgame scores together, for coding simplicity, and performance (cache)
+// Bind opening and endgame scores together
 struct Eval {
 	int op, eg;
 
@@ -50,12 +50,6 @@ struct Eval {
 		return *this;
 	}
 };
-
-inline const Eval& operator- (const Eval& e1, const Eval& e2)
-{
-	Eval e(e1);
-	return e -= e2;
-}
 
 extern const Eval Material[NB_PIECE];
 

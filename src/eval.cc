@@ -80,7 +80,8 @@ private:
 
 	int calc_phase() const;
 	Eval eval_white() const {
-		return e[WHITE] - e[BLACK];
+		Eval tmp(e[WHITE]);
+		return tmp -= e[BLACK];
 	}
 };
 
@@ -313,16 +314,22 @@ void EvalInfo::eval_passer_interaction(int sq)
 void EvalInfo::eval_pawns()
 {
 	const Key key = B->st().kpkey;
-	PawnCache::Entry h = PC.probe(key);
+	PawnCache::Entry& h = PC.probe(key);
 
 	if (h.key == key)
 		e[WHITE] += h.eval_white;
 	else {
 		const Eval ew0 = eval_white();
 		h.key = key;
-		select_side(WHITE); h.passers  = do_eval_pawns();
-		select_side(BLACK); h.passers |= do_eval_pawns();
-		h.eval_white = eval_white() - ew0;
+
+		select_side(WHITE);
+		h.passers = do_eval_pawns();
+
+		select_side(BLACK);
+		h.passers |= do_eval_pawns();
+
+		h.eval_white = eval_white();
+		h.eval_white -= ew0;
 	}
 
 	// piece-dependant passed pawn scoring
