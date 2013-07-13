@@ -35,8 +35,8 @@ public:
 		std::memset(buf, 0, sizeof(buf));
 	}
 
-	Entry &probe(Key key) {
-		return buf[key & (count - 1)];
+	Entry *probe(Key key) {
+		return &buf[key & (count - 1)];
 	}
 
 private:
@@ -314,26 +314,26 @@ void EvalInfo::eval_passer_interaction(int sq)
 void EvalInfo::eval_pawns()
 {
 	const Key key = B->st().kpkey;
-	PawnCache::Entry& h = PC.probe(key);
+	PawnCache::Entry *h = PC.probe(key);
 
-	if (h.key == key)
-		e[WHITE] += h.eval_white;
+	if (h->key == key)
+		e[WHITE] += h->eval_white;
 	else {
 		const Eval ew0 = eval_white();
-		h.key = key;
+		h->key = key;
 
 		select_side(WHITE);
-		h.passers = do_eval_pawns();
+		h->passers = do_eval_pawns();
 
 		select_side(BLACK);
-		h.passers |= do_eval_pawns();
+		h->passers |= do_eval_pawns();
 
-		h.eval_white = eval_white();
-		h.eval_white -= ew0;
+		h->eval_white = eval_white();
+		h->eval_white -= ew0;
 	}
 
 	// piece-dependant passed pawn scoring
-	Bitboard b = h.passers;
+	Bitboard b = h->passers;
 	while (b)
 		eval_passer_interaction(bb::pop_lsb(&b));
 }
