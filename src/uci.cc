@@ -63,7 +63,7 @@ void uci::loop()
 		is >> std::boolalpha;
 		is >> std::skipws >> token;
 		if (token == "uci")
-			std::cout << "id name DiscoCheck " DISCO_VERSION "\n"
+			std::cout << "id name DiscoCheck 4.3\n"
 					  << "id author Lucas Braesch\n"
 					  /* Declare UCI options here */
 					  << "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
