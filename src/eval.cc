@@ -102,7 +102,7 @@ void EvalInfo::eval_material()
 
 	// Bishop pair
 	if (bb::several_bits(B->get_pieces(us, BISHOP)))
-		e[us] += {40, 50};
+		e[us] += {40, 60};
 
 	// Rook pair penalty
 	if (bb::several_bits(B->get_pieces(us, ROOK)))
