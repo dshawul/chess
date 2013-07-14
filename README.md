@@ -8,20 +8,16 @@ is only of interest for programmers.
 
 DiscoCheck has the following UCI options
 
-* Hash: this is the size, in MB, of the hash table.
+* Hash (MB): size of the main hash table.
 * Clear Hash (button): clears the hash table.
-* Contempt. Make DiscoCheck avoid draws (by chess rules) by scoring them -Contempt for the engine and
-+Contempt for the opponent. For example, if Contempt=25, DiscoCheck will think that a draw by chess
-rules (3-repetition, 50-move, stalemate, insufficient material) is worth -25cp for itself, and will
-assume that the opponent values such a draw at +25cp (DiscoCheck tries to avoid draws knowing that
-its opponent seeks them).
+* Contempt (cp): Make DiscoCheck avoid draws (by chess rules) by scoring them -Contempt for the engine and
++Contempt for the opponent.
 
 ### Compiling it yourself
 
-On Linux, assuming you have g++ installed, simply run `./make.sh` to compile. It should also work on
-any other UNIX-like system with g++ installed (eg. MacOSX, BSD, Solaris etc.)
+On Linux (or POSIX), with g++ installed, simply run `./make.sh` to compile.
 
-For Windows, and/or other compilers (eg. MSVC, ICC), I don't know. So you will have to figure it out.
+On Windows, and/or with other compilers (eg. MSVC, ICC), I don't know. So you will have to figure it out.
 That being said, I have tried hard to write code as portable as possible, but there may be a few things
 that are GCC specific. If you find something that is not portable and should be rewritten to improve
 portability, please let me know (patches and pull requests are welcome).
