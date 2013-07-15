@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include <chrono>
+#include <vector>
 #include "search.h"
 #include "uci.h"
 #include "eval.h"
@@ -29,6 +30,7 @@ using namespace std::chrono;
 namespace {
 
 const int MAX_PLY = 0x80;
+const int MIN_DEPTH = -128;	// depth are signed 1 byte (for TT entries compactness)
 const int MATE = 32000;
 const int QS_LIMIT = -8;
 
@@ -51,34 +53,21 @@ int score_from_tt(int tt_score, int ply);
 
 bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
 
-bool is_mate_score(int score)
-{
-	return std::abs(score) >= MATE - MAX_PLY;
-}
-
-int mated_in(int ply)
-{
-	return ply - MATE;
-}
-
-int mate_in(int ply)
-{
-	return MATE - ply;
-}
-
-int null_reduction(int depth)
-{
-	return 3 + depth / 4;
-}
+bool is_mate_score(int score);
+int mated_in(int ply);
+int mate_in(int ply);
+int null_reduction(int depth);
 
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
-const int EvalMargin[4]	 = {0, vEP, vN, vQ};
+const int EvalMargin[4] = {0, vEP, vN, vQ};
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
 move::move_t best;
 int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
+
+std::vector<move::move_t> read_pv(board::Position& B, int max_ply);
 
 }	// namespace
 
@@ -162,8 +151,12 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 		// iteration 1 is disastrous, and can return a null or stupid move
 		can_abort = true;
 
-		// Display best move for this iteration
-		std::cout << " pv " << move_to_string(best) << std::endl;
+		// Display PV for this iteration
+		std::vector<move::move_t> pv = read_pv(B, depth);
+		std::cout << " pv ";
+		for (auto it = pv.begin(); it != pv.end(); ++it)
+			std::cout << move_to_string(*it) << ' ';
+		std::cout << std::endl;
 	}
 
 	return best;
@@ -518,6 +511,26 @@ void node_poll(board::Position &B)
 	}
 }
 
+bool is_mate_score(int score)
+{
+	return std::abs(score) >= MATE - MAX_PLY;
+}
+
+int mated_in(int ply)
+{
+	return ply - MATE;
+}
+
+int mate_in(int ply)
+{
+	return MATE - ply;
+}
+
+int null_reduction(int depth)
+{
+	return 3 + depth / 4;
+}
+
 int score_to_tt(int score, int ply)
 /* mate scores from the search, must be adjusted to be written in the TT. For example, if we find a
  * mate in 10 plies from the current position, it will be scored mate_in(15) by the search and must
@@ -564,6 +577,24 @@ void time_alloc(const SearchLimits& sl, int result[2])
 		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - time_buffer), 1);
 		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - time_buffer), 1);
 	}
+}
+
+std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
+// Get the PV from the TT
+{
+	std::vector<move::move_t> pv;
+	B.set_unwind();
+
+	for (int ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
+		const TTable::Entry *tte = TT.probe(B.get_key());
+		if (!tte || !tte->move) break;
+
+		pv.push_back(tte->move);
+		B.play(tte->move);
+	}
+
+	B.unwind();
+	return pv;
 }
 
 }	// namespace
