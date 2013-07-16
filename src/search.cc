@@ -365,11 +365,14 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 			if (root) {
 				best = ss->m;
+
+				// Insert the new best move in the TT
+				tte = TT.probe(key);
+				if (!tte || tte->move != best)
+					TT.store(key, PV, MIN_DEPTH, 0, 0, best);
+
+				// Read PV from TT, and remember it before it gets overwritten
 				pv = read_pv(B, depth);
-				/*if (pv.size() > 0)
-					pv[0] = best;
-				else
-					pv.push_back(best);*/
 			}
 		}
 	}
