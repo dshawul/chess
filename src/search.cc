@@ -155,18 +155,16 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 		// iteration 1 is disastrous, and can return a null or stupid move
 		can_abort = true;
 
-		// Display PV for this iteration
+		// Display the PV
 		std::cout << " pv ";
 		for (auto it = pv.begin(); it != pv.end(); ++it)
 			std::cout << move_to_string(*it) << ' ';
 		std::cout << std::endl;
 	}
 
-	std::cout << "best = " << move_to_string(best) << '\t'
-			  << "pv[0] = " << move_to_string(pv[0]) << std::endl;
-
 	assert(best == pv[0]);
-	assert(pv[1]);
+	assert(pv[1]);	// for pondering
+
 	return best;
 }
 
@@ -366,13 +364,15 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			if (root) {
 				best = ss->m;
 
-				// Insert the new best move in the TT
-				tte = TT.probe(key);
-				if (!tte || tte->move != best)
-					TT.store(key, PV, MIN_DEPTH, 0, 0, best);
+				// Uzbek method to retreive the PV ('best' is not necessarly in the TT yet)
 
-				// Read PV from TT, and remember it before it gets overwritten
+				// 1. play the move and get the PV from the TT after the move
+				B.play(best);
 				pv = read_pv(B, depth);
+				B.undo();
+
+				// 2. insert the move at the beginning of the PV
+				pv.insert(pv.begin(), best);
 			}
 		}
 	}
@@ -616,7 +616,7 @@ std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
 }
 
 void write_pv(board::Position& B, const std::vector<move::move_t>& pv)
-// Writes the PV back in the TT
+// Writes the PV back in the TT, in case it got overwritten
 {
 	B.set_unwind();
 
