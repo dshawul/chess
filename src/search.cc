@@ -67,7 +67,9 @@ move::move_t best;
 int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
 
+std::vector<move::move_t> pv;
 std::vector<move::move_t> read_pv(board::Position& B, int max_ply);
+void write_pv(board::Position& B, const std::vector<move::move_t>& pv);
 
 }	// namespace
 
@@ -119,6 +121,8 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 				return best = ss->best;
 			}
 
+			write_pv(B, pv);
+
 			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
 					  << " time " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
 
@@ -152,13 +156,17 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 		can_abort = true;
 
 		// Display PV for this iteration
-		std::vector<move::move_t> pv = read_pv(B, depth);
 		std::cout << " pv ";
 		for (auto it = pv.begin(); it != pv.end(); ++it)
 			std::cout << move_to_string(*it) << ' ';
 		std::cout << std::endl;
 	}
 
+	std::cout << "best = " << move_to_string(best) << '\t'
+			  << "pv[0] = " << move_to_string(pv[0]) << std::endl;
+
+	assert(best == pv[0]);
+	assert(pv[1]);
 	return best;
 }
 
@@ -354,8 +362,15 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			best_score = score;
 			alpha = std::max(alpha, score);
 			ss->best = ss->m;
-			if (root)
+
+			if (root) {
 				best = ss->m;
+				pv = read_pv(B, depth);
+				/*if (pv.size() > 0)
+					pv[0] = best;
+				else
+					pv.push_back(best);*/
+			}
 		}
 	}
 
@@ -595,6 +610,25 @@ std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
 
 	B.unwind();
 	return pv;
+}
+
+void write_pv(board::Position& B, const std::vector<move::move_t>& pv)
+// Writes the PV back in the TT
+{
+	B.set_unwind();
+
+	for (auto it = pv.begin(); it != pv.end(); ++it) {
+		const Key key = B.get_key();
+		const TTable::Entry *tte = TT.probe(key);
+
+		// Overwrite wrong TT entries with a PV dummy entry
+		if (!tte || tte->move != *it)
+			TT.store(key, PV, MIN_DEPTH, 0, 0, *it);
+
+		B.play(*it);
+	}
+
+	B.unwind();
 }
 
 }	// namespace
