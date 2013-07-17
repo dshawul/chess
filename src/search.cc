@@ -30,7 +30,6 @@ using namespace std::chrono;
 namespace {
 
 const int MAX_PLY = 0x80;
-const int MIN_DEPTH = -128;	// depth are signed 1 byte (for TT entries compactness)
 const int MATE = 32000;
 const int QS_LIMIT = -8;
 
@@ -42,133 +41,218 @@ std::uint64_t node_limit;
 int time_limit[2], time_allowed;
 time_point<high_resolution_clock> start;
 
-void node_poll(board::Position& B);
-void time_alloc(const SearchLimits& sl, int result[2]);
-
 History H;
 Refutation R;
 
-int score_to_tt(int score, int ply);
-int score_from_tt(int tt_score, int ply);
-
-bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply);
-
-bool is_mate_score(int score);
-int mated_in(int ply);
-int mate_in(int ply);
-int null_reduction(int depth);
-
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
-const int EvalMargin[4] = {0, vEP, vN, vQ};
+const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
 move::move_t best;
-int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss);
-
 std::vector<move::move_t> pv;
 std::vector<move::move_t> read_pv(board::Position& B, int max_ply);
-void write_pv(board::Position& B, const std::vector<move::move_t>& pv);
 
-}	// namespace
-
-move::move_t bestmove(board::Position& B, const SearchLimits& sl)
+void node_poll(board::Position &B)
 {
-	start = high_resolution_clock::now();
+	if (!(++node_count & (PollingFrequency - 1)) && can_abort) {
+		bool abort = false;
 
-	SearchInfo ss[MAX_PLY + 1 - QS_LIMIT];
-	for (int ply = 0; ply < MAX_PLY + 1 - QS_LIMIT; ++ply)
-		ss[ply].clear(ply);
+		// abort search because node limit exceeded
+		if (node_limit && node_count >= node_limit)
+			abort = true;
+		// abort search because time limit exceeded
+		else if (time_allowed && duration_cast<milliseconds>
+				 (high_resolution_clock::now() - start).count() > time_allowed)
+			abort = true;
+		// abort when UCI "stop" command is received (involves some non standard I/O)
+		else if (uci::stop())
+			abort = true;
 
-	node_count = 0;
-	node_limit = sl.nodes;
-	time_alloc(sl, time_limit);
-	best = move::move_t(0);
+		if (abort)
+			throw AbortSearch();
+	}
+}
 
-	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
-	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
-	// as the best move could be illegal or completely stupid.
-	can_abort = false;
+bool is_mate_score(int score)
+{
+	return std::abs(score) >= MATE - MAX_PLY;
+}
 
-	H.clear();
-	R.clear();
-	TT.new_search();
-	B.set_unwind();		// remember the board::Position state
+int mated_in(int ply)
+{
+	return ply - MATE;
+}
 
-	// Calculate the value of a draw by chess rules, for both colors (contempt option)
-	const int us = B.get_turn(), them = opp_color(us);
-	DrawScore[us] = -uci::Contempt;
-	DrawScore[them] = +uci::Contempt;
+int mate_in(int ply)
+{
+	return MATE - ply;
+}
 
-	const int max_depth = sl.depth ? std::min(MAX_PLY - 1, sl.depth) : MAX_PLY - 1;
+int null_reduction(int depth)
+{
+	return 3 + depth / 4;
+}
 
-	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
-		// iterative deepening loop
+int score_to_tt(int score, int ply)
+/* mate scores from the search, must be adjusted to be written in the TT. For example, if we find a
+ * mate in 10 plies from the current position, it will be scored mate_in(15) by the search and must
+ * be entered mate_in(10) in the TT */
+{
+	return score >= mate_in(MAX_PLY) ? score + ply :
+		   score <= mated_in(MAX_PLY) ? score - ply : score;
+}
 
-		int score, delta = 16;
-		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
-		time_allowed = time_limit[0] >> (best && move::see(B, best) > 0);
+int score_from_tt(int tt_score, int ply)
+/* mate scores from the TT need to be adjusted. For example, if we find a mate in 10 in the TT at
+ * ply 5, then we effectively have a mate in 15 plies (from the root) */
+{
+	return tt_score >= mate_in(MAX_PLY) ? tt_score - ply :
+		   tt_score <= mated_in(MAX_PLY) ? tt_score + ply : tt_score;
+}
 
-		for (;;) {
-			// Aspiration loop
+bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply)
+/* PV nodes: return only exact scores
+ * non PV nodes: return fail high/low scores. Mate scores are also trusted, regardless of the
+ * depth. This idea is from StockFish, and although it's not totally sound, it seems to work. */
+{
+	const bool depth_ok = tte->depth >= depth;
 
-			try {
-				score = search(B, alpha, beta, depth, PV, ss);
-			} catch (AbortSearch e) {
-				return best;
-			} catch (ForcedMove e) {
-				return best = ss->best;
+	if (is_pv)
+		return depth_ok && tte->node_type() == PV;
+	else {
+		const int tt_score = score_from_tt(tte->score, ply);
+		return (depth_ok
+				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
+				|| tt_score < std::min(mated_in(MAX_PLY), beta))
+			   && ((tte->node_type() == Cut && tt_score >= beta)
+				   || (tte->node_type() == All && tt_score < beta));
+	}
+}
+
+void time_alloc(const SearchLimits& sl, int result[2])
+{
+	if (sl.movetime > 0)
+		result[0] = result[1] = sl.movetime;
+	else if (sl.time > 0 || sl.inc > 0) {
+		static const int time_buffer = 100;
+		int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
+		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - time_buffer), 1);
+		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - time_buffer), 1);
+	}
+}
+
+std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
+{
+	std::vector<move::move_t> pv;
+	B.set_unwind();
+
+	for (int ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
+		const TTable::Entry *tte = TT.probe(B.get_key());
+		if (!tte || !tte->move) break;
+
+		pv.push_back(tte->move);
+		B.play(tte->move);
+	}
+
+	B.unwind();
+	return pv;
+}
+
+int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+{
+	assert(depth <= 0);
+	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
+
+	const Key key = B.get_key();
+	TT.prefetch(key);
+	node_poll(B);
+
+	const bool in_check = B.is_check();
+	int best_score = -INF, old_alpha = alpha;
+	ss->best = move::move_t(0);
+
+	if (B.is_draw())
+		return DrawScore[B.get_turn()];
+
+	// TT lookup
+	const TTable::Entry *tte = TT.probe(key);
+	if (tte) {
+		if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
+			TT.refresh(tte);
+			return score_from_tt(tte->score, ss->ply);
+		}
+		ss->eval = tte->eval;
+		ss->best = tte->move;
+	} else
+		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
+
+	// stand pat
+	if (!in_check) {
+		best_score = ss->eval + eval::asymmetric_eval(B);
+		alpha = std::max(alpha, best_score);
+		if (alpha >= beta)
+			return alpha;
+	}
+
+	MoveSort MS(&B, depth, ss, &H, nullptr);
+	int see;
+	const int fut_base = ss->eval + vEP / 2;
+
+	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
+		int check = move::is_check(B, ss->m);
+
+		// Futility pruning
+		if (!check && !in_check && node_type != PV) {
+			// opt_score = current eval + some margin + max material gain of the move
+			const int opt_score = fut_base
+								  + Material[B.get_piece_on(ss->m.tsq())].eg
+								  + (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
+								  + (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+
+			// still can't raise alpha, skip
+			if (opt_score <= alpha) {
+				best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
+				continue;
 			}
 
-			write_pv(B, pv);
-
-			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
-					  << " time " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
-
-			if (alpha < score && score < beta) {
-				// score is within bounds
-				if (depth >= 4 && !is_mate_score(score)) {
-					// set aspiration window for the next depth (so aspiration starts at depth 5)
-					alpha = score - delta;
-					beta = score + delta;
-				}
-				// stop the aspiration loop
-				break;
-			} else {
-				// score is outside bounds: resize window and double delta
-				if (score <= alpha) {
-					alpha -= delta;
-					std::cout << " upperbound" << std::endl;
-				} else if (score >= beta) {
-					beta += delta;
-					std::cout << " lowerbound" << std::endl;
-				}
-				delta *= 2;
-
-				// increase time_allowed, to try to finish the current depth iteration
-				time_allowed = time_limit[1];
+			// the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
+			if (fut_base <= alpha && depth < 0 && see <= 0) {
+				best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
+				continue;
 			}
 		}
 
-		// Here we know for sure that iteration 1 is finished. Aborting before the end of
-		// iteration 1 is disastrous, and can return a null or stupid move
-		can_abort = true;
+		// SEE pruning
+		if (!in_check && check != move::DISCO_CHECK && see < 0)
+			continue;
 
-		// Display the PV
-		std::cout << " pv ";
-		for (auto it = pv.begin(); it != pv.end(); ++it)
-			std::cout << move_to_string(*it) << ' ';
-		std::cout << std::endl;
+		// recursion
+		int score;
+		if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
+			score = ss->eval + see;
+		else {
+			B.play(ss->m);
+			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1);
+			B.undo();
+		}
+
+		if (score > best_score) {
+			best_score = score;
+			alpha = std::max(alpha, score);
+			ss->best = ss->m;
+		}
 	}
 
-	assert(best == pv[0]);
-	assert(pv[1]);	// for pondering
+	if (B.is_check() && !MS.get_count())
+		return mated_in(ss->ply);
 
-	return best;
+	// update TT
+	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
+	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
+
+	return best_score;
 }
-
-namespace {
 
 int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
@@ -364,14 +448,12 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			if (root) {
 				best = ss->m;
 
-				// Uzbek method to retreive the PV ('best' is not necessarly in the TT yet)
-
-				// 1. play the move and get the PV from the TT after the move
+				// To get the PV ('best' not necessarly yet in TT):
+				// 1. play 'best' and get subsequent PV from TT
 				B.play(best);
 				pv = read_pv(B, depth);
 				B.undo();
-
-				// 2. insert the move at the beginning of the PV
+				// 2. insert 'best' in front of the PV
 				pv.insert(pv.begin(), best);
 			}
 		}
@@ -413,226 +495,96 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	return best_score;
 }
 
-int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
-{
-	assert(depth <= 0);
-	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
-
-	const Key key = B.get_key();
-	TT.prefetch(key);
-	node_poll(B);
-
-	const bool in_check = B.is_check();
-	int best_score = -INF, old_alpha = alpha;
-	ss->best = move::move_t(0);
-
-	if (B.is_draw())
-		return DrawScore[B.get_turn()];
-
-	// TT lookup
-	const TTable::Entry *tte = TT.probe(key);
-	if (tte) {
-		if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
-			TT.refresh(tte);
-			return score_from_tt(tte->score, ss->ply);
-		}
-		ss->eval = tte->eval;
-		ss->best = tte->move;
-	} else
-		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
-
-	// stand pat
-	if (!in_check) {
-		best_score = ss->eval + eval::asymmetric_eval(B);
-		alpha = std::max(alpha, best_score);
-		if (alpha >= beta)
-			return alpha;
-	}
-
-	MoveSort MS(&B, depth, ss, &H, nullptr);
-	int see;
-	const int fut_base = ss->eval + vEP / 2;
-
-	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
-		int check = move::is_check(B, ss->m);
-
-		// Futility pruning
-		if (!check && !in_check && node_type != PV) {
-			// opt_score = current eval + some margin + max material gain of the move
-			const int opt_score = fut_base
-								  + Material[B.get_piece_on(ss->m.tsq())].eg
-								  + (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
-								  + (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
-
-			// still can't raise alpha, skip
-			if (opt_score <= alpha) {
-				best_score = std::max(best_score, opt_score);	// beware of fail soft side effect
-				continue;
-			}
-
-			// the "SEE proxy" tells us we are unlikely to raise alpha, skip if depth < 0
-			if (fut_base <= alpha && depth < 0 && see <= 0) {
-				best_score = std::max(best_score, fut_base);	// beware of fail soft side effect
-				continue;
-			}
-		}
-
-		// SEE pruning
-		if (!in_check && check != move::DISCO_CHECK && see < 0)
-			continue;
-
-		// recursion
-		int score;
-		if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
-			score = ss->eval + see;
-		else {
-			B.play(ss->m);
-			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1);
-			B.undo();
-		}
-
-		if (score > best_score) {
-			best_score = score;
-			alpha = std::max(alpha, score);
-			ss->best = ss->m;
-		}
-	}
-
-	if (B.is_check() && !MS.get_count())
-		return mated_in(ss->ply);
-
-	// update TT
-	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
-	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
-
-	return best_score;
-}
-
-void node_poll(board::Position &B)
-{
-	if (!(++node_count & (PollingFrequency - 1)) && can_abort) {
-		bool abort = false;
-
-		// abort search because node limit exceeded
-		if (node_limit && node_count >= node_limit)
-			abort = true;
-		// abort search because time limit exceeded
-		else if (time_allowed && duration_cast<milliseconds>
-				 (high_resolution_clock::now() - start).count() > time_allowed)
-			abort = true;
-		// abort when UCI "stop" command is received (involves some non standard I/O)
-		else if (uci::stop())
-			abort = true;
-
-		if (abort)
-			throw AbortSearch();
-	}
-}
-
-bool is_mate_score(int score)
-{
-	return std::abs(score) >= MATE - MAX_PLY;
-}
-
-int mated_in(int ply)
-{
-	return ply - MATE;
-}
-
-int mate_in(int ply)
-{
-	return MATE - ply;
-}
-
-int null_reduction(int depth)
-{
-	return 3 + depth / 4;
-}
-
-int score_to_tt(int score, int ply)
-/* mate scores from the search, must be adjusted to be written in the TT. For example, if we find a
- * mate in 10 plies from the current position, it will be scored mate_in(15) by the search and must
- * be entered mate_in(10) in the TT */
-{
-	return score >= mate_in(MAX_PLY) ? score + ply :
-		   score <= mated_in(MAX_PLY) ? score - ply : score;
-}
-
-int score_from_tt(int tt_score, int ply)
-/* mate scores from the TT need to be adjusted. For example, if we find a mate in 10 in the TT at
- * ply 5, then we effectively have a mate in 15 plies (from the root) */
-{
-	return tt_score >= mate_in(MAX_PLY) ? tt_score - ply :
-		   tt_score <= mated_in(MAX_PLY) ? tt_score + ply : tt_score;
-}
-
-bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, int ply)
-/* PV nodes: return only exact scores
- * non PV nodes: return fail high/low scores. Mate scores are also trusted, regardless of the
- * depth. This idea is from StockFish, and although it's not totally sound, it seems to work. */
-{
-	const bool depth_ok = tte->depth >= depth;
-
-	if (is_pv)
-		return depth_ok && tte->node_type() == PV;
-	else {
-		const int tt_score = score_from_tt(tte->score, ply);
-		return (depth_ok
-				|| tt_score >= std::max(mate_in(MAX_PLY), beta)
-				|| tt_score < std::min(mated_in(MAX_PLY), beta))
-			   && ((tte->node_type() == Cut && tt_score >= beta)
-				   || (tte->node_type() == All && tt_score < beta));
-	}
-}
-
-void time_alloc(const SearchLimits& sl, int result[2])
-{
-	if (sl.movetime > 0)
-		result[0] = result[1] = sl.movetime;
-	else if (sl.time > 0 || sl.inc > 0) {
-		static const int time_buffer = 100;
-		int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
-		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - time_buffer), 1);
-		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - time_buffer), 1);
-	}
-}
-
-std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
-// Get the PV from the TT
-{
-	std::vector<move::move_t> pv;
-	B.set_unwind();
-
-	for (int ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
-		const TTable::Entry *tte = TT.probe(B.get_key());
-		if (!tte || !tte->move) break;
-
-		pv.push_back(tte->move);
-		B.play(tte->move);
-	}
-
-	B.unwind();
-	return pv;
-}
-
-void write_pv(board::Position& B, const std::vector<move::move_t>& pv)
-// Writes the PV back in the TT, in case it got overwritten
-{
-	B.set_unwind();
-
-	for (auto it = pv.begin(); it != pv.end(); ++it) {
-		const Key key = B.get_key();
-		const TTable::Entry *tte = TT.probe(key);
-
-		// Overwrite wrong TT entries with a PV dummy entry
-		if (!tte || tte->move != *it)
-			TT.store(key, PV, MIN_DEPTH, 0, 0, *it);
-
-		B.play(*it);
-	}
-
-	B.unwind();
-}
-
 }	// namespace
+
+move::move_t bestmove(board::Position& B, const SearchLimits& sl)
+{
+	start = high_resolution_clock::now();
+
+	SearchInfo ss[MAX_PLY + 1 - QS_LIMIT];
+	for (int ply = 0; ply < MAX_PLY + 1 - QS_LIMIT; ++ply)
+		ss[ply].clear(ply);
+
+	node_count = 0;
+	node_limit = sl.nodes;
+	time_alloc(sl, time_limit);
+	best = move::move_t(0);
+
+	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
+	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
+	// as the best move could be illegal or completely stupid.
+	can_abort = false;
+
+	H.clear();
+	R.clear();
+	TT.new_search();
+	B.set_unwind();		// remember the board::Position state
+
+	// Calculate the value of a draw by chess rules, for both colors (contempt option)
+	const int us = B.get_turn(), them = opp_color(us);
+	DrawScore[us] = -uci::Contempt;
+	DrawScore[them] = +uci::Contempt;
+
+	const int max_depth = sl.depth ? std::min(MAX_PLY - 1, sl.depth) : MAX_PLY - 1;
+
+	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
+		// iterative deepening loop
+
+		int score, delta = 16;
+		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
+		time_allowed = time_limit[0] >> (best && move::see(B, best) > 0);
+
+		for (;;) {
+			// Aspiration loop
+
+			try {
+				score = search(B, alpha, beta, depth, PV, ss);
+			} catch (AbortSearch e) {
+				return best;
+			} catch (ForcedMove e) {
+				return best = ss->best;
+			}
+
+			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
+					  << " time " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+
+			if (alpha < score && score < beta) {
+				// score is within bounds
+				if (depth >= 4 && !is_mate_score(score)) {
+					// set aspiration window for the next depth (so aspiration starts at depth 5)
+					alpha = score - delta;
+					beta = score + delta;
+				}
+				// stop the aspiration loop
+				break;
+			} else {
+				// score is outside bounds: resize window and double delta
+				if (score <= alpha) {
+					alpha -= delta;
+					std::cout << " upperbound" << std::endl;
+				} else if (score >= beta) {
+					beta += delta;
+					std::cout << " lowerbound" << std::endl;
+				}
+				delta *= 2;
+
+				// increase time_allowed, to try to finish the current depth iteration
+				time_allowed = time_limit[1];
+			}
+		}
+
+		// Here we know for sure that iteration 1 is finished. Aborting before the end of
+		// iteration 1 is disastrous, and can return a null or stupid move
+		can_abort = true;
+
+		// Display the PV
+		std::cout << " pv ";
+		for (auto it = pv.begin(); it != pv.end(); ++it)
+			std::cout << move_to_string(*it) << ' ';
+		std::cout << std::endl;
+	}
+
+	assert(pv[0] == best && pv[1]);
+	return best;
+}
 
