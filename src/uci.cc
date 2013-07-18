@@ -154,6 +154,8 @@ void go(board::Position& B, std::istringstream& is)
 				is >> sl.depth;
 			else if (token == "nodes")
 				is >> sl.nodes;
+			else if (token == "ponder")
+				sl.ponder = true;
 		}
 	}
 
