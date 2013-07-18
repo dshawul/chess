@@ -145,9 +145,9 @@ void time_alloc(const SearchLimits& sl, int result[2])
 std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
 {
 	std::vector<move::move_t> pv;
-	B.set_unwind();
+	int ply;
 
-	for (int ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
+	for (ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
 		const TTable::Entry *tte = TT.probe(B.get_key());
 		if (!tte || !tte->move) break;
 
@@ -155,7 +155,9 @@ std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
 		B.play(tte->move);
 	}
 
-	B.unwind();
+	while (ply-- > 0)
+		B.undo();
+
 	return pv;
 }
 
@@ -518,7 +520,7 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 	H.clear();
 	R.clear();
 	TT.new_search();
-	B.set_unwind();		// remember the board::Position state
+	B.set_root();	// remember root node, for correct 2/3-fold in is_draw()
 
 	// Calculate the value of a draw by chess rules, for both colors (contempt option)
 	const int us = B.get_turn(), them = opp_color(us);

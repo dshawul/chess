@@ -74,8 +74,7 @@ public:
 	void play(move::move_t m);
 	void undo();
 
-	void set_unwind();	// set_unwind() remembers the current position in sp0
-	void unwind();		// unwind() undoes moves all the way down to sp0
+	void set_root();	// set_root() remembers the root position in sp0 (for 2/3-fold is_draw())
 
 	bool is_check() const;
 	bool is_draw() const;
@@ -212,15 +211,9 @@ inline Key Position::get_key() const
 		   ^ bb::zob_castle[st().crights];
 }
 
-inline void Position::set_unwind()
+inline void Position::set_root()
 {
 	sp0 = sp;
-}
-
-inline void Position::unwind()
-{
-	while (sp > sp0)
-		undo();
 }
 
 inline bool Position::is_check() const
