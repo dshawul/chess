@@ -499,7 +499,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 }	// namespace
 
-move::move_t bestmove(board::Position& B, const SearchLimits& sl)
+move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *ponder)
 {
 	start = high_resolution_clock::now();
 
@@ -586,7 +586,13 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl)
 		std::cout << std::endl;
 	}
 
-	assert(pv[0] == best && pv[1]);
+	// PV must start from the best move, and have at least two elements (anything after that may be
+	// incorrect due to TT overwriting).
+	assert(best == pv[0] && pv[1]);
+
+	if (ponder)
+		*ponder = pv[1];
+
 	return best;
 }
 

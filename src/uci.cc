@@ -32,7 +32,7 @@ namespace uci {
 int Hash = 16;
 int Contempt = 25;
 const int ELO_MIN = 1500, ELO_MAX = 2700;
-bool LimitStrength = false;
+bool LimitStrength = false, Ponder = false;
 int Elo = ELO_MIN;
 
 }	// namespace uci
@@ -69,9 +69,10 @@ void uci::loop()
 					  << "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
 					  << "option name Clear Hash type button\n"
 					  << "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
+					  << "option name Ponder type check default " << uci::Ponder << '\n'
 					  << "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
 					  << "option name UCI_Elo type spin default " << uci::Elo
-					  << " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  "\n"
+					  << " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
 					  /* end of UCI options */
 					  << "uciok" << std::endl;
 		else if (token == "ucinewgame")
@@ -156,8 +157,11 @@ void go(board::Position& B, std::istringstream& is)
 		}
 	}
 
-	move::move_t m = bestmove(B, sl);
-	std::cout << "bestmove " << move::move_to_string(m) << std::endl;
+	// best and ponder move
+	move::move_t best, ponder;
+	best = bestmove(B, sl, &ponder);
+	std::cout << "bestmove " << move_to_string(best)
+			  << " ponder " << move_to_string(ponder) << std::endl;
 }
 
 void setoption(std::istringstream& is)
@@ -176,6 +180,8 @@ void setoption(std::istringstream& is)
 		TT.clear();
 	else if (name == "Contempt")
 		is >> uci::Contempt;
+	else if (name == "Ponder")
+		is >> uci::Ponder;
 	else if (name == "UCI_LimitStrength")
 		is >> uci::LimitStrength;
 	else if (name == "UCI_Elo")
