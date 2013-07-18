@@ -318,6 +318,9 @@ move_undone:
 		--move_count;
 
 	--sp;
+
+	assert(verify_keys());
+	assert(verify_psq());
 }
 
 Bitboard Position::calc_attacks(int color) const

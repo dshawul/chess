@@ -84,7 +84,7 @@ void TTable::new_search()
 
 const TTable::Entry *TTable::probe(Key key) const
 {
-	const Entry *e = cluster[key & (count - 1)].entry;
+	const Entry *e = &cluster[key & (count - 1)].entry[0];
 
 	for (size_t i = 0; i < 4; ++i, ++e)
 		if (e->key_match(key))
