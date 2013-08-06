@@ -30,7 +30,7 @@ using namespace std::chrono;
 namespace {
 
 const int MAX_PLY = 0x80;
-const int MATE = 32000;
+const int MATE = 16000;
 const int QS_LIMIT = -8;
 
 bool can_abort;
