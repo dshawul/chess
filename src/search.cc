@@ -50,8 +50,6 @@ const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
 move::move_t best;
-std::vector<move::move_t> pv;
-std::vector<move::move_t> read_pv(board::Position& B, int max_ply);
 
 void node_poll(board::Position &B)
 {
@@ -140,25 +138,6 @@ void time_alloc(const SearchLimits& sl, int result[2])
 		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - time_buffer), 1);
 		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - time_buffer), 1);
 	}
-}
-
-std::vector<move::move_t> read_pv(board::Position& B, int max_ply)
-{
-	std::vector<move::move_t> pv;
-	int ply;
-
-	for (ply = 0; ply < max_ply && !B.is_draw(); ++ply) {
-		const TTable::Entry *tte = TT.probe(B.get_key());
-		if (!tte || !tte->move) break;
-
-		pv.push_back(tte->move);
-		B.play(tte->move);
-	}
-
-	while (ply-- > 0)
-		B.undo();
-
-	return pv;
 }
 
 int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
@@ -447,17 +426,8 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			alpha = std::max(alpha, score);
 			ss->best = ss->m;
 
-			if (root) {
+			if (root)
 				best = ss->m;
-
-				// To get the PV ('best' not necessarly yet in TT):
-				// 1. play 'best' and get subsequent PV from TT
-				B.play(best);
-				pv = read_pv(B, depth);
-				B.undo();
-				// 2. insert 'best' in front of the PV
-				pv.insert(pv.begin(), best);
-			}
 		}
 	}
 
@@ -539,6 +509,8 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 		for (;;) {
 			// Aspiration loop
 
+			can_abort = depth >= 2;
+
 			try {
 				score = search(B, alpha, beta, depth, PV, ss);
 			} catch (AbortSearch e) {
@@ -575,23 +547,10 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 			}
 		}
 
-		// Here we know for sure that iteration 1 is finished. Aborting before the end of
-		// iteration 1 is disastrous, and can return a null or stupid move
-		can_abort = true;
-
-		// Display the PV
-		std::cout << " pv ";
-		for (auto it = pv.begin(); it != pv.end(); ++it)
-			std::cout << move_to_string(*it) << ' ';
 		std::cout << std::endl;
 	}
 
-	// PV must start from the best move, and have at least two elements (anything after that may be
-	// incorrect due to TT overwriting).
-	assert(best == pv[0] && pv[1]);
-
-	if (ponder)
-		*ponder = pv[1];
+	*ponder = move::move_t(0);
 
 	return best;
 }
