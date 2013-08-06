@@ -17,6 +17,7 @@
 #include "uci.h"
 #include "search.h"
 #include "eval.h"
+#include "test.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -89,6 +90,10 @@ void uci::loop()
 		else if (token == "eval") {
 			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B);
 			std::cout << B << "eval = " << e << std::endl;
+		} else if (token == "perft") {
+			int depth;
+			if (is >> depth)
+				std::cout << perft(B, depth, 0) << std::endl;
 		}
 	}
 }
