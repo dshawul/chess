@@ -74,7 +74,7 @@ private:
 					   int *total_count, int *total_weight);
 
 	Bitboard do_eval_pawns();
-	void eval_shelter_storm();
+	void eval_shield_storm();
 	void eval_passer(int sq, Eval* res);
 	void eval_passer_interaction(int sq);
 
@@ -338,9 +338,9 @@ void EvalInfo::eval_pawns()
 		eval_passer_interaction(bb::pop_lsb(&b));
 }
 
-void EvalInfo::eval_shelter_storm()
+void EvalInfo::eval_shield_storm()
 {
-	static const int ShelterPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
+	static const int ShieldPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
 	static const int StormPenalty[8] = {10, 0, 40, 20, 10, 0, 0, 0};
 
 	const int kf = file(our_ksq);
@@ -353,11 +353,11 @@ void EvalInfo::eval_shelter_storm()
 		int r, sq;
 		bool half;
 
-		// Pawn shelter
+		// Pawn shield
 		b = our_pawns & bb::file_bb(f);
 		r = b ? (us ? 7 - rank(bb::msb(b)) : rank(bb::lsb(b))) : 0;
 		half = f != kf;
-		e[us].op -= ShelterPenalty[r] >> half;
+		e[us].op -= ShieldPenalty[r] >> half;
 
 		// Pawn storm
 		b = their_pawns & bb::file_bb(f);
@@ -423,7 +423,7 @@ Bitboard EvalInfo::do_eval_pawns()
 	static const Eval Hole = {16, 10};
 	Bitboard passers = 0;
 
-	eval_shelter_storm();
+	eval_shield_storm();
 
 	Bitboard sqs = our_pawns;
 	while (sqs) {
