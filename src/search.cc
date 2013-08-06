@@ -247,7 +247,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	const Key key = B.get_key();
 	TT.prefetch(key);
 
-	move::move_t subtree_pv[MAX_DEPTH + 1];
+	move::move_t subtree_pv[MAX_DEPTH - ss->ply];
 	if (node_type == PV)
 		pv[0] = move::move_t(0);
 
@@ -437,7 +437,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 				if (node_type == PV) {
 					// update the PV
 					pv[0] = ss->m;
-					for (int i = 0; i < MAX_DEPTH; i++)
+					for (int i = 0; i < MAX_DEPTH - ss->ply; i++)
 						if (!(pv[i + 1] = subtree_pv[i]))
 							break;
 				}
