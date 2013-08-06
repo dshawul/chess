@@ -534,8 +534,12 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 				return best = ss->best;
 			}
 
-			std::cout << "info score cp " << score << " depth " << depth << " nodes " << node_count
-					  << " time " << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+			if (is_mate_score(score))
+				std::cout << "info score mate " << (score > 0 ? (MATE - score + 1) / 2 : -(score + MATE + 1) / 2);
+			else
+				std::cout << "info score cp " << score;
+			std::cout << " depth " << depth << " nodes " << node_count << " time "
+					  << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
 
 			if (alpha < score && score < beta) {
 				// score is within bounds
@@ -567,10 +571,12 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 		for (int i = 0; i < MAX_PLY && pv[i]; i++)
 			std::cout << ' ' << move_to_string(pv[i]);
 		std::cout << std::endl;
-	}
 
-	if (ponder)
-		*ponder = pv[1];
+		// FIXME: Root search should update this, since the PV can change and not terminate an
+		// iteration (timeout exception for eg.)
+		if (ponder)
+			*ponder = pv[1];
+	}
 
 	return best;
 }
