@@ -93,6 +93,16 @@ const TTable::Entry *TTable::probe(Key key) const
 	return nullptr;
 }
 
+void TTable::Entry::save(Key k, std::uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move::move_t m)
+{
+	key_type = (k & ~3ULL) ^ (nt + 1);
+	generation = g;
+	depth = d;
+	score = s;
+	eval = e;
+	move = m;
+}
+
 void TTable::store(Key key, int node_type, int8_t depth, int16_t score, int16_t eval, move::move_t move)
 {
 	Entry *e = cluster[key & (count - 1)].entry, *replace = e;

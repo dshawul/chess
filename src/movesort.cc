@@ -16,6 +16,14 @@
 #include "movesort.h"
 #include "search.h"
 
+void SearchInfo:: clear(int _ply)
+{
+	ply = _ply;
+	m = best = killer[0] = killer[1] = move::move_t(0);
+	eval = reduction = 0;
+	skip_null = null_child = false;
+}
+
 void History::clear()
 {
 	std::memset(h, 0, sizeof(h));
@@ -41,6 +49,24 @@ void History::add(const board::Position& B, move::move_t m, int bonus)
 		for (int c = WHITE; c <= BLACK; ++c)
 			for (int p = PAWN; p <= KING; ++p)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
+}
+
+move::move_t Refutation::get_refutation(Key dm_key) const
+{
+	const size_t idx = dm_key & (count - 1);
+	Entry tmp = {dm_key, move::move_t(0)};
+	return r[idx].dm_key == tmp.dm_key ? r[idx].move : move::move_t(0);
+}
+
+void Refutation::set_refutation(Key dm_key, move::move_t m)
+{
+	const size_t idx = dm_key & (count - 1);
+	r[idx] = {dm_key, m};
+}
+
+void Refutation::clear()
+{
+	std::memset(this, 0, sizeof(this));
 }
 
 MoveSort::MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,

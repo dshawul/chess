@@ -22,12 +22,7 @@ struct SearchInfo {
 	int ply, reduction, eval;
 	bool skip_null, null_child;
 
-	void clear(int _ply) {
-		ply = _ply;
-		m = best = killer[0] = killer[1] = move::move_t(0);
-		eval = reduction = 0;
-		skip_null = null_child = false;
-	}
+	void clear(int _ply);
 };
 
 /* History heuristic (quite move ordering):
@@ -57,20 +52,9 @@ private:
  * */
 class Refutation {
 public:
-	void clear() {
-		std::memset(this, 0, sizeof(this));
-	}
-
-	move::move_t get_refutation(Key dm_key) const {
-		const size_t idx = dm_key & (count - 1);
-		Entry tmp = {dm_key, move::move_t(0)};
-		return r[idx].dm_key == tmp.dm_key ? r[idx].move : move::move_t(0);
-	}
-
-	void set_refutation(Key dm_key, move::move_t m) {
-		const size_t idx = dm_key & (count - 1);
-		r[idx] = {dm_key, m};
-	}
+	void clear();
+	move::move_t get_refutation(Key dm_key) const;
+	void set_refutation(Key dm_key, move::move_t m);
 
 private:
 	struct Entry {
