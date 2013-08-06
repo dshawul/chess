@@ -93,7 +93,8 @@ const TTable::Entry *TTable::probe(Key key) const
 	return nullptr;
 }
 
-void TTable::Entry::save(Key k, std::uint8_t g, int nt, int8_t d, int16_t s, int16_t e, move::move_t m)
+void TTable::Entry::save(Key k, std::uint8_t g, int nt, std::int8_t d, std::int16_t s, std::int16_t e,
+						 move::move_t m)
 {
 	key_type = (k & ~3ULL) ^ (nt + 1);
 	generation = g;

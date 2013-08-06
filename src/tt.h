@@ -33,6 +33,9 @@ public:
 		bool key_match(Key k) const {
 			return (key_type & ~3ULL) == (k & ~3ULL);
 		}
+
+		void save(Key k, std::uint8_t g, int nt, std::int8_t d, std::int16_t s, std::int16_t e,
+				  move::move_t m);
 	};
 
 	struct Cluster {
