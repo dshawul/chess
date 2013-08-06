@@ -29,9 +29,11 @@ using namespace std::chrono;
 
 namespace {
 
-const int MAX_PLY = 0x80;
+const int MAX_DEPTH = 127;	// do not change: depth are encoded as 8 bits signed for TT entries
+const int MIN_DEPTH = -8;	// qsearch depth limit (extra ply allowed if in check)
+const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 2;
+
 const int MATE = 16000;
-const int QS_LIMIT = -8;
 
 bool can_abort;
 struct AbortSearch {};
@@ -210,7 +212,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 
 		// recursion
 		int score;
-		if (depth <= QS_LIMIT && !in_check)		// prevent qsearch explosion
+		if (depth <= MIN_DEPTH && !in_check)		// prevent qsearch explosion
 			score = ss->eval + see;
 		else {
 			B.play(ss->m);
@@ -239,13 +241,13 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
-	if (depth <= 0 || ss->ply >= MAX_PLY)
+	if (depth <= 0 || ss->ply >= MAX_DEPTH)
 		return qsearch(B, alpha, beta, depth, node_type, ss);
 
 	const Key key = B.get_key();
 	TT.prefetch(key);
 
-	move::move_t subtree_pv[MAX_PLY];
+	move::move_t subtree_pv[MAX_DEPTH + 1];
 	if (node_type == PV)
 		pv[0] = move::move_t(0);
 
@@ -435,8 +437,9 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 				if (node_type == PV) {
 					// update the PV
 					pv[0] = ss->m;
-					std::memcpy(pv + 1, subtree_pv, (MAX_PLY - 1)*sizeof(move::move_t));
-					pv[MAX_PLY - 1] = move::move_t(0);
+					for (int i = 0; i < MAX_DEPTH; i++)
+						if (!(pv[i + 1] = subtree_pv[i]))
+							break;
 				}
 			}
 
@@ -487,8 +490,8 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 {
 	start = high_resolution_clock::now();
 
-	SearchInfo ss[MAX_PLY + 1 - QS_LIMIT];
-	for (int ply = 0; ply < MAX_PLY + 1 - QS_LIMIT; ++ply)
+	SearchInfo ss[MAX_PLY];
+	for (int ply = 0; ply < MAX_PLY; ++ply)
 		ss[ply].clear(ply);
 
 	node_count = 0;
@@ -511,8 +514,8 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 	DrawScore[us] = -uci::Contempt;
 	DrawScore[them] = +uci::Contempt;
 
-	move::move_t pv[MAX_PLY];
-	const int max_depth = sl.depth ? std::min(MAX_PLY - 1, sl.depth) : MAX_PLY - 1;
+	move::move_t pv[MAX_DEPTH + 1];
+	const int max_depth = sl.depth ? std::min(MAX_DEPTH, sl.depth) : MAX_DEPTH;
 
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
 		// iterative deepening loop
@@ -568,7 +571,7 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 
 		// display the PV
 		std::cout << " pv";
-		for (int i = 0; i < MAX_PLY && pv[i]; i++)
+		for (int i = 0; i <= MAX_DEPTH && pv[i]; i++)
 			std::cout << ' ' << move_to_string(pv[i]);
 		std::cout << std::endl;
 
