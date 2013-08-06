@@ -235,7 +235,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	return best_score;
 }
 
-int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
@@ -244,6 +244,10 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 	const Key key = B.get_key();
 	TT.prefetch(key);
+
+	move::move_t subtree_pv[MAX_PLY];
+	if (node_type == PV)
+		pv[0] = move::move_t(0);
 
 	node_poll(B);
 
@@ -308,7 +312,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 		B.play(move::move_t(0));
 		(ss + 1)->null_child = true;
-		int score = -search(B, -beta, -alpha, depth - reduction, All, ss + 1);
+		int score = -search(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
 		(ss + 1)->null_child = false;
 		B.undo();
 
@@ -327,7 +331,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	if ( (!tte || !tte->move || tte->depth <= 0)
 		 && depth >= (node_type == PV ? 4 : 7) ) {
 		ss->skip_null = true;
-		search(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss);
+		search(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss, subtree_pv);
 		ss->skip_null = false;
 	}
 
@@ -398,7 +402,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			// search full window full depth
 			// Note that the full window is a zero window at non PV nodes
 			// "-node_type" effectively does PV->PV Cut<->All
-			score = -search(B, -beta, -alpha, new_depth, -node_type, ss + 1);
+			score = -search(B, -beta, -alpha, new_depth, -node_type, ss + 1, subtree_pv);
 		else {
 			// Cut node: If the first move didn't produce the expected cutoff, then we are
 			// unlikely to get a cutoff at this node, which becomes an All node, so that its
@@ -408,23 +412,33 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 			// zero window search (reduced)
 			score = -search(B, -alpha - 1, -alpha, new_depth - ss->reduction,
-							node_type == PV ? Cut : -node_type, ss + 1);
+							node_type == PV ? Cut : -node_type, ss + 1, subtree_pv);
 
 			// doesn't fail low: verify at full depth, with zero window
 			if (score > alpha && ss->reduction)
-				score = -search(B, -alpha - 1, -alpha, new_depth, All, ss + 1);
+				score = -search(B, -alpha - 1, -alpha, new_depth, All, ss + 1, subtree_pv);
 
 			// still doesn't fail low at PV node: full depth and full window
 			if (node_type == PV && score > alpha)
-				score = -search(B, -beta, -alpha, new_depth , PV, ss + 1);
+				score = -search(B, -beta, -alpha, new_depth , PV, ss + 1, subtree_pv);
 		}
 
 		B.undo();
 
 		if (score > best_score) {
 			best_score = score;
-			alpha = std::max(alpha, score);
 			ss->best = ss->m;
+
+			if (score > alpha) {
+				alpha = score;
+
+				if (node_type == PV) {
+					// update the PV
+					pv[0] = ss->m;
+					std::memcpy(pv + 1, subtree_pv, (MAX_PLY - 1)*sizeof(move::move_t));
+					pv[MAX_PLY - 1] = move::move_t(0);
+				}
+			}
 
 			if (root)
 				best = ss->m;
@@ -497,6 +511,7 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 	DrawScore[us] = -uci::Contempt;
 	DrawScore[them] = +uci::Contempt;
 
+	move::move_t pv[MAX_PLY];
 	const int max_depth = sl.depth ? std::min(MAX_PLY - 1, sl.depth) : MAX_PLY - 1;
 
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
@@ -512,7 +527,7 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 			can_abort = depth >= 2;
 
 			try {
-				score = search(B, alpha, beta, depth, PV, ss);
+				score = search(B, alpha, beta, depth, PV, ss, pv);
 			} catch (AbortSearch e) {
 				return best;
 			} catch (ForcedMove e) {
@@ -547,11 +562,15 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 			}
 		}
 
+		// display the PV
+		std::cout << " pv";
+		for (int i = 0; i < MAX_PLY && pv[i]; i++)
+			std::cout << ' ' << move_to_string(pv[i]);
 		std::cout << std::endl;
 	}
 
-	*ponder = move::move_t(0);
+	if (ponder)
+		*ponder = pv[1];
 
 	return best;
 }
-
