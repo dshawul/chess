@@ -159,6 +159,8 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
 
+	const Bitboard hanging = hanging_pieces(B);
+
 	// TT lookup
 	const TTable::Entry *tte = TT.probe(key);
 	if (tte) {
@@ -173,7 +175,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 
 	// stand pat
 	if (!in_check) {
-		best_score = ss->eval + eval::asymmetric_eval(B);
+		best_score = ss->eval + eval::asymmetric_eval(B, hanging);
 		alpha = std::max(alpha, best_score);
 		if (alpha >= beta)
 			return alpha;
@@ -270,7 +272,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 		return alpha;
 	}
 
-	const Bitboard hanging = hanging_pieces(B, B.get_turn());
+	const Bitboard hanging = hanging_pieces(B);
 
 	// TT lookup
 	const TTable::Entry *tte = TT.probe(key);
@@ -285,7 +287,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
 	// Stand pat score (adjusted for tempo and hanging pieces)
-	const int stand_pat = ss->eval + eval::asymmetric_eval(B);
+	const int stand_pat = ss->eval + eval::asymmetric_eval(B, hanging);
 
 	// Eval pruning
 	if ( depth <= 3 && node_type != PV

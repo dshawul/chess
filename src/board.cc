@@ -516,9 +516,9 @@ bool Position::is_draw() const
 	return false;
 }
 
-Bitboard hanging_pieces(const Position& B, int us)
+Bitboard hanging_pieces(const Position& B)
 {
-	const int them = opp_color(us);
+	const int us = B.get_turn(), them = opp_color(us);
 
 	const Bitboard our_pawns = B.get_pieces(us, PAWN);
 	const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;

@@ -88,7 +88,7 @@ void uci::loop()
 		} else if (token == "setoption")
 			setoption(is);
 		else if (token == "eval") {
-			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B);
+			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B, hanging_pieces(B));
 			std::cout << B << "eval = " << e << std::endl;
 		} else if (token == "perft") {
 			int depth;

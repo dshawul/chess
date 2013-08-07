@@ -111,7 +111,7 @@ private:
 extern const std::string PieceLabel[NB_COLOR];
 extern std::ostream& operator<< (std::ostream& ostrm, const Position& B);
 
-extern Bitboard hanging_pieces(const Position& B, int us);
+extern Bitboard hanging_pieces(const Position& B);
 extern Bitboard calc_attackers(const Position& B, int sq, Bitboard occ);
 
 inline int Position::get_color_on(int sq) const
