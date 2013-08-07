@@ -119,7 +119,8 @@ bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, in
 	const bool depth_ok = tte->depth >= depth;
 
 	if (is_pv)
-		return depth_ok && tte->node_type() == PV;
+		return depth_ok && tte->node_type() == PV
+			   && ply >= 2;	// to have at least a ponder move in the PV
 	else {
 		const int tt_score = score_from_tt(tte->score, ply);
 		return (depth_ok
