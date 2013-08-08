@@ -77,13 +77,13 @@ void uci::loop()
 					  /* end of UCI options */
 					  << "uciok" << std::endl;
 		else if (token == "ucinewgame")
-			TT.clear();
+			search::TT.clear();
 		else if (token == "position")
 			position(B, is);
 		else if (token == "go")
 			go(B, is);
 		else if (token == "isready") {
-			TT.alloc(uci::Hash << 20);
+			search::TT.alloc(uci::Hash << 20);
 			std::cout << "readyok" << std::endl;
 		} else if (token == "setoption")
 			setoption(is);
@@ -136,14 +136,14 @@ void position(board::Position& B, std::istringstream& is)
 
 void go(board::Position& B, std::istringstream& is)
 {
-	SearchLimits sl;
-	PollingFrequency = 256;
+	search::Limits sl;
+	search::PollingFrequency = 256;
 
 	if (uci::LimitStrength) {
 		// discard parameters of the go command
 		sl.nodes = pow(2.0, 8.0 + pow((uci::Elo - uci::ELO_MIN) / 128.0, 1.0 / 0.9));
 		if (sl.nodes / 16 <= 256)
-			PollingFrequency = 1ULL << bb::msb(sl.nodes / 16);
+			search::PollingFrequency = 1ULL << bb::msb(sl.nodes / 16);
 	} else {
 		std::string token;
 		while (is >> token) {
@@ -184,7 +184,7 @@ void setoption(std::istringstream& is)
 	if (name == "Hash")
 		is >> uci::Hash;
 	else if (name == "ClearHash")
-		TT.clear();
+		search::TT.clear();
 	else if (name == "Contempt")
 		is >> uci::Contempt;
 	else if (name == "Ponder")

@@ -20,12 +20,16 @@
 #include "movesort.h"
 #include "prng.h"
 
+using namespace std::chrono;
+
+namespace search {
+
 TTable TT;
 
 std::uint64_t node_count;
 std::uint64_t PollingFrequency;
 
-using namespace std::chrono;
+}	// namespace search
 
 namespace {
 
@@ -55,11 +59,11 @@ move::move_t best;
 
 void node_poll(board::Position &B)
 {
-	if (!(++node_count & (PollingFrequency - 1)) && can_abort) {
+	if (!(++search::node_count & (search::PollingFrequency - 1)) && can_abort) {
 		bool abort = false;
 
 		// abort search because node limit exceeded
-		if (node_limit && node_count >= node_limit)
+		if (node_limit && search::node_count >= node_limit)
 			abort = true;
 		// abort search because time limit exceeded
 		else if (time_allowed && duration_cast<milliseconds>
@@ -131,7 +135,7 @@ bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, in
 	}
 }
 
-void time_alloc(const SearchLimits& sl, int result[2])
+void time_alloc(const search::Limits& sl, int result[2])
 {
 	if (sl.movetime > 0)
 		result[0] = result[1] = sl.movetime;
@@ -149,7 +153,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
 	const Key key = B.get_key();
-	TT.prefetch(key);
+	search::TT.prefetch(key);
 	node_poll(B);
 
 	const bool in_check = B.is_check();
@@ -162,10 +166,10 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	const Bitboard hanging = hanging_pieces(B);
 
 	// TT lookup
-	const TTable::Entry *tte = TT.probe(key);
+	const TTable::Entry *tte = search::TT.probe(key);
 	if (tte) {
 		if (can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
-			TT.refresh(tte);
+			search::TT.refresh(tte);
 			return score_from_tt(tte->score, ss->ply);
 		}
 		ss->eval = tte->eval;
@@ -235,12 +239,12 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 
 	// update TT
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
-	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
+	search::TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
 	return best_score;
 }
 
-int search(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
+int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
@@ -248,7 +252,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 		return qsearch(B, alpha, beta, depth, node_type, ss);
 
 	const Key key = B.get_key();
-	TT.prefetch(key);
+	search::TT.prefetch(key);
 
 	move::move_t subtree_pv[MAX_DEPTH - ss->ply];
 	if (node_type == PV)
@@ -275,10 +279,10 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	const Bitboard hanging = hanging_pieces(B);
 
 	// TT lookup
-	const TTable::Entry *tte = TT.probe(key);
+	const TTable::Entry *tte = search::TT.probe(key);
 	if (tte) {
 		if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
-			TT.refresh(tte);
+			search::TT.refresh(tte);
 			return score_from_tt(tte->score, ss->ply);
 		}
 		ss->eval = tte->eval;
@@ -317,7 +321,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 		B.play(move::move_t(0));
 		(ss + 1)->null_child = true;
-		int score = -search(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
+		int score = -pvs(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
 		(ss + 1)->null_child = false;
 		B.undo();
 
@@ -336,7 +340,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 	if ( (!tte || !tte->move || tte->depth <= 0)
 		 && depth >= (node_type == PV ? 4 : 7) ) {
 		ss->skip_null = true;
-		search(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss, subtree_pv);
+		pvs(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss, subtree_pv);
 		ss->skip_null = false;
 	}
 
@@ -407,7 +411,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 			// search full window full depth
 			// Note that the full window is a zero window at non PV nodes
 			// "-node_type" effectively does PV->PV Cut<->All
-			score = -search(B, -beta, -alpha, new_depth, -node_type, ss + 1, subtree_pv);
+			score = -pvs(B, -beta, -alpha, new_depth, -node_type, ss + 1, subtree_pv);
 		else {
 			// Cut node: If the first move didn't produce the expected cutoff, then we are
 			// unlikely to get a cutoff at this node, which becomes an All node, so that its
@@ -416,16 +420,16 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 				node_type = All;
 
 			// zero window search (reduced)
-			score = -search(B, -alpha - 1, -alpha, new_depth - ss->reduction,
-							node_type == PV ? Cut : -node_type, ss + 1, subtree_pv);
+			score = -pvs(B, -alpha - 1, -alpha, new_depth - ss->reduction,
+						 node_type == PV ? Cut : -node_type, ss + 1, subtree_pv);
 
 			// doesn't fail low: verify at full depth, with zero window
 			if (score > alpha && ss->reduction)
-				score = -search(B, -alpha - 1, -alpha, new_depth, All, ss + 1, subtree_pv);
+				score = -pvs(B, -alpha - 1, -alpha, new_depth, All, ss + 1, subtree_pv);
 
 			// still doesn't fail low at PV node: full depth and full window
 			if (node_type == PV && score > alpha)
-				score = -search(B, -beta, -alpha, new_depth , PV, ss + 1, subtree_pv);
+				score = -pvs(B, -beta, -alpha, new_depth , PV, ss + 1, subtree_pv);
 		}
 
 		B.undo();
@@ -462,7 +466,7 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 	// update TT
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
-	TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
+	search::TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
 	// best move is quiet: update killers and history
 	if (ss->best && !move::is_cop(B, ss->best)) {
@@ -490,7 +494,9 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 
 }	// namespace
 
-move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *ponder)
+namespace search {
+
+move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder)
 {
 	start = high_resolution_clock::now();
 
@@ -532,9 +538,8 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 			// Aspiration loop
 
 			can_abort = depth >= 2;
-
 			try {
-				score = search(B, alpha, beta, depth, PV, ss, pv);
+				score = pvs(B, alpha, beta, depth, PV, ss, pv);
 			} catch (AbortSearch e) {
 				return best;
 			} catch (ForcedMove e) {
@@ -587,3 +592,5 @@ move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *
 
 	return best;
 }
+
+}	// namespace search

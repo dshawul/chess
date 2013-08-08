@@ -16,8 +16,10 @@
 #include "movegen.h"
 #include "tt.h"
 
-struct SearchLimits {
-	SearchLimits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0), ponder(false) {}
+namespace search {
+
+struct Limits {
+	Limits(): time(0), inc(0), movetime(0), depth(0), movestogo(0), nodes(0), ponder(false) {}
 	int time, inc, movetime, depth, movestogo;
 	std::uint64_t nodes;
 	bool ponder;
@@ -29,5 +31,6 @@ extern TTable TT;
 extern std::uint64_t node_count;
 extern std::uint64_t PollingFrequency;	// must be a power of two
 
-move::move_t bestmove(board::Position& B, const SearchLimits& sl, move::move_t *ponder = nullptr);
+move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder = nullptr);
 
+}	// namespace search

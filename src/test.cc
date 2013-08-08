@@ -101,11 +101,11 @@ void bench(int depth)
 	};
 
 	board::Position B;
-	SearchLimits sl;
+	search::Limits sl;
 	sl.depth = depth;
 	std::uint64_t signature = 0;
 
-	TT.alloc(32 << 20);
+	search::TT.alloc(32 << 20);
 
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
@@ -115,7 +115,7 @@ void bench(int depth)
 		std::cout << B.get_fen() << std::endl;
 		bestmove(B, sl);
 		std::cout << std::endl;
-		signature += node_count;
+		signature += search::node_count;
 	}
 
 	end = high_resolution_clock::now();
