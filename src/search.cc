@@ -455,8 +455,9 @@ int search(board::Position& B, int alpha, int beta, int depth, int node_type, Se
 		// mated or stalemated
 		assert(!root);
 		return in_check ? mated_in(ss->ply) : DrawScore[B.get_turn()];
-	} else if (root && MS.get_count() == 1)
+	} else if (root && MS.get_count() == 1 && depth >= 2)
 		// forced move at the root node, play instantly and prevent further iterative deepening
+		// depth >= 2 is to make sure we have a ponder move pv[1]
 		throw ForcedMove();
 
 	// update TT
