@@ -33,9 +33,9 @@ std::uint64_t PollingFrequency;
 
 namespace {
 
-const int MAX_DEPTH = 127;	// do not change: depth are encoded as 8 bits signed for TT entries
-const int MIN_DEPTH = -8;	// qsearch depth limit (extra ply allowed if in check)
-const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 2;
+const int MAX_DEPTH = 127;	// pvs() depth go from MAX_DEPTH down to 1
+const int MIN_DEPTH = -8;	// qsearch() depth go from 0 downto -MIN_DEPTH-1
+const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 1;	// plies go from 0 to MAX_PLY
 
 const int MATE = 16000;
 
@@ -147,7 +147,7 @@ void time_alloc(const search::Limits& sl, int result[2])
 	}
 }
 
-int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
+int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
 {
 	assert(depth <= 0);
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
@@ -159,6 +159,10 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	const bool in_check = B.is_check();
 	int best_score = -INF, old_alpha = alpha;
 	ss->best = move::move_t(0);
+
+	move::move_t subtree_pv[MAX_PLY - ss->ply];
+	if (node_type == PV)
+		pv[0] = move::move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -223,13 +227,25 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 			score = ss->eval + see;
 		else {
 			B.play(ss->m);
-			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1);
+			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1, subtree_pv);
 			B.undo();
 		}
 
 		if (score > best_score) {
 			best_score = score;
-			alpha = std::max(alpha, score);
+
+			if (score > alpha) {
+				alpha = score;
+
+				if (node_type == PV) {
+					// update the PV
+					pv[0] = ss->m;
+					for (int i = 0; i < MAX_PLY - ss->ply; i++)
+						if (!(pv[i + 1] = subtree_pv[i]))
+							break;
+				}
+			}
+
 			ss->best = ss->m;
 		}
 	}
@@ -249,12 +265,12 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
 	if (depth <= 0 || ss->ply >= MAX_DEPTH)
-		return qsearch(B, alpha, beta, depth, node_type, ss);
+		return qsearch(B, alpha, beta, depth, node_type, ss, pv);
 
 	const Key key = B.get_key();
 	search::TT.prefetch(key);
 
-	move::move_t subtree_pv[MAX_DEPTH - ss->ply];
+	move::move_t subtree_pv[MAX_PLY - ss->ply];
 	if (node_type == PV)
 		pv[0] = move::move_t(0);
 
@@ -305,7 +321,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 		 && !in_check && !is_mate_score(beta) ) {
 		const int threshold = beta - RazorMargin[depth];
 		if (ss->eval < threshold) {
-			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1);
+			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1, subtree_pv);
 			if (score < threshold)
 				return score;
 		}
@@ -444,7 +460,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 				if (node_type == PV) {
 					// update the PV
 					pv[0] = ss->m;
-					for (int i = 0; i < MAX_DEPTH - ss->ply; i++)
+					for (int i = 0; i < MAX_PLY - ss->ply; i++)
 						if (!(pv[i + 1] = subtree_pv[i]))
 							break;
 				}
@@ -500,8 +516,8 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 {
 	start = high_resolution_clock::now();
 
-	SearchInfo ss[MAX_PLY];
-	for (int ply = 0; ply < MAX_PLY; ++ply)
+	SearchInfo ss[MAX_PLY + 1];
+	for (int ply = 0; ply <= MAX_PLY; ++ply)
 		ss[ply].clear(ply);
 
 	node_count = 0;
@@ -524,7 +540,7 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 	DrawScore[us] = -uci::Contempt;
 	DrawScore[them] = +uci::Contempt;
 
-	move::move_t pv[MAX_DEPTH + 1];
+	move::move_t pv[MAX_PLY + 1];
 	const int max_depth = sl.depth ? std::min(MAX_DEPTH, sl.depth) : MAX_DEPTH;
 
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
@@ -580,7 +596,7 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 
 		// display the PV
 		std::cout << " pv";
-		for (int i = 0; i <= MAX_DEPTH && pv[i]; i++)
+		for (int i = 0; i <= MAX_PLY && pv[i]; i++)
 			std::cout << ' ' << move_to_string(pv[i]);
 		std::cout << std::endl;
 
