@@ -167,8 +167,10 @@ void go(board::Position& B, std::istringstream& is)
 	// best and ponder move
 	move::move_t best, ponder;
 	best = bestmove(B, sl, &ponder);
-	std::cout << "bestmove " << move_to_string(best)
-			  << " ponder " << move_to_string(ponder) << std::endl;
+	std::cout << "bestmove " << move_to_string(best);
+	if (ponder)
+		std::cout << " ponder " << move_to_string(ponder);
+	std::cout << std::endl;
 }
 
 void setoption(std::istringstream& is)
