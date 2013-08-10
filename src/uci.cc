@@ -165,11 +165,10 @@ void go(board::Position& B, std::istringstream& is)
 	}
 
 	// best and ponder move
-	move::move_t best, ponder;
-	best = bestmove(B, sl, &ponder);
-	std::cout << "bestmove " << move_to_string(best);
-	if (ponder)
-		std::cout << " ponder " << move_to_string(ponder);
+	std::pair<move::move_t, move::move_t> best = bestmove(B, sl);
+	std::cout << "bestmove " << move_to_string(best.first);
+	if (best.second)
+		std::cout << " ponder " << move_to_string(best.second);
 	std::cout << std::endl;
 }
 
