@@ -55,7 +55,7 @@ const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
-move::move_t best;
+move::move_t best_move, ponder_move;
 
 void node_poll(board::Position &B)
 {
@@ -466,8 +466,10 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 				}
 			}
 
-			if (root)
-				best = ss->m;
+			if (root) {
+				best_move = pv[0];
+				ponder_move = pv[1];
+			}
 		}
 	}
 
@@ -512,7 +514,8 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 
 namespace search {
 
-move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder)
+std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits& sl)
+// returns a pair (best move, ponder move)
 {
 	start = high_resolution_clock::now();
 
@@ -523,12 +526,7 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
-	best = move::move_t(0);
-
-	// We can only abort the search once iteration 1 is finished. In extreme situations (eg. fixed
-	// nodes), the SearchLimits sl could trigger a search abortion before that, which is disastrous,
-	// as the best move could be illegal or completely stupid.
-	can_abort = false;
+	best_move = ponder_move = move::move_t(0);
 
 	H.clear();
 	R.clear();
@@ -546,9 +544,14 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
 		// iterative deepening loop
 
+		// We can only abort the search once iteration 1 is finished. In extreme situations (eg.
+		// fixed nodes), the SearchLimits sl could trigger a search abortion before that, which is
+		// disastrous, as the best move could be illegal or completely stupid.
+		can_abort = depth >= 2;
+
 		int score, delta = 16;
 		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
-		time_allowed = time_limit[0] >> (best && move::see(B, best) > 0);
+		time_allowed = time_limit[0] >> (best_move && move::see(B, best_move) > 0);
 
 		for (;;) {
 			// Aspiration loop
@@ -557,9 +560,10 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 			try {
 				score = pvs(B, alpha, beta, depth, PV, ss, pv);
 			} catch (AbortSearch e) {
-				return best;
+				goto return_pair;
 			} catch (ForcedMove e) {
-				return best = ss->best;
+				best_move = ss->best;
+				goto return_pair;
 			}
 
 			if (is_mate_score(score))
@@ -599,14 +603,10 @@ move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder
 		for (int i = 0; i <= MAX_PLY && pv[i]; i++)
 			std::cout << ' ' << move_to_string(pv[i]);
 		std::cout << std::endl;
-
-		// FIXME: Root search should update this, since the PV can change and not terminate an
-		// iteration (timeout exception for eg.)
-		if (ponder)
-			*ponder = pv[1];
 	}
 
-	return best;
+return_pair:
+	return std::make_pair(best_move, ponder_move);
 }
 
 }	// namespace search

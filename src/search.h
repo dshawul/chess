@@ -31,6 +31,6 @@ extern TTable TT;
 extern std::uint64_t node_count;
 extern std::uint64_t PollingFrequency;	// must be a power of two
 
-move::move_t bestmove(board::Position& B, const Limits& sl, move::move_t *ponder = nullptr);
+std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits& sl);
 
 }	// namespace search
