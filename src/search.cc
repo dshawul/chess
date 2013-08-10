@@ -396,7 +396,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 		if (!capture && !dangerous && !in_check && !root) {
 			// Move count pruning
 			if ( depth <= 6 && node_type != PV
-				 && LMR >= 3 + depth * depth
+				 && LMR >= 3 + depth * (2 * depth - 1) / 2
 				 && alpha > mated_in(MAX_PLY)
 				 && (see < 0 || !refute(B, ss->m, threat_move)) ) {
 				best_score = std::max(best_score, std::min(alpha, stand_pat + see));
