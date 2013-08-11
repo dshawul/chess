@@ -467,7 +467,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 			}
 
 			if (root) {
-				best_move = pv[0];
+				best_move = ss->m;
 				ponder_move = pv[1];
 			}
 		}
