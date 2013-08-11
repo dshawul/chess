@@ -105,14 +105,14 @@ void bench(int depth)
 	sl.depth = depth;
 	std::uint64_t signature = 0;
 
-	search::TT.alloc(32 << 20);
+	search::TT.alloc(32ULL << 20);
+	search::clear_state();
 
 	time_point<high_resolution_clock> start, end;
 	start = high_resolution_clock::now();
 
 	for (int i = 0; test[i]; ++i) {
 		B.set_fen(test[i]);
-		search::clear_state();
 
 		std::cout << B.get_fen() << std::endl;
 		bestmove(B, sl);
