@@ -13,7 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
-#include "movegen.h"
+#include "movesort.h"
 #include "tt.h"
 
 namespace search {
@@ -25,12 +25,14 @@ struct Limits {
 	bool ponder;
 };
 
-// Transposition Table
 extern TTable TT;
+extern Refutation R;
 
 extern std::uint64_t node_count;
 extern std::uint64_t PollingFrequency;	// must be a power of two
 
 std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits& sl);
+
+extern void clear_state();
 
 }	// namespace search

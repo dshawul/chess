@@ -112,9 +112,12 @@ void bench(int depth)
 
 	for (int i = 0; test[i]; ++i) {
 		B.set_fen(test[i]);
+		search::clear_state();
+
 		std::cout << B.get_fen() << std::endl;
 		bestmove(B, sl);
 		std::cout << std::endl;
+
 		signature += search::node_count;
 	}
 

@@ -25,6 +25,7 @@ using namespace std::chrono;
 namespace search {
 
 TTable TT;
+Refutation R;
 
 std::uint64_t node_count;
 std::uint64_t PollingFrequency;
@@ -48,7 +49,6 @@ int time_limit[2], time_allowed;
 time_point<high_resolution_clock> start;
 
 History H;
-Refutation R;
 
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
 const int EvalMargin[4]	 = {0, vEP, vN, vQ};
@@ -360,8 +360,8 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 		ss->skip_null = false;
 	}
 
-	MoveSort MS(&B, depth, ss, &H, &R);
-	const move::move_t refutation = R.get_refutation(B.get_dm_key());
+	MoveSort MS(&B, depth, ss, &H, &search::R);
+	const move::move_t refutation = search::R.get_refutation(B.get_dm_key());
 
 	int cnt = 0, LMR = 0, see;
 	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
@@ -504,7 +504,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 				H.add(B, m, m == ss->best ? bonus : -bonus);
 
 		// update double move refutation hash table
-		R.set_refutation(B.get_dm_key(), ss->best);
+		search::R.set_refutation(B.get_dm_key(), ss->best);
 	}
 
 	return best_score;
@@ -529,7 +529,6 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	best_move = ponder_move = move::move_t(0);
 
 	H.clear();
-	R.clear();
 	TT.new_search();
 	B.set_root();	// remember root node, for correct 2/3-fold in is_draw()
 
@@ -607,6 +606,12 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 
 return_pair:
 	return std::make_pair(best_move, ponder_move);
+}
+
+extern void clear_state()
+{
+	TT.clear();
+	R.clear();
 }
 
 }	// namespace search

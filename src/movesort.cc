@@ -66,7 +66,7 @@ void Refutation::set_refutation(Key dm_key, move::move_t m)
 
 void Refutation::clear()
 {
-	std::memset(this, 0, sizeof(this));
+	std::memset(this, 0, count * sizeof(Entry));
 }
 
 MoveSort::MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,

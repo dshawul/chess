@@ -77,7 +77,7 @@ void uci::loop()
 					  /* end of UCI options */
 					  << "uciok" << std::endl;
 		else if (token == "ucinewgame")
-			search::TT.clear();
+			search::clear_state();
 		else if (token == "position")
 			position(B, is);
 		else if (token == "go")
