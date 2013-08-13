@@ -42,64 +42,6 @@ namespace {
 
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
-void intro();
-void position(board::Position& B, std::istringstream& is);
-void go(board::Position& B, std::istringstream& is);
-void setoption(std::istringstream& is);
-
-bool input_available();
-
-}	// namespace
-
-void uci::loop()
-{
-	board::Position B;
-	std::string cmd, token;
-	std::cout << std::boolalpha;
-
-	while (token != "quit") {
-		if (!getline(std::cin, cmd) || cmd == "quit")
-			break;
-
-		std::istringstream is(cmd);
-		is >> std::boolalpha;
-		is >> std::skipws >> token;
-		if (token == "uci")
-			intro();
-		else if (token == "ucinewgame")
-			search::clear_state();
-		else if (token == "position")
-			position(B, is);
-		else if (token == "go")
-			go(B, is);
-		else if (token == "isready") {
-			search::TT.alloc(uci::Hash << 20);
-			std::cout << "readyok" << std::endl;
-		} else if (token == "setoption")
-			setoption(is);
-		else if (token == "eval") {
-			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B, hanging_pieces(B));
-			std::cout << B << "eval = " << e << std::endl;
-		} else if (token == "perft") {
-			int depth;
-			if (is >> depth)
-				std::cout << perft(B, depth, 0) << std::endl;
-		}
-	}
-}
-
-bool uci::stop()
-{
-	std::string token;
-
-	if (input_available())
-		getline(std::cin, token);
-
-	return token == "stop";
-}
-
-namespace {
-
 void intro()
 {
 	std::cout << "id name DiscoCheck 4.3\n"
@@ -241,3 +183,49 @@ bool input_available()
 
 }	// namespace
 
+void uci::loop()
+{
+	board::Position B;
+	std::string cmd, token;
+	std::cout << std::boolalpha;
+
+	while (token != "quit") {
+		if (!getline(std::cin, cmd) || cmd == "quit")
+			break;
+
+		std::istringstream is(cmd);
+		is >> std::boolalpha;
+		is >> std::skipws >> token;
+		if (token == "uci")
+			intro();
+		else if (token == "ucinewgame")
+			search::clear_state();
+		else if (token == "position")
+			position(B, is);
+		else if (token == "go")
+			go(B, is);
+		else if (token == "isready") {
+			search::TT.alloc(uci::Hash << 20);
+			std::cout << "readyok" << std::endl;
+		} else if (token == "setoption")
+			setoption(is);
+		else if (token == "eval") {
+			const int e = eval::symmetric_eval(B) + eval::asymmetric_eval(B, hanging_pieces(B));
+			std::cout << B << "eval = " << e << std::endl;
+		} else if (token == "perft") {
+			int depth;
+			if (is >> depth)
+				std::cout << perft(B, depth, 0) << std::endl;
+		}
+	}
+}
+
+bool uci::stop()
+{
+	std::string token;
+
+	if (input_available())
+		getline(std::cin, token);
+
+	return token == "stop";
+}
