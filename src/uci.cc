@@ -42,6 +42,7 @@ namespace {
 
 const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
+void intro();
 void position(board::Position& B, std::istringstream& is);
 void go(board::Position& B, std::istringstream& is);
 void setoption(std::istringstream& is);
@@ -64,18 +65,7 @@ void uci::loop()
 		is >> std::boolalpha;
 		is >> std::skipws >> token;
 		if (token == "uci")
-			std::cout << "id name DiscoCheck 4.3\n"
-					  << "id author Lucas Braesch\n"
-					  /* Declare UCI options here */
-					  << "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
-					  << "option name Clear Hash type button\n"
-					  << "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
-					  << "option name Ponder type check default " << uci::Ponder << '\n'
-					  << "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
-					  << "option name UCI_Elo type spin default " << uci::Elo
-					  << " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
-					  /* end of UCI options */
-					  << "uciok" << std::endl;
+			intro();
 		else if (token == "ucinewgame")
 			search::clear_state();
 		else if (token == "position")
@@ -109,6 +99,22 @@ bool uci::stop()
 }
 
 namespace {
+
+void intro()
+{
+	std::cout << "id name DiscoCheck 4.3\n"
+			  << "id author Lucas Braesch\n"
+			  // Declare UCI options here
+			  << "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
+			  << "option name Clear Hash type button\n"
+			  << "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
+			  << "option name Ponder type check default " << uci::Ponder << '\n'
+			  << "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
+			  << "option name UCI_Elo type spin default " << uci::Elo
+			  << " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
+			  // end of UCI options
+			  << "uciok" << std::endl;
+}
 
 void position(board::Position& B, std::istringstream& is)
 {
