@@ -94,12 +94,21 @@ move::move_t *MoveSort::generate(GenType type, move::move_t *mlist)
 		// If we are in check, then type must be ALL (see constructor)
 		assert(!B->is_check());
 
+		const int us = B->get_turn(), them = opp_color(us);
 		move::move_t *end = mlist;
-		Bitboard enemies = B->get_pieces(opp_color(B->get_turn()));
+		Bitboard targets = B->get_pieces(them);
 
-		end = movegen::gen_piece_moves(*B, enemies, end, true);
-		end = movegen::gen_pawn_moves(*B, enemies | B->st().epsq_bb() | bb::PPromotionRank[B->get_turn()], end, false);
+		// Piece captures
+		if (targets & (B->st().attacks[us][KNIGHT] | B->st().attacks[us][BISHOP]
+					   | B->st().attacks[us][ROOK] | B->st().attacks[us][KING]))
+			end = movegen::gen_piece_moves(*B, targets, end, true);
 
+		// Pawn captures
+		targets |= B->st().epsq_bb() | bb::PPromotionRank[us];
+		if (targets & B->st().attacks[us][PAWN])
+			end = movegen::gen_pawn_moves(*B, targets, end, false);
+
+		// Quiet checks
 		if (type == GEN_CAPTURES_CHECKS)
 			end = movegen::gen_quiet_checks(*B, end);
 
