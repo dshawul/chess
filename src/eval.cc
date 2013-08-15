@@ -46,6 +46,22 @@ private:
 
 PawnCache PC;
 
+// Known draws (with recognizer function)
+static const Key KPK  = 0x110000000001ULL;
+static const Key KKP  = 0x110000000010ULL;
+static const Key KBPK = 0x110000010001ULL;
+static const Key KKBP = 0x110000100010ULL;
+
+// Known wins
+static const Key KRK  = 0x110001000000ULL;
+static const Key KKR  = 0x110010000000ULL;
+static const Key KQK  = 0x110100000000ULL;
+static const Key KKQ  = 0x111000000000ULL;
+static const Key KBBK = 0x110000020000ULL;
+static const Key KKBB = 0x110000200000ULL;
+static const Key KBNK = 0x110000010100ULL;
+static const Key KKBN = 0x110000101000ULL;
+
 class EvalInfo {
 public:
 	explicit EvalInfo(const board::Position *_B): eval_factor(16), B(_B) {
@@ -63,6 +79,8 @@ public:
 
 	int interpolate() const;
 	int eval_factor;	// between 0 and 16
+
+	void adjust_kbnk();
 
 private:
 	const board::Position *B;
@@ -112,29 +130,21 @@ void EvalInfo::eval_material()
 
 void EvalInfo::eval_drawish()
 {
-	// known win
-	static const Key KRK  = 0x110001000000ULL;
-	static const Key KKR  = 0x110010000000ULL;
-	static const Key KQK  = 0x110100000000ULL;
-	static const Key KKQ  = 0x111000000000ULL;
-	static const Key KBBK = 0x110000020000ULL;
-	static const Key KKBB = 0x110000200000ULL;
-	// FIXME: add KBNK and KKBN, but only once knowledge is added to handle these correctly
-
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	const Bitboard mk = B->st().mat_key;
 
 	if (!B->get_pieces(strong_side, PAWN)) {
 		// The strongest side has no pawns
-		if (mk != KRK && mk != KKR && mk != KQK && mk != KKQ && mk != KBBK && mk != KKBB)
+		if ( mk != KRK && mk != KKR
+			 && mk != KQK && mk != KKQ
+			 && mk != KBBK && mk != KKBB
+			 && mk != KBNK && mk != KKBN )
 			// Unless we are in a trivial win configuration, half the eval
 			eval_factor = 8;
 	} else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
 		// Each side has exactly one bishop
 		const Bitboard b = B->get_pieces(WHITE, BISHOP) | B->get_pieces(BLACK, BISHOP);
-		static const Bitboard white_sqaures = 0x55AA55AA55AA55AAULL;
-		static const Bitboard black_sqaures = 0xAA55AA55AA55AA55ULL;
-		if ((b & white_sqaures) && (b & black_sqaures))
+		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
 			// We have an opposite color bishop situation. If the stronger side has no other
 			// pieces it's more drawish.
 			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4 * strong_side))) ? 12 : 8;
@@ -570,6 +580,19 @@ int EvalInfo::interpolate() const
 	return eval * eval_factor / 16;
 }
 
+void EvalInfo::adjust_kbnk()
+{
+	const int weak_side = B->get_pieces(WHITE, BISHOP) ? BLACK : WHITE;
+	const int strong_side = opp_color(weak_side);
+
+	const int weak_ksq = B->get_king_pos(weak_side);
+	const int bcolor = (B->get_pieces(strong_side, BISHOP) & bb::WhiteSquares) ? WHITE : BLACK;
+
+	// minimum distance of the defending king to a mate corner
+	const int d = std::min(bb::kdist(weak_ksq, bcolor ? A1 : A8), bb::kdist(weak_ksq, bcolor ? H8 : H1));
+	e[weak_side].eg += 32 * (d - 4);
+}
+
 bool kpk_draw(const board::Position& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
@@ -640,24 +663,20 @@ void eval::init()
 
 int eval::symmetric_eval(const board::Position& B)
 {
-	// Known draws (exact)
-	static const Key KPK  = 0x110000000001ULL;
-	static const Key KKP  = 0x110000000010ULL;
-	static const Key KBPK = 0x110000010001ULL;
-	static const Key KKBP = 0x110000100010ULL;
-
 	assert(!B.is_check());
 	EvalInfo ei(&B);
 
-	// Recognize some drawish patterns
+	// Recognize some general drawish patterns
 	ei.eval_drawish();
 
-	// Recognize some known draws
+	// Recognize some specific endgames
 	const Bitboard mk = B.st().mat_key;
 	if ((mk == KPK || mk == KKP) && kpk_draw(B))
 		return 0;	// known draw (certain)
 	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
 		return 0;	// known draw (certain)
+	else if (mk == KBNK || mk == KKBN)
+		ei.adjust_kbnk();
 
 	ei.eval_pawns();
 	for (int color = WHITE; color <= BLACK; ++color) {

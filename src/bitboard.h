@@ -27,6 +27,9 @@ const Bitboard PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000
 
 const Bitboard HalfBoard[NB_COLOR] = { 0x00000000FFFFFFFFULL, 0xFFFFFFFF00000000ULL };
 
+const Bitboard WhiteSquares = 0x55AA55AA55AA55AAULL;
+const Bitboard BlackSquares = 0xAA55AA55AA55AA55ULL;
+
 // Initialize: bitboards, magics
 extern void init();
 extern bool BitboardInitialized;

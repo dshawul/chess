@@ -115,7 +115,7 @@ void init_psq()
 					if (piece < KING)
 						e -= Material[piece];
 					std::cout << (phase == OPENING ? e.op : e.eg)
-					          << (file(sq) == FILE_H ? '\n' : ',');
+							  << (file(sq) == FILE_H ? '\n' : ',');
 				}
 			std::cout << std::endl;
 		}*/
