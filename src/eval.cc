@@ -112,12 +112,24 @@ void EvalInfo::eval_material()
 
 void EvalInfo::eval_drawish()
 {
-	// If the stronger side has no pawns, half the material difference in the endgame
+	// known win
+	static const Key KRK  = 0x110001000000ULL;
+	static const Key KKR  = 0x110010000000ULL;
+	static const Key KQK  = 0x110100000000ULL;
+	static const Key KKQ  = 0x111000000000ULL;
+	static const Key KBBK = 0x110000020000ULL;
+	static const Key KKBB = 0x110000200000ULL;
+	// FIXME: add KBNK and KKBN, but only once knowledge is added to handle these correctly
+
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
-	if (!B->get_pieces(strong_side, PAWN))
-		eval_factor = 8;
-	// Opposite color bishop ending
-	else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
+	const Bitboard mk = B->st().mat_key;
+
+	if (!B->get_pieces(strong_side, PAWN)) {
+		// The strongest side has no pawns
+		if (mk != KRK && mk != KKR && mk != KQK && mk != KKQ && mk != KBBK && mk != KKBB)
+			// Unless we are in a trivial win configuration, half the eval
+			eval_factor = 8;
+	} else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
 		// Each side has exactly one bishop
 		const Bitboard b = B->get_pieces(WHITE, BISHOP) | B->get_pieces(BLACK, BISHOP);
 		static const Bitboard white_sqaures = 0x55AA55AA55AA55AAULL;
@@ -633,33 +645,19 @@ int eval::symmetric_eval(const board::Position& B)
 	static const Key KKP  = 0x110000000010ULL;
 	static const Key KBPK = 0x110000010001ULL;
 	static const Key KKBP = 0x110000100010ULL;
-	// known win
-	static const Key KRK  = 0x110001000000ULL;
-	static const Key KKR  = 0x110010000000ULL;
-	static const Key KQK  = 0x110100000000ULL;
-	static const Key KKQ  = 0x111000000000ULL;
-	static const Key KBBK = 0x110000020000ULL;
-	static const Key KKBB = 0x110000200000ULL;
-	// FIXME: KBNK and KKBN, but requires PST adjustment to mate quickly with B+N
 
 	assert(!B.is_check());
 	EvalInfo ei(&B);
 
-	// Compute ei.eval_factor based on general rules (default 16 = 100%)
+	// Recognize some drawish patterns
 	ei.eval_drawish();
 
-	// Recognize some 3-4 men draws
-	if (bb::count_bit(B.st().occ) <= 4) {
-		const Bitboard mk = B.st().mat_key;
-		if ((mk == KPK || mk == KKP) && kpk_draw(B))
-			return 0;	// known draw (certain)
-		else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
-			return 0;	// known draw (certain)
-		else if (mk == KRK || mk == KKR || mk == KQK || mk == KKQ || mk == KBBK || mk == KKBB)
-			// known win, but winning side has no pawn. we override the general rule of
-			// ei.eval_drawish() by re-setting eval_factor to its normal value
-			ei.eval_factor = 16;
-	}
+	// Recognize some known draws
+	const Bitboard mk = B.st().mat_key;
+	if ((mk == KPK || mk == KKP) && kpk_draw(B))
+		return 0;	// known draw (certain)
+	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
+		return 0;	// known draw (certain)
 
 	ei.eval_pawns();
 	for (int color = WHITE; color <= BLACK; ++color) {
