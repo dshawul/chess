@@ -48,7 +48,7 @@ PawnCache PC;
 
 class EvalInfo {
 public:
-	explicit EvalInfo(const board::Position *_B): B(_B), eval_factor(16) {
+	explicit EvalInfo(const board::Position *_B): eval_factor(16), B(_B) {
 		e[WHITE] = e[BLACK] = {0, 0};
 	}
 
@@ -60,14 +60,15 @@ public:
 
 	void eval_pawns();
 	void eval_drawish();
+
 	int interpolate() const;
+	int eval_factor;	// between 0 and 16
 
 private:
 	const board::Position *B;
 	Eval e[NB_COLOR];
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
-	int eval_factor;	// between 0 and 16
 
 	void score_mobility(int us, int p0, int p, Bitboard tss);
 	void score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
@@ -627,21 +628,33 @@ void eval::init()
 
 int eval::symmetric_eval(const board::Position& B)
 {
-	static const Key KPK = 0x110000000001ull;
-	static const Key KKP = 0x110000000010ull;
-	static const Key KBPK = 0x110000010001ull;
-	static const Key KKBP = 0x110000100010ull;
+	// Known draws (exact)
+	static const Key KPK  = 0x110000000001ULL;
+	static const Key KKP  = 0x110000000010ULL;
+	static const Key KBPK = 0x110000010001ULL;
+	static const Key KKBP = 0x110000100010ULL;
+	// very drawish (approximate, with exceptions)
+	static const Key KNKP = 0x110000000110ULL;
+	static const Key KPKN = 0x110000001001ULL;
+	static const Key KBKP = 0x110000010010ULL;
+	static const Key KPKB = 0x110000100001ULL;
 
 	assert(!B.is_check());
-
-	// Recognize some known draws
-	const Bitboard mk = B.st().mat_key;
-	if ((mk == KPK || mk == KKP) && kpk_draw(B))
-		return 0;
-	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
-		return 0;
-
 	EvalInfo ei(&B);
+
+	// Recognize most common 4-men draws
+	if (bb::count_bit(B.st().occ) <= 4) {
+		const Bitboard mk = B.st().mat_key;
+		if ((mk == KPK || mk == KKP) && kpk_draw(B))
+			return 0;
+		else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
+			return 0;
+		else if (mk == KNKP || mk == KPKN || mk == KBKP || mk == KPKB)
+			ei.eval_factor = 4;
+	} else
+		// Recognize generic drawish pattern, using the eval_factor
+		ei.eval_drawish();
+
 	ei.eval_pawns();
 
 	for (int color = WHITE; color <= BLACK; ++color) {
@@ -652,7 +665,6 @@ int eval::symmetric_eval(const board::Position& B)
 		ei.eval_pieces();
 	}
 
-	ei.eval_drawish();
 	return ei.interpolate();
 }
 
@@ -661,4 +673,3 @@ int eval::asymmetric_eval(const board::Position& B, Bitboard hanging)
 	static const int TEMPO = 4;
 	return TEMPO - stand_pat_penalty(B, hanging);
 }
-
