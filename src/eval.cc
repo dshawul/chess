@@ -633,11 +633,6 @@ int eval::symmetric_eval(const board::Position& B)
 	static const Key KKP  = 0x110000000010ULL;
 	static const Key KBPK = 0x110000010001ULL;
 	static const Key KKBP = 0x110000100010ULL;
-	// very drawish (approximate, with exceptions)
-	static const Key KNKP = 0x110000000110ULL;
-	static const Key KPKN = 0x110000001001ULL;
-	static const Key KBKP = 0x110000010010ULL;
-	static const Key KPKB = 0x110000100001ULL;
 	// known win
 	static const Key KRK  = 0x110001000000ULL;
 	static const Key KKR  = 0x110010000000ULL;
@@ -645,6 +640,7 @@ int eval::symmetric_eval(const board::Position& B)
 	static const Key KKQ  = 0x111000000000ULL;
 	static const Key KBBK = 0x110000020000ULL;
 	static const Key KKBB = 0x110000200000ULL;
+	// FIXME: KBNK and KKBN, but requires PST adjustment to mate quickly with B+N
 
 	assert(!B.is_check());
 	EvalInfo ei(&B);
@@ -659,9 +655,6 @@ int eval::symmetric_eval(const board::Position& B)
 			return 0;	// known draw (certain)
 		else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
 			return 0;	// known draw (certain)
-		else if (mk == KNKP || mk == KPKN || mk == KBKP || mk == KPKB)
-			// really drawish (though not certain): reduce eval_factor from 8 to 4
-			ei.eval_factor = 4;
 		else if (mk == KRK || mk == KKR || mk == KQK || mk == KKQ || mk == KBBK || mk == KKBB)
 			// known win, but winning side has no pawn. we override the general rule of
 			// ei.eval_drawish() by re-setting eval_factor to its normal value
