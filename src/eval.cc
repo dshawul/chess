@@ -21,7 +21,11 @@
 
 namespace {
 
+// Minimum King distance for a King of a given color to its optimal safety square (B1/B8 or G1/G8)
 int KingDistanceToSafety[NB_COLOR][NB_SQUARE];
+
+// Minimum taxi distance for to the corner of the given color. Used for KBNK mating technique.
+int KingTaxiDistanceToCorner[NB_COLOR][NB_SQUARE];
 
 class PawnCache {
 public:
@@ -582,15 +586,15 @@ int EvalInfo::interpolate() const
 
 void EvalInfo::adjust_kbnk()
 {
-	const int weak_side = B->get_pieces(WHITE, BISHOP) ? BLACK : WHITE;
-	const int strong_side = opp_color(weak_side);
+	assert(B->st().mat_key == KBNK || B->st().mat_key == KKBN);
+	const int strong_side = B->st().mat_key == KBNK ? WHITE : BLACK;
+	const int weak_side = opp_color(strong_side);
 
 	const int weak_ksq = B->get_king_pos(weak_side);
 	const int bcolor = (B->get_pieces(strong_side, BISHOP) & bb::WhiteSquares) ? WHITE : BLACK;
 
-	// minimum distance of the defending king to a mate corner
-	const int d = std::min(bb::kdist(weak_ksq, bcolor ? A1 : A8), bb::kdist(weak_ksq, bcolor ? H8 : H1));
-	e[weak_side].eg += 32 * (d - 4);
+	// Minimum taxi distance to a mate corner, is a bonus for the defending King (further is better)
+	e[weak_side].eg += 32 * (KingTaxiDistanceToCorner[bcolor][weak_ksq] - 4);
 }
 
 bool kpk_draw(const board::Position& B)
@@ -656,9 +660,20 @@ void eval::init()
 {
 	kpk::init();
 
-	for (int us = WHITE; us <= BLACK; ++us)
-		for (int sq = A1; sq <= H8; ++sq)
-			KingDistanceToSafety[us][sq] = std::min(bb::kdist(sq, us ? E8 : E1), bb::kdist(sq, us ? B8 : B1));
+	for (int c = WHITE; c <= BLACK; ++c)
+		for (int sq = A1; sq <= H8; ++sq) {
+			KingDistanceToSafety[c][sq] = std::min(bb::kdist(sq, c ? E8 : E1), bb::kdist(sq, c ? B8 : B1));
+
+			const int r = rank(sq), f = file(sq);
+			const int taxi_dist_to_A1 = r + f;
+			const int taxi_dist_to_H1 = r + FILE_H - f;
+			const int taxi_dist_to_A8 = RANK_8 - r + f;
+			const int taxi_dist_to_H8 = RANK_8 - r + FILE_H - f;
+
+			KingTaxiDistanceToCorner[c][sq] = c
+											  ? std::min(taxi_dist_to_A1, taxi_dist_to_H8)
+											  : std::min(taxi_dist_to_A8, taxi_dist_to_H1);
+		}
 }
 
 int eval::symmetric_eval(const board::Position& B)
