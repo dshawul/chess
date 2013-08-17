@@ -448,6 +448,7 @@ Bitboard EvalInfo::do_eval_pawns()
 {
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
+
 	Bitboard passers = 0;
 
 	eval_shield_storm();
@@ -459,10 +460,35 @@ Bitboard EvalInfo::do_eval_pawns()
 		const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
 
 		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
-		const bool hole = !chained && !(bb::PawnSpan[them][next_sq] & our_pawns)
-						  && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
 
+		/* A pawn is pseudo-isolated, if it has pawns besides and behind, but they cannot move
+		 * forward to support it, and make it part of a pawn chain. This condition is quite
+		 * complicated and slow to compute, but performance here is somewhat mittigated by the
+		 * goot hit ratio of the PawnCache hashtable */
+		bool pseudo_isolated = false;
+		if (!isolated && !chained) {
+			const Bitboard taken = their_pawns | B->st().attacks[them][PAWN];
+			Bitboard b = bb::InFront[them][r] & (taken | our_pawns), bf;
+
+			bool pi_left = f == FILE_A;
+			if (!pi_left) {
+				bf = b & bb::file_bb(f - 1);
+				if (!bf || bb::test_bit(taken, us ? bb::lsb(bf) : bb::msb(bf)))
+					pi_left = true;
+			}
+
+			bool pi_right = f == FILE_H;
+			if (!pi_right) {
+				bf = b & bb::file_bb(f + 1);
+				if (!bf || bb::test_bit(taken, us ? bb::lsb(bf) : bb::msb(bf)))
+					pi_right = true;
+			}
+
+			pseudo_isolated = pi_left && pi_right;
+		}
+
+		const bool hole = pseudo_isolated && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool open = !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		const bool passed = open && !(bb::PawnSpan[us][sq] & their_pawns);
 		const bool candidate = chained && open && !passed
@@ -476,6 +502,9 @@ Bitboard EvalInfo::do_eval_pawns()
 		} else if (isolated) {
 			e[us].op -= open ? Isolated : Isolated / 2;
 			e[us].eg -= Isolated;
+		} else if (pseudo_isolated && !(bb::PawnSpan[us][sq] & our_pawns)) {
+			e[us].op -= Isolated / 4;
+			e[us].eg -= Isolated / 2;
 		}
 
 		if (candidate) {
