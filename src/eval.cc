@@ -98,7 +98,7 @@ private:
 
 	Bitboard do_eval_pawns();
 	void eval_shield_storm();
-	void eval_passer(int sq, Eval* res);
+	void eval_passer(int sq, Eval* res, bool chainable);
 	void eval_passer_interaction(int sq);
 
 	int calc_phase() const;
@@ -400,12 +400,10 @@ void EvalInfo::eval_shield_storm()
 	}
 }
 
-void EvalInfo::eval_passer(int sq, Eval *res)
+void EvalInfo::eval_passer(int sq, Eval *res, bool chainable)
 {
-	const int r = rank(sq), f = file(sq);
 	const int next_sq = bb::pawn_push(us, sq);
-	const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
-
+	const int r = rank(sq);
 	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);						// Quadratic part	0..20
 
@@ -422,25 +420,13 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 	}
 
 	// support by friendly pawn
-	if (besides & bb::PawnSpan[them][next_sq]) {
+	if (chainable && L) {
 		if (bb::PAttacks[them][next_sq] & our_pawns)
 			res->eg += 8 * L;	// besides is good, as it allows a further push
 		else if (bb::PAttacks[them][sq] & our_pawns)
 			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
-		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
-			// pawns that are 1 push away
-			Bitboard b = bb::PAttacks[them][sq];
-			// also pawns that are 1 double push away if on 5-th (relative) rank
-			// for simplicity neglect en-passant refutation of the double push
-			if (L == 3)
-				b |= bb::PAttacks[them][bb::pawn_push(them, sq)];
-
-			while (b) {
-				const int tsq = bb::pop_lsb(&b);
-				if (bb::test_bit(our_pawns, bb::pawn_push(them, tsq)))
-					res->eg += 2 * L;	// 1 push away from defendint the passer
-			}
-		}
+		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN])))
+			res->eg += 3 * L;
 	}
 }
 
@@ -509,11 +495,11 @@ Bitboard EvalInfo::do_eval_pawns()
 
 		if (candidate) {
 			Eval tmp = {0, 0};
-			eval_passer(sq, &tmp);
+			eval_passer(sq, &tmp, true);
 			e[us] += {tmp.op / 2, tmp.eg / 2};
 		} else if (passed) {
 			bb::set_bit(&passers, sq);
-			eval_passer(sq, &e[us]);
+			eval_passer(sq, &e[us], !isolated && !pseudo_isolated);
 		}
 	}
 
