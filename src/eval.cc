@@ -489,10 +489,8 @@ Bitboard EvalInfo::do_eval_pawns()
 		} else if (isolated) {
 			e[us].op -= open ? Isolated : Isolated / 2;
 			e[us].eg -= Isolated;
-		} else if (pseudo_isolated && !(bb::PawnSpan[us][sq] & our_pawns)) {
-			e[us].op -= Isolated / 4;
+		} else if (pseudo_isolated && !(bb::PawnSpan[us][sq] & our_pawns))
 			e[us].eg -= Isolated / 2;
-		}
 
 		if (candidate) {
 			Eval tmp = {0, 0};
