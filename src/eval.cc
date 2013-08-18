@@ -425,7 +425,7 @@ void EvalInfo::eval_passer(int sq, Eval *res, bool chainable)
 			res->eg += 8 * L;	// besides is good, as it allows a further push
 		else if (bb::PAttacks[them][sq] & our_pawns)
 			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
-		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN])))
+		else
 			res->eg += 3 * L;
 	}
 }
@@ -455,7 +455,8 @@ Bitboard EvalInfo::do_eval_pawns()
 		bool pseudo_isolated = false;
 		if (!isolated && !chained) {
 			const Bitboard taken = their_pawns | B->st().attacks[them][PAWN];
-			Bitboard b = bb::InFront[them][r] & (taken | our_pawns), bf;
+			const Bitboard b = bb::InFront[them][r] & (taken | our_pawns);
+			Bitboard bf;
 
 			bool pi_left = f == FILE_A;
 			if (!pi_left) {
