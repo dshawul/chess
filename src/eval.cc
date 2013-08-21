@@ -98,7 +98,7 @@ private:
 
 	Bitboard do_eval_pawns();
 	void eval_shield_storm();
-	void eval_passer(int sq, Eval* res, bool chainable);
+	void eval_passer(int sq, Eval* res);
 	void eval_passer_interaction(int sq);
 
 	int calc_phase() const;
@@ -400,10 +400,12 @@ void EvalInfo::eval_shield_storm()
 	}
 }
 
-void EvalInfo::eval_passer(int sq, Eval *res, bool chainable)
+void EvalInfo::eval_passer(int sq, Eval *res)
 {
+	const int r = rank(sq), f = file(sq);
 	const int next_sq = bb::pawn_push(us, sq);
-	const int r = rank(sq);
+	const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
+
 	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);						// Quadratic part	0..20
 
@@ -420,13 +422,25 @@ void EvalInfo::eval_passer(int sq, Eval *res, bool chainable)
 	}
 
 	// support by friendly pawn
-	if (chainable && L) {
+	if (besides & bb::PawnSpan[them][next_sq]) {
 		if (bb::PAttacks[them][next_sq] & our_pawns)
 			res->eg += 8 * L;	// besides is good, as it allows a further push
 		else if (bb::PAttacks[them][sq] & our_pawns)
 			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
-		else
-			res->eg += 3 * L;
+		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
+			// pawns that are 1 push away
+			Bitboard b = bb::PAttacks[them][sq];
+			// also pawns that are 1 double push away if on 5-th (relative) rank
+			// for simplicity neglect en-passant refutation of the double push
+			if (L == 3)
+				b |= bb::PAttacks[them][bb::pawn_push(them, sq)];
+
+			while (b) {
+				const int tsq = bb::pop_lsb(&b);
+				if (bb::test_bit(our_pawns, bb::pawn_push(them, tsq)))
+					res->eg += 2 * L;	// 1 push away from defendint the passer
+			}
+		}
 	}
 }
 
@@ -434,7 +448,6 @@ Bitboard EvalInfo::do_eval_pawns()
 {
 	static const int Chained = 5, Isolated = 20;
 	static const Eval Hole = {16, 10};
-
 	Bitboard passers = 0;
 
 	eval_shield_storm();
@@ -446,36 +459,10 @@ Bitboard EvalInfo::do_eval_pawns()
 		const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
 
 		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
+		const bool hole = !chained && !(bb::PawnSpan[them][next_sq] & our_pawns)
+						  && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
 
-		/* A pawn is pseudo-isolated, if it has pawns besides and behind, but they cannot move
-		 * forward to support it, and make it part of a pawn chain. This condition is quite
-		 * complicated and slow to compute, but performance here is somewhat mittigated by the
-		 * goot hit ratio of the PawnCache hashtable */
-		bool pseudo_isolated = false;
-		if (!isolated && !chained) {
-			const Bitboard taken = their_pawns | B->st().attacks[them][PAWN];
-			const Bitboard b = bb::InFront[them][r] & (taken | our_pawns);
-			Bitboard bf;
-
-			bool pi_left = f == FILE_A;
-			if (!pi_left) {
-				bf = b & bb::file_bb(f - 1);
-				if (!bf || bb::test_bit(taken, us ? bb::lsb(bf) : bb::msb(bf)))
-					pi_left = true;
-			}
-
-			bool pi_right = f == FILE_H;
-			if (!pi_right) {
-				bf = b & bb::file_bb(f + 1);
-				if (!bf || bb::test_bit(taken, us ? bb::lsb(bf) : bb::msb(bf)))
-					pi_right = true;
-			}
-
-			pseudo_isolated = pi_left && pi_right;
-		}
-
-		const bool hole = pseudo_isolated && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool open = !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		const bool passed = open && !(bb::PawnSpan[us][sq] & their_pawns);
 		const bool candidate = chained && open && !passed
@@ -489,16 +476,15 @@ Bitboard EvalInfo::do_eval_pawns()
 		} else if (isolated) {
 			e[us].op -= open ? Isolated : Isolated / 2;
 			e[us].eg -= Isolated;
-		} else if (pseudo_isolated && !(bb::PawnSpan[us][sq] & our_pawns))
-			e[us].eg -= Isolated / 2;
+		}
 
 		if (candidate) {
 			Eval tmp = {0, 0};
-			eval_passer(sq, &tmp, true);
+			eval_passer(sq, &tmp);
 			e[us] += {tmp.op / 2, tmp.eg / 2};
 		} else if (passed) {
 			bb::set_bit(&passers, sq);
-			eval_passer(sq, &e[us], !isolated && !pseudo_isolated);
+			eval_passer(sq, &e[us]);
 		}
 	}
 
