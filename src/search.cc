@@ -56,6 +56,7 @@ const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 
 move::move_t best_move, ponder_move;
+bool best_move_changed;
 
 void node_poll(board::Position &B)
 {
@@ -467,7 +468,10 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 			}
 
 			if (root) {
-				best_move = ss->m;
+				if (best_move != ss->m) {
+					best_move_changed = true;
+					best_move = ss->m;
+				}
 				ponder_move = pv[1];
 			}
 		}
@@ -526,7 +530,9 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	node_count = 0;
 	node_limit = sl.nodes;
 	time_alloc(sl, time_limit);
+
 	best_move = ponder_move = move::move_t(0);
+	best_move_changed = false;
 
 	H.clear();
 	TT.new_search();
@@ -549,9 +555,13 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 		can_abort = depth >= 2;
 
 		int score, delta = 16;
-		// set time allowance to normal, and divide by two if we're in an "easy" recapture situation
-		time_allowed = time_limit[0] >> (best_move && move::see(B, best_move) > 0);
 
+		// Time allowance
+		time_allowed = time_limit[best_move_changed];
+		if (best_move && move::see(B, best_move) > 0)
+			time_allowed /= 2;
+
+		best_move_changed = false;
 		for (;;) {
 			// Aspiration loop
 
