@@ -348,8 +348,10 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 				   : beta;		// *but* do not return an unproven mate
 		else {
 			threat_move = (ss + 1)->best;
-			if (score <= mated_in(MAX_PLY) && (ss - 1)->reduction)
+			if (score <= mated_in(MAX_PLY) && (ss - 1)->reduction) {
 				++depth;
+				--(ss - 1)->reduction;
+			}
 		}
 	}
 
