@@ -26,7 +26,6 @@ struct Limits {
 };
 
 extern TTable TT;
-extern Refutation R;
 
 extern std::uint64_t node_count;
 extern std::uint64_t PollingFrequency;	// must be a power of two
