@@ -29,7 +29,7 @@ void History::clear()
 	std::memset(h, 0, sizeof(h));
 }
 
-int History::get(const board::Position& B, move::move_t m) const
+std::int16_t History::get(const board::Position& B, move::move_t m) const
 {
 	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move::is_cop(B, m) && piece_ok(piece));
@@ -37,15 +37,14 @@ int History::get(const board::Position& B, move::move_t m) const
 	return h[B.get_turn()][piece][tsq];
 }
 
-void History::add(const board::Position& B, move::move_t m, int bonus)
+void History::add(const board::Position& B, move::move_t m, std::int16_t bonus)
 {
-	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	const int us = B.get_turn(), piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move::is_cop(B, m) && piece_ok(piece));
 
-	int &v = h[B.get_turn()][piece][tsq];
-	v += bonus;
+	h[us][piece][tsq] += bonus;
 
-	if (std::abs(v) >= History::Max)
+	if (std::abs(h[us][piece][tsq]) >= History::Max)
 		for (int c = WHITE; c <= BLACK; ++c)
 			for (int p = PAWN; p <= KING; ++p)
 				for (int s = A1; s <= H8; h[c][p][s++] /= 2);
