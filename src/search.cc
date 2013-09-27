@@ -336,16 +336,23 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 		 && B.st().piece_psq[B.get_turn()] ) {
 		const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
 
+		// if the TT entry tells us that no move can beat alpha at the null search depth or deeper,
+		// we safely skip the null search.
+		if ( tte && tte->depth >= depth - reduction
+			 && tte->node_type() != Cut	// ie. upper bound or exact score
+			 && tte->score <= alpha )
+			goto tt_skip_null;
+
 		B.play(move::move_t(0));
-		(ss + 1)->null_child = true;
-		int score = -pvs(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
-		(ss + 1)->null_child = false;
+		(ss + 1)->null_child = (ss + 1)->skip_null = true;
+		const int score = -pvs(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
+		(ss + 1)->null_child = (ss + 1)->skip_null = false;
 		B.undo();
 
-		if (score >= beta)		// null search fails high
+		if (score >= beta)	// null search fails high
 			return score < mate_in(MAX_PLY)
-				   ? score		// fail soft
-				   : beta;		// *but* do not return an unproven mate
+				   ? score	// fail soft
+				   : beta;	// but do not return an unproven mate
 		else {
 			threat_move = (ss + 1)->best;
 			if (score <= mated_in(MAX_PLY) && (ss - 1)->reduction) {
@@ -354,6 +361,8 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 			}
 		}
 	}
+
+tt_skip_null:
 
 	// Internal Iterative Deepening
 	if ( (!tte || !tte->move || tte->depth <= 0)
