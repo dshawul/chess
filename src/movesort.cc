@@ -31,10 +31,10 @@ void History::clear()
 
 int16_t History::get(const board::Position& B, move::move_t m) const
 {
-	const int piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
+	const int us = B.get_turn(), piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move::is_cop(B, m) && piece_ok(piece));
 
-	return h[B.get_turn()][piece][tsq];
+	return h[us][piece][tsq];
 }
 
 void History::add(const board::Position& B, move::move_t m, int16_t bonus)
