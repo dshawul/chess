@@ -22,7 +22,7 @@ namespace move {
 class move_t;
 }
 
-#define MAX_MOVES	0x80	// max number of legal moves
+#define MAX_MOVES	0xC0	// max number of legal moves
 
 namespace movegen {
 
