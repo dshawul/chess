@@ -454,7 +454,7 @@ bool Position::verify_keys() const
 	for (int color = WHITE; color <= BLACK; ++color)
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
-			mat_key += (std::uint64_t)bb::count_bit(sqs) << (8 * piece + 4 * color);
+			mat_key += (uint64_t)bb::count_bit(sqs) << (8 * piece + 4 * color);
 			while (sqs) {
 				const int sq = bb::pop_lsb(&sqs);
 				key ^= bb::zob[color][piece][sq];

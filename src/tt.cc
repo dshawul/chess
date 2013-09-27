@@ -51,7 +51,7 @@ TTable::~TTable()
 	count = 0;
 }
 
-void TTable::alloc(std::uint64_t size)
+void TTable::alloc(uint64_t size)
 {
 	// calculate the number of clusters allocate (count must be a power of two)
 	size_t new_count = 1ULL << bb::msb(size / sizeof(Cluster));
@@ -93,7 +93,7 @@ const TTable::Entry *TTable::probe(Key key) const
 	return nullptr;
 }
 
-void TTable::Entry::save(Key k, std::uint8_t g, int nt, std::int8_t d, std::int16_t s, std::int16_t e,
+void TTable::Entry::save(Key k, uint8_t g, int nt, int8_t d, int16_t s, int16_t e,
 						 move::move_t m)
 {
 	key_type = (k & ~3ULL) ^ (nt + 1);

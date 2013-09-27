@@ -26,15 +26,15 @@ public:
 		init();
 	}
 
-	std::uint64_t rand() {
-		const std::uint64_t e = a - rotate(b,  7);
+	uint64_t rand() {
+		const uint64_t e = a - rotate(b,  7);
 		a = b ^ rotate(c, 13);
 		b = c + rotate(d, 37);
 		c = d + e;
 		return d = e + a;
 	}
 
-	void init(std::uint64_t seed = 0) {
+	void init(uint64_t seed = 0) {
 		a = 0xf1ea5eed, b = c = d = seed;
 		for (int i = 0; i < 20; ++i)
 			rand();
@@ -42,9 +42,9 @@ public:
 
 private:
 	// generator state
-	std::uint64_t a, b, c, d;
+	uint64_t a, b, c, d;
 
-	std::uint64_t rotate(std::uint64_t x, std::uint64_t k) const {
+	uint64_t rotate(uint64_t x, uint64_t k) const {
 		return (x << k) | (x >> (64 - k));
 	}
 };

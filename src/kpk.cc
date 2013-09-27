@@ -18,7 +18,7 @@
 namespace {
 
 const int IndexMax = 64 * 64 * 2 * 24;	// wk * bk * stm * wp
-std::uint64_t bitbase[IndexMax / 64];
+uint64_t bitbase[IndexMax / 64];
 enum {ILLEGAL = 0, UNKNOWN = 1, DRAW = 2, WIN = 4};
 
 int encode(int wk, int bk, int stm, int wp)
@@ -43,7 +43,7 @@ void decode(int idx, int *wk, int *bk, int *stm, int *wp)
 	*wp = square(RANK_7 - idx / 4, idx & 3);
 }
 
-std::uint8_t rules(int idx)
+uint8_t rules(int idx)
 {
 	assert(idx < IndexMax);
 	int wk, bk, stm, wp;
@@ -68,13 +68,13 @@ std::uint8_t rules(int idx)
 	return UNKNOWN;
 }
 
-std::uint8_t classify(std::uint8_t res[], int idx)
+uint8_t classify(uint8_t res[], int idx)
 {
 	assert(idx < IndexMax && res[idx] == UNKNOWN);
 	int wk, bk, stm, wp;
 	decode(idx, &wk, &bk, &stm, &wp);
 
-	std::uint8_t r = ILLEGAL;
+	uint8_t r = ILLEGAL;
 	Bitboard b = bb::KAttacks[stm ? bk : wk];
 
 	// king moves
@@ -100,7 +100,7 @@ std::uint8_t classify(std::uint8_t res[], int idx)
 		return res[idx] = r & DRAW ? DRAW : (r & UNKNOWN ? UNKNOWN : WIN);
 }
 
-bool kpk_ok(std::uint8_t res[])
+bool kpk_ok(uint8_t res[])
 {
 	int illegal = 0, win = 0;
 
@@ -119,7 +119,7 @@ bool kpk_ok(std::uint8_t res[])
 void kpk::init()
 {
 	// 192 KB on the stack
-	std::uint8_t res[IndexMax];
+	uint8_t res[IndexMax];
 
 	// first pass: apply static rules
 	for (int idx = 0; idx < IndexMax; ++idx)

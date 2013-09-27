@@ -32,14 +32,14 @@ struct SearchInfo {
  * */
 class History {
 public:
-	static const std::int16_t Max = 2000;
+	static const int16_t Max = 2000;
 
 	void clear();
-	void add(const board::Position& B, move::move_t m, std::int16_t bonus);
-	std::int16_t get(const board::Position& B, move::move_t m) const;
+	void add(const board::Position& B, move::move_t m, int16_t bonus);
+	int16_t get(const board::Position& B, move::move_t m) const;
 
 private:
-	std::int16_t h[NB_COLOR][NB_PIECE][NB_SQUARE];
+	int16_t h[NB_COLOR][NB_PIECE][NB_SQUARE];
 };
 
 /* Double Move Refutation Hash Table:
@@ -58,7 +58,7 @@ public:
 
 private:
 	struct Entry {
-		std::uint64_t dm_key: 48;
+		uint64_t dm_key: 48;
 		move::move_t move;
 	};
 
@@ -76,7 +76,7 @@ public:
 
 	struct Token {
 		move::move_t m;
-		std::int16_t score, see;
+		int16_t score, see;
 
 		bool operator< (const Token& t) const {
 			return score < t.score;

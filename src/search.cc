@@ -27,8 +27,8 @@ namespace search {
 TTable TT;
 Refutation R;
 
-std::uint64_t node_count;
-std::uint64_t PollingFrequency;
+uint64_t node_count;
+uint64_t PollingFrequency;
 
 }	// namespace search
 
@@ -44,7 +44,7 @@ bool can_abort;
 struct AbortSearch {};
 struct ForcedMove {};
 
-std::uint64_t node_limit;
+uint64_t node_limit;
 int time_limit[2], time_allowed;
 time_point<high_resolution_clock> start;
 

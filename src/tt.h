@@ -21,7 +21,7 @@ class TTable {
 public:
 	struct Entry {
 		Key key_type;	// bit 0..1 for node_type+1, and 2..63 for key's 62 MSB
-		mutable std::uint8_t generation;
+		mutable uint8_t generation;
 		int8_t depth;
 		int16_t score, eval;
 		move::move_t move;
@@ -34,7 +34,7 @@ public:
 			return (key_type & ~3ULL) == (k & ~3ULL);
 		}
 
-		void save(Key k, std::uint8_t g, int nt, std::int8_t d, std::int16_t s, std::int16_t e,
+		void save(Key k, uint8_t g, int nt, int8_t d, int16_t s, int16_t e,
 				  move::move_t m);
 	};
 
@@ -45,7 +45,7 @@ public:
 	TTable(): count(0), cluster(nullptr) {}
 	~TTable();
 
-	void alloc(std::uint64_t size);
+	void alloc(uint64_t size);
 	void clear();
 
 	void new_search();
@@ -61,7 +61,7 @@ public:
 
 private:
 	size_t count;
-	std::uint8_t generation;
+	uint8_t generation;
 	Cluster *cluster;
 };
 

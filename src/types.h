@@ -114,9 +114,9 @@ inline int color_of(int sq)
 	return (sq & 1) ^ BLACK;
 }
 
-typedef std::uint64_t Key;
-typedef std::uint64_t Bitboard;
+typedef uint64_t Key;
+typedef uint64_t Bitboard;
 
 #define INF		32767
 
-extern std::uint64_t dbg_cnt1, dbg_cnt2;
+extern uint64_t dbg_cnt1, dbg_cnt2;
