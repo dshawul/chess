@@ -190,7 +190,7 @@ void EvalInfo::eval_mobility()
 
 	// Lateral mobility
 	fss = B->get_RQ(us);
-	occ = B->st().occ & ~B->get_pieces(us, ROOK);		// see through rooks
+	occ = B->st().occ ^ B->get_pieces(us, ROOK);		// see through rooks
 	while (fss) {
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
@@ -200,7 +200,7 @@ void EvalInfo::eval_mobility()
 
 	// Diagonal mobility
 	fss = B->get_BQ(us);
-	occ = B->st().occ & ~B->get_pieces(us, BISHOP);		// see through rooks
+	occ = B->st().occ ^ B->get_pieces(us, BISHOP);		// see through rooks
 	while (fss) {
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
@@ -250,7 +250,7 @@ void EvalInfo::eval_safety()
 	attacked = B->st().attacks[them][ROOK] & bb::KAttacks[our_ksq] & ~solid;
 	if (attacked) {
 		fss = B->get_RQ(them);
-		occ = B->st().occ & ~fss;	// rooks and queens see through each other
+		occ = B->st().occ ^ fss;	// rooks and queens see through each other
 		while (attacked) {
 			sq = bb::pop_lsb(&attacked);
 			sq_attackers = fss & bb::rook_attack(sq, occ);
@@ -267,7 +267,7 @@ void EvalInfo::eval_safety()
 	attacked = B->st().attacks[them][BISHOP] & bb::KAttacks[our_ksq] & ~solid;
 	if (attacked) {
 		fss = B->get_BQ(them);
-		occ = B->st().occ & ~fss;	// bishops and queens see through each other
+		occ = B->st().occ ^ fss;	// bishops and queens see through each other
 		while (attacked) {
 			sq = bb::pop_lsb(&attacked);
 			sq_attackers = fss & bb::bishop_attack(sq, occ);
@@ -560,7 +560,7 @@ void EvalInfo::eval_pieces()
 
 	// Hanging pieces
 	Bitboard loose_pawns = our_pawns & ~B->st().attacks[us][NO_PIECE];
-	Bitboard loose_pieces = (B->get_pieces(us) & ~our_pawns)
+	Bitboard loose_pieces = (B->get_pieces(us) ^ our_pawns)
 							& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {

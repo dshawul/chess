@@ -372,7 +372,7 @@ Bitboard Position::hidden_checkers(bool find_pins, int color) const
 
 	while (pinners) {
 		int sq = bb::pop_lsb(&pinners);
-		Bitboard b = bb::Between[ksq][sq] & ~(1ULL << sq) & st().occ;
+		Bitboard b = (bb::Between[ksq][sq] ^ (1ULL << sq)) & st().occ;
 		// NB: if b == 0 then we're in check
 
 		if (!bb::several_bits(b) && (b & all[color]))
@@ -521,7 +521,7 @@ Bitboard hanging_pieces(const Position& B)
 	const int us = B.get_turn(), them = opp_color(us);
 
 	const Bitboard our_pawns = B.get_pieces(us, PAWN);
-	const Bitboard our_pieces = B.get_pieces(us) & ~our_pawns;
+	const Bitboard our_pieces = B.get_pieces(us) ^ our_pawns;
 
 	const Bitboard attacked = B.st().attacks[them][NO_PIECE];
 	const Bitboard defended = B.st().attacks[us][NO_PIECE];
