@@ -11,6 +11,8 @@
  *
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
+ *
+ * Credits: KPK bitbase generation code based on Stockfish.
 */
 #include "bitboard.h"
 #include "kpk.h"
@@ -62,7 +64,7 @@ uint8_t rules(int idx)
 			&& !bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp + 8))
 			return WIN;
 	} else if ( !(bb::KAttacks[bk] & ~(bb::KAttacks[wk] | bb::PAttacks[WHITE][wp]))
-				|| bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp) )
+		 || bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp) )
 		return DRAW;
 
 	return UNKNOWN;

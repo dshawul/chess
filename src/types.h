@@ -18,7 +18,7 @@
 #include <cassert>
 #include <iostream>
 
-/* Square, Rank, File */
+// Square, Rank, File
 
 #define NB_SQUARE 64
 enum {
@@ -76,7 +76,7 @@ inline int file_mirror(int sq)
 	return sq ^ 7;
 }
 
-/* Piece */
+// Piece
 
 #define NB_PIECE 6
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE };
@@ -92,7 +92,7 @@ inline bool is_slider(int piece)
 	return BISHOP <= piece && piece <= QUEEN;
 }
 
-/* Color */
+// Color
 
 #define NB_COLOR 2
 enum { WHITE, BLACK, NO_COLOR };
@@ -114,9 +114,9 @@ inline int color_of(int sq)
 	return (sq & 1) ^ BLACK;
 }
 
-typedef uint64_t Key;
-typedef uint64_t Bitboard;
+typedef uint64_t Key, Bitboard;
 
 #define INF		32767
 
 extern uint64_t dbg_cnt1, dbg_cnt2;
+

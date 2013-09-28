@@ -460,13 +460,13 @@ Bitboard EvalInfo::do_eval_pawns()
 
 		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
 		const bool hole = !chained && !(bb::PawnSpan[them][next_sq] & our_pawns)
-						  && bb::test_bit(B->st().attacks[them][PAWN], next_sq);
+			&& bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
 
 		const bool open = !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
 		const bool passed = open && !(bb::PawnSpan[us][sq] & their_pawns);
 		const bool candidate = chained && open && !passed
-							   && !bb::several_bits(bb::PawnSpan[us][sq] & their_pawns);
+			&& !bb::several_bits(bb::PawnSpan[us][sq] & their_pawns);
 
 		if (chained)
 			e[us].op += Chained;
@@ -561,7 +561,7 @@ void EvalInfo::eval_pieces()
 	// Hanging pieces
 	Bitboard loose_pawns = our_pawns & ~B->st().attacks[us][NO_PIECE];
 	Bitboard loose_pieces = (B->get_pieces(us) ^ our_pawns)
-							& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
+		& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
 		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
@@ -628,9 +628,9 @@ bool kbpk_draw(const board::Position& B)
 	int stm = B.get_turn();
 
 	return (file(pawn) == FILE_A || file(pawn) == FILE_H)
-		   && color_of(bishop) != color_of(prom_sq)
-		   && bb::kdist(their_king, prom_sq) < bb::kdist(our_king, prom_sq) - (stm == us)
-		   && bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
+		&& color_of(bishop) != color_of(prom_sq)
+		&& bb::kdist(their_king, prom_sq) < bb::kdist(our_king, prom_sq) - (stm == us)
+		&& bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
 }
 
 int stand_pat_penalty(const board::Position& B, Bitboard hanging)
@@ -671,8 +671,8 @@ void eval::init()
 			const int taxi_dist_to_H8 = RANK_8 - r + FILE_H - f;
 
 			KingTaxiDistanceToCorner[c][sq] = c
-											  ? std::min(taxi_dist_to_A1, taxi_dist_to_H8)
-											  : std::min(taxi_dist_to_A8, taxi_dist_to_H1);
+				? std::min(taxi_dist_to_A1, taxi_dist_to_H8)
+				: std::min(taxi_dist_to_A8, taxi_dist_to_H1);
 		}
 }
 

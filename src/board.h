@@ -207,8 +207,8 @@ inline Key Position::get_key() const
 {
 	assert(initialized);
 	return st().key
-		   ^ (st().epsq == NO_SQUARE ? 0 : bb::zob_ep[st().epsq])
-		   ^ bb::zob_castle[st().crights];
+		^ (st().epsq == NO_SQUARE ? 0 : bb::zob_ep[st().epsq])
+		^ bb::zob_castle[st().crights];
 }
 
 inline void Position::set_root()

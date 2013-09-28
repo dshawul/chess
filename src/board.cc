@@ -62,7 +62,7 @@ void Position::set_fen(const std::string& _fen)
 				if (piece == KING)
 					king_pos[color] = sq;
 			}
-			sq++;
+			++sq;
 		}
 	}
 
@@ -212,7 +212,7 @@ void Position::play(move::move_t m)
 		const int inc_pp = us ? -8 : 8;
 		// set the epsq if double push, and ep square is attacked by enemy pawns
 		sp->epsq = tsq == fsq + 2 * inc_pp && bb::test_bit(st().attacks[them][PAWN], fsq + inc_pp)
-				   ? fsq + inc_pp : NO_SQUARE;
+			? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
 		if (m.flag() == move::EN_PASSANT)
 			clear_square(them, PAWN, tsq - inc_pp);
@@ -330,8 +330,9 @@ Bitboard Position::calc_attacks(int color) const
 
 	// Pawn
 	fss = get_pieces(color, PAWN);
-	r |= sp->attacks[color][PAWN] = bb::shift_bit((fss & ~bb::FileA_bb), color ? -NB_FILE - 1 : +NB_FILE - 1)
-									| bb::shift_bit((fss & ~bb::FileH_bb), color ? -NB_FILE + 1 : +NB_FILE + 1);
+	r |= sp->attacks[color][PAWN]
+		= bb::shift_bit((fss & ~bb::FileA_bb), color ? -NB_FILE - 1 : +NB_FILE - 1)
+		| bb::shift_bit((fss & ~bb::FileH_bb), color ? -NB_FILE + 1 : +NB_FILE + 1);
 
 	// Knight
 	sp->attacks[color][KNIGHT] = 0;
@@ -391,9 +392,9 @@ Bitboard Position::calc_checkers(int kcolor) const
 	const Bitboard BQ = get_BQ(them) & bb::BPseudoAttacks[kpos];
 
 	return (RQ & bb::rook_attack(kpos, st().occ))
-		   | (BQ & bb::bishop_attack(kpos, st().occ))
-		   | (get_pieces(them, KNIGHT) & bb::NAttacks[kpos])
-		   | (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
+		| (BQ & bb::bishop_attack(kpos, st().occ))
+		| (get_pieces(them, KNIGHT) & bb::NAttacks[kpos])
+		| (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
 }
 
 void Position::set_square(int color, int piece, int sq, bool play)
@@ -535,11 +536,11 @@ Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
 	assert(square_ok(sq));
 
 	return (B.get_RQ() & bb::RPseudoAttacks[sq] & bb::rook_attack(sq, occ))
-		   | (B.get_BQ() & bb::BPseudoAttacks[sq] & bb::bishop_attack(sq, occ))
-		   | (bb::NAttacks[sq] & B.get_N())
-		   | (bb::KAttacks[sq] & B.get_K())
-		   | (bb::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
-		   | (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
+		| (B.get_BQ() & bb::BPseudoAttacks[sq] & bb::bishop_attack(sq, occ))
+		| (bb::NAttacks[sq] & B.get_N())
+		| (bb::KAttacks[sq] & B.get_K())
+		| (bb::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
+		| (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 }
 
 }	// namespace board

@@ -201,9 +201,9 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 		if (!check && !in_check && node_type != PV) {
 			// opt_score = current eval + some margin + max material gain of the move
 			const int opt_score = fut_base
-								  + Material[B.get_piece_on(ss->m.tsq())].eg
-								  + (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
-								  + (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+				+ Material[B.get_piece_on(ss->m.tsq())].eg
+				+ (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
+				+ (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
 
 			// still can't raise alpha, skip
 			if (opt_score <= alpha) {
@@ -351,8 +351,8 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 
 		if (score >= beta)	// null search fails high
 			return score < mate_in(MAX_PLY)
-				   ? score	// fail soft
-				   : beta;	// but do not return an unproven mate
+				? score		// fail soft
+				: beta;		// but do not return an unproven mate
 		else {
 			threat_move = (ss + 1)->best;
 			if (score <= mated_in(MAX_PLY) && (ss - 1)->reduction) {
@@ -399,11 +399,11 @@ tt_skip_null:
 		const bool bad_capture = capture && see < 0;
 		// dangerous movea are not reduced
 		const bool dangerous = check
-							   || ss->m == ss->killer[0]
-							   || ss->m == ss->killer[1]
-							   || ss->m == refutation
-							   || (move::is_pawn_threat(B, ss->m) && see >= 0)
-							   || (ss->m.flag() == move::CASTLING);
+			|| ss->m == ss->killer[0]
+			|| ss->m == ss->killer[1]
+			|| ss->m == refutation
+			|| (move::is_pawn_threat(B, ss->m) && see >= 0)
+			|| (ss->m.flag() == move::CASTLING);
 
 		if (!capture && !dangerous && !in_check && !root) {
 			// Move count pruning

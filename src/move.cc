@@ -63,8 +63,8 @@ int is_check(const board::Position& B, move_t m)
 		bb::clear_bit(&occ, tsq + (us ? 8 : -8));
 		bb::set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
-		if ((B.get_RQ(us) & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
-			|| (B.get_BQ(us) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)))
+		if ( (B.get_RQ(us) & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
+			|| (B.get_BQ(us) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)) )
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
