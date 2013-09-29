@@ -41,9 +41,9 @@ struct move_t {
 	int flag() const;
 	int prom() const;
 
-	void fsq(int fsq);
-	void tsq(int tsq);
-	void flag(int flag);
+	void fsq(int new_fsq);
+	void tsq(int new_tsq);
+	void flag(int new_flag);
 	void prom(int piece);
 
 private:
@@ -106,25 +106,25 @@ inline int move_t::prom() const
 	return ((b >> 12) & 3) + KNIGHT;
 }
 
-inline void move_t::fsq(int fsq)
+inline void move_t::fsq(int new_fsq)
 {
-	assert(square_ok(fsq));
+	assert(square_ok(new_fsq));
 	b &= 0xffc0;
-	b ^= fsq;
+	b ^= new_fsq;
 }
 
-inline void move_t::tsq(int tsq)
+inline void move_t::tsq(int new_tsq)
 {
-	assert(square_ok(tsq));
+	assert(square_ok(new_tsq));
 	b &= 0xf03f;
-	b ^= (tsq << 6);
+	b ^= (new_tsq << 6);
 }
 
-inline void move_t::flag(int flag)
+inline void move_t::flag(int new_flag)
 {
-	assert(flag < 4);
+	assert(new_flag < 4);
 	b &= 0x3fff;
-	b ^= (flag << 14);
+	b ^= (new_flag << 14);
 }
 
 inline void move_t::prom(int piece)
