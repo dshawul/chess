@@ -289,31 +289,30 @@ void EvalInfo::eval_passer_interaction(int sq)
 // it is piece dependant, and we need to separate what is KP dependant from the rest (or we cannot
 // use the Pawn Cache with KP key)
 {
-	const int us = B->get_color_on(sq), them = opp_color(us);
-
+	const int c = B->get_color_on(sq), not_c = opp_color(c);
 	const int r = rank(sq);
-	const int L = (us ? 7 - r : r) - RANK_2;	// Linear part		0..5
-	const int Q = L * (L - 1);					// Quadratic part	0..20
+	const int L = (c ? 7 - r : r) - RANK_2;	// Linear part		0..5
+	const int Q = L * (L - 1);				// Quadratic part	0..20
 
-	if (Q && !bb::test_bit(B->st().occ, bb::pawn_push(us, sq))) {
-		const Bitboard path = bb::SquaresInFront[us][sq];
+	if (Q && !bb::test_bit(B->st().occ, bb::pawn_push(c, sq))) {
+		const Bitboard path = bb::SquaresInFront[c][sq];
 		const Bitboard b = bb::file_bb(file(sq)) & bb::rook_attack(sq, B->st().occ);
 
 		uint64_t defended, attacked;
-		if (B->get_RQ(them) & b) {
-			defended = path & B->st().attacks[us][NO_PIECE];
+		if (B->get_RQ(not_c) & b) {
+			defended = path & B->st().attacks[c][NO_PIECE];
 			attacked = path;
 		} else {
-			defended = (B->get_RQ(us) & b) ? path : path & B->st().attacks[us][NO_PIECE];
-			attacked = path & (B->st().attacks[them][NO_PIECE] | B->get_pieces(them));
+			defended = (B->get_RQ(c) & b) ? path : path & B->st().attacks[c][NO_PIECE];
+			attacked = path & (B->st().attacks[not_c][NO_PIECE] | B->get_pieces(not_c));
 		}
 
 		if (!attacked)
 			// Promotion path is all defended
-			e[us].eg += Q * (path == defended ? 7 : 6);
+			e[c].eg += Q * (path == defended ? 7 : 6);
 		else
 			// Attacked squares on promotion path are defended
-			e[us].eg += Q * (!(attacked & ~defended) ? 4 : 2);
+			e[c].eg += Q * (!(attacked & ~defended) ? 4 : 2);
 	}
 }
 
