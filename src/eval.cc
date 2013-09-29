@@ -291,18 +291,6 @@ void EvalInfo::eval_passer_interaction(int sq)
 {
 	const int us = B->get_color_on(sq), them = opp_color(us);
 
-	if (!B->st().piece_psq[them]) {
-		// opponent has no pieces
-		const int psq = square(us ? RANK_1 : RANK_8, file(sq));
-		const int pd = bb::kdist(sq, psq);
-		const int kd = bb::kdist(B->get_king_pos(them), psq) - (them == B->get_turn());
-
-		if (kd > pd) {	// unstoppable passer
-			e[us].eg += vR;	// on top of the bonus from do_eval_pawns()
-			return;
-		}
-	}
-
 	const int r = rank(sq);
 	const int L = (us ? 7 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);					// Quadratic part	0..20
