@@ -104,7 +104,7 @@ private:
 	Token list[MAX_MOVES];
 	int idx, count, depth;
 
-	move::move_t *generate(GenType type, move::move_t *mlist);
+	move::move_t *generate(move::move_t *mlist);
 	void annotate(const move::move_t *mlist);
 	void score(MoveSort::Token *t);
 };

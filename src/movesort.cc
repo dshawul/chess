@@ -81,11 +81,11 @@ MoveSort::MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,
 	refutation = R ? R->get_refutation(B->get_dm_key()) : move::move_t(0);
 
 	move::move_t mlist[MAX_MOVES];
-	count = generate(type, mlist) - mlist;
+	count = generate(mlist) - mlist;
 	annotate(mlist);
 }
 
-move::move_t *MoveSort::generate(GenType type, move::move_t *mlist)
+move::move_t *MoveSort::generate(move::move_t *mlist)
 {
 	if (type == GEN_ALL)
 		return movegen::gen_moves(*B, mlist);
