@@ -528,7 +528,7 @@ Bitboard hanging_pieces(const Position& B)
 	const Bitboard defended = B.st().attacks[us][NO_PIECE];
 
 	return ((our_pawns ^ our_pieces) & attacked & ~defended)
-		   | (our_pieces & B.st().attacks[them][PAWN]);
+		| (our_pieces & B.st().attacks[them][PAWN]);
 }
 
 Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
@@ -543,5 +543,15 @@ Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
 		| (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 }
 
-}	// namespace board
+bool has_mating_material(const Position& B, int color)
+{
+	// We have mating material when we have either:
+	// 1. a pawn
+	// 2. a major piece
+	// 3. 2 minors one of them being a bishop
+	return B.get_pieces(color, PAWN)
+		|| B.get_RQ(color)
+		|| (bb::several_bits(B.get_NB(color)) && B.get_pieces(color, BISHOP));
+}
 
+}	// namespace board

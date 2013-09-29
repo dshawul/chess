@@ -56,13 +56,7 @@ static const Key KKP  = 0x110000000010ULL;
 static const Key KBPK = 0x110000010001ULL;
 static const Key KKBP = 0x110000100010ULL;
 
-// Known wins
-static const Key KRK  = 0x110001000000ULL;
-static const Key KKR  = 0x110010000000ULL;
-static const Key KQK  = 0x110100000000ULL;
-static const Key KKQ  = 0x111000000000ULL;
-static const Key KBBK = 0x110000020000ULL;
-static const Key KKBB = 0x110000200000ULL;
+// For specialised function to deliver mate in KBNK situation
 static const Key KBNK = 0x110000010100ULL;
 static const Key KKBN = 0x110000101000ULL;
 
@@ -135,15 +129,12 @@ void EvalInfo::eval_material()
 void EvalInfo::eval_drawish()
 {
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
-	const Bitboard mk = B->st().mat_key;
 
 	if (!B->get_pieces(strong_side, PAWN)) {
-		// The strongest side has no pawns
-		if ( mk != KRK && mk != KKR
-			 && mk != KQK && mk != KKQ
-			 && mk != KBBK && mk != KKBB
-			 && mk != KBNK && mk != KKBN )
-			// Unless we are in a trivial win configuration, half the eval
+		// The strongest side has no pawns.
+		// Unless we have mating material against a lone king, half the eval		
+		if ( bb::several_bits(B->get_pieces(opp_color(strong_side)))
+			|| !board::has_mating_material(*B, strong_side) )
 			eval_factor = 8;
 	} else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
 		// Each side has exactly one bishop

@@ -113,6 +113,7 @@ extern std::ostream& operator<< (std::ostream& ostrm, const Position& B);
 
 extern Bitboard hanging_pieces(const Position& B);
 extern Bitboard calc_attackers(const Position& B, int sq, Bitboard occ);
+extern bool has_mating_material(const Position& B, int color);
 
 inline int Position::get_color_on(int sq) const
 {
