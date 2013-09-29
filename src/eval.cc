@@ -75,7 +75,7 @@ public:
 	void eval_pawns();
 	void eval_drawish();
 
-	int interpolate() const;
+	int interpolate();
 	int eval_factor;	// between 0 and 16
 
 	void adjust_kbnk();
@@ -86,7 +86,7 @@ private:
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
 
-	void score_mobility(int us, int p0, int p, Bitboard tss);
+	void score_mobility(int p0, int p, Bitboard tss);
 	void score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
 					   int *total_count, int *total_weight);
 
@@ -146,7 +146,7 @@ void EvalInfo::eval_drawish()
 	}
 }
 
-void EvalInfo::score_mobility(int us, int p0, int p, Bitboard tss)
+void EvalInfo::score_mobility(int p0, int p, Bitboard tss)
 {
 	static const int mob_count[ROOK + 1][15] = {
 		{},
@@ -176,7 +176,7 @@ void EvalInfo::eval_mobility()
 	fss = B->get_pieces(us, KNIGHT);
 	while (fss) {
 		tss = bb::NAttacks[bb::pop_lsb(&fss)] & mob_targets;
-		score_mobility(us, KNIGHT, KNIGHT, tss);
+		score_mobility(KNIGHT, KNIGHT, tss);
 	}
 
 	// Lateral mobility
@@ -186,7 +186,7 @@ void EvalInfo::eval_mobility()
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
 		tss = bb::rook_attack(fsq, occ) & mob_targets;
-		score_mobility(us, ROOK, piece, tss);
+		score_mobility(ROOK, piece, tss);
 	}
 
 	// Diagonal mobility
@@ -196,7 +196,7 @@ void EvalInfo::eval_mobility()
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
 		tss = bb::bishop_attack(fsq, occ) & mob_targets;
-		score_mobility(us, BISHOP, piece, tss);
+		score_mobility(BISHOP, piece, tss);
 	}
 }
 
@@ -555,9 +555,9 @@ int EvalInfo::calc_phase() const
 	return (B->st().piece_psq[WHITE] + B->st().piece_psq[BLACK]) * 1024 / total;
 }
 
-int EvalInfo::interpolate() const
+int EvalInfo::interpolate()
 {
-	const int us = B->get_turn(), them = opp_color(us);
+	us = B->get_turn(), them = opp_color(us);
 	const int phase = calc_phase();
 	const int eval = (phase * (e[us].op - e[them].op) + (1024 - phase) * (e[us].eg - e[them].eg)) / 1024;
 	return eval * eval_factor / 16;
