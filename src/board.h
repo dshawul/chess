@@ -97,8 +97,8 @@ private:
 	bool initialized;
 
 	void clear();
-	void set_square(int color, int piece, int sq, bool play = true);
-	void clear_square(int color, int piece, int sq, bool play = true);
+	void set_square(int color, int piece, int sq, bool calc = true);
+	void clear_square(int color, int piece, int sq, bool calc = true);
 
 	Bitboard calc_attacks(int color) const;
 	Bitboard calc_checkers(int kcolor) const;

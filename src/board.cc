@@ -373,11 +373,10 @@ Bitboard Position::hidden_checkers(bool find_pins, int color) const
 
 	while (pinners) {
 		int sq = bb::pop_lsb(&pinners);
-		Bitboard b = (bb::Between[ksq][sq] ^ (1ULL << sq)) & st().occ;
-		// NB: if b == 0 then we're in check
+		Bitboard skewered = (bb::Between[ksq][sq] ^ (1ULL << sq)) & st().occ;
 
-		if (!bb::several_bits(b) && (b & all[color]))
-			result |= b;
+		if (!bb::several_bits(skewered) && (skewered & all[color]))
+			result |= skewered;
 	}
 	return result;
 }
@@ -397,7 +396,7 @@ Bitboard Position::calc_checkers(int kcolor) const
 		| (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
 }
 
-void Position::set_square(int color, int piece, int sq, bool play)
+void Position::set_square(int color, int piece, int sq, bool calc)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -407,7 +406,7 @@ void Position::set_square(int color, int piece, int sq, bool play)
 	bb::set_bit(&all[color], sq);
 	piece_on[sq] = piece;
 
-	if (play) {
+	if (calc) {
 		bb::set_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
@@ -422,7 +421,7 @@ void Position::set_square(int color, int piece, int sq, bool play)
 	}
 }
 
-void Position::clear_square(int color, int piece, int sq, bool play)
+void Position::clear_square(int color, int piece, int sq, bool calc)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -432,7 +431,7 @@ void Position::clear_square(int color, int piece, int sq, bool play)
 	bb::clear_bit(&all[color], sq);
 	piece_on[sq] = NO_PIECE;
 
-	if (play) {
+	if (calc) {
 		bb::clear_bit(&sp->occ, sq);
 
 		const Eval& e = get_psq(color, piece, sq);
