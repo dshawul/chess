@@ -307,8 +307,14 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 	} else
 		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
-	// Stand pat score (adjusted for tempo and hanging pieces)
-	const int stand_pat = ss->eval + eval::asymmetric_eval(B, hanging);
+	// Stand pat score: adjust for assymetric eval, and using tte->score (when possible)
+	int stand_pat = ss->eval + eval::asymmetric_eval(B, hanging);
+	if (tte) {
+		if (tte->score < stand_pat && tte->node_type() <= PV)
+			stand_pat = tte->score;
+		else if (tte->score > stand_pat && tte->node_type() >= PV)
+			stand_pat = tte->score;
+	}
 
 	// Eval pruning
 	if ( depth <= 3 && node_type != PV
@@ -321,7 +327,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 	if ( depth <= 3 && node_type != PV
 		 && !in_check && !is_mate_score(beta) ) {
 		const int threshold = beta - RazorMargin[depth];
-		if (ss->eval < threshold) {
+		if (stand_pat < threshold) {
 			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1, subtree_pv);
 			if (score < threshold)
 				return score;
@@ -330,11 +336,11 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 
 	// Null move pruning
 	move::move_t threat_move = move::move_t(0);
-	if ( ss->eval >= beta	// eval symmetry prevents double null moves
+	if ( stand_pat >= beta
 		 && !ss->skip_null && node_type != PV
 		 && !in_check && !is_mate_score(beta)
 		 && B.st().piece_psq[B.get_turn()] ) {
-		const int reduction = null_reduction(depth) + (ss->eval - vOP >= beta);
+		const int reduction = null_reduction(depth) + (stand_pat - vOP >= beta);
 
 		// if the TT entry tells us that no move can beat alpha at the null search depth or deeper,
 		// we safely skip the null search.
