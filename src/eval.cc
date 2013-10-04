@@ -664,12 +664,14 @@ int symmetric_eval(const board::Position& B)
 	// Recognize some general drawish patterns
 	ei.eval_drawish();
 
-	// Recognize some specific endgames
-	const Bitboard mk = B.st().mat_key;
-	if (is_draw(B))
-		return 0;
-	else if (mk == KBNK || mk == KKBN)
-		ei.adjust_kbnk();
+	if (bb::count_bit(B.st().occ) <= 4) {
+		// Recognize some specific endgames
+		const Bitboard mk = B.st().mat_key;
+		if (is_tb_draw(B))
+			return 0;
+		else if (mk == KBNK || mk == KKBN)
+			ei.adjust_kbnk();
+	}
 
 	ei.eval_pawns();
 	for (int color = WHITE; color <= BLACK; ++color) {
@@ -689,14 +691,11 @@ int asymmetric_eval(const board::Position& B, Bitboard hanging)
 	return TEMPO - stand_pat_penalty(B, hanging);
 }
 
-bool is_draw(const board::Position& B)
+bool is_tb_draw(const board::Position& B)
 // Recognizes some notorious draws. We're talking about TB-like draws here, not to be confused with
 // drawish positions (where we use scaling), or draws by chess rules (see B.is_draw()).
 // Used both in the eval, and as interior node recognizers in the search (pseudo-TB pruning).
 {
-	if (bb::count_bit(B.st().occ) > 4)
-		return false;
-
 	const Bitboard mk = B.st().mat_key;
 	bool r = ((mk == KPK || mk == KKP) && kpk_draw(B))
 		|| ((mk == KBPK || mk == KKBP) && kbpk_draw(B));

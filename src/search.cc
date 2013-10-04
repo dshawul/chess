@@ -282,7 +282,7 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 	int best_score = -INF;
 	ss->best = move::move_t(0);
 
-	if (!root && (B.is_draw() || eval::is_draw(B)))
+	if (!root && (B.is_draw() || (bb::count_bit(B.st().occ) <= 4 && eval::is_tb_draw(B))))
 		return DrawScore[B.get_turn()];
 		
 	// mate distance pruning
