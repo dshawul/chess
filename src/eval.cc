@@ -634,7 +634,9 @@ int stand_pat_penalty(const board::Position& B, Bitboard hanging)
 
 }	// namespace
 
-void eval::init()
+namespace eval {
+
+void init()
 {
 	kpk::init();
 
@@ -654,7 +656,7 @@ void eval::init()
 		}
 }
 
-int eval::symmetric_eval(const board::Position& B)
+int symmetric_eval(const board::Position& B)
 {
 	assert(!B.is_check());
 	EvalInfo ei(&B);
@@ -664,10 +666,8 @@ int eval::symmetric_eval(const board::Position& B)
 
 	// Recognize some specific endgames
 	const Bitboard mk = B.st().mat_key;
-	if ((mk == KPK || mk == KKP) && kpk_draw(B))
-		return 0;	// known draw (certain)
-	else if ((mk == KBPK || mk == KKBP) && kbpk_draw(B))
-		return 0;	// known draw (certain)
+	if (is_draw(B))
+		return 0;
 	else if (mk == KBNK || mk == KKBN)
 		ei.adjust_kbnk();
 
@@ -683,8 +683,26 @@ int eval::symmetric_eval(const board::Position& B)
 	return ei.interpolate();
 }
 
-int eval::asymmetric_eval(const board::Position& B, Bitboard hanging)
+int asymmetric_eval(const board::Position& B, Bitboard hanging)
 {
 	static const int TEMPO = 4;
 	return TEMPO - stand_pat_penalty(B, hanging);
 }
+
+bool is_draw(const board::Position& B)
+// Recognizes some notorious draws. We're talking about TB-like draws here, not to be confused with
+// drawish positions (where we use scaling), or draws by chess rules (see B.is_draw()).
+// Used both in the eval, and as interior node recognizers in the search (pseudo-TB pruning).
+{
+	if (bb::count_bit(B.st().occ) > 4)
+		return false;
+
+	const Bitboard mk = B.st().mat_key;
+	bool r = ((mk == KPK || mk == KKP) && kpk_draw(B))
+		|| ((mk == KBPK || mk == KKBP) && kbpk_draw(B));
+
+	return r;
+}
+
+}	// namespace eval
+

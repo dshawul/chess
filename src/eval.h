@@ -22,4 +22,6 @@ extern void init();
 extern int symmetric_eval(const board::Position& B);
 extern int asymmetric_eval(const board::Position& B, Bitboard hanging_pieces);
 
+extern bool is_draw(const board::Position& B);
+
 }	// namespace eval

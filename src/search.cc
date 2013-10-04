@@ -282,9 +282,9 @@ int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, Searc
 	int best_score = -INF;
 	ss->best = move::move_t(0);
 
-	if (B.is_draw())
+	if (!root && (B.is_draw() || eval::is_draw(B)))
 		return DrawScore[B.get_turn()];
-
+		
 	// mate distance pruning
 	alpha = std::max(alpha, mated_in(ss->ply));
 	beta = std::min(beta, mate_in(ss->ply + 1));
