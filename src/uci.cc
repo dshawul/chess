@@ -45,17 +45,17 @@ const char* StartFEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
 void intro()
 {
 	std::cout << "id name DiscoCheck 4.3\n"
-			  << "id author Lucas Braesch\n"
-			  // Declare UCI options here
-			  << "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
-			  << "option name Clear Hash type button\n"
-			  << "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
-			  << "option name Ponder type check default " << uci::Ponder << '\n'
-			  << "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
-			  << "option name UCI_Elo type spin default " << uci::Elo
-			  << " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
-			  // end of UCI options
-			  << "uciok" << std::endl;
+		<< "id author Lucas Braesch\n"
+		// Declare UCI options here
+		<< "option name Hash type spin default " << uci::Hash << " min 1 max 8192\n"
+		<< "option name Clear Hash type button\n"
+		<< "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
+		<< "option name Ponder type check default " << uci::Ponder << '\n'
+		<< "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
+		<< "option name UCI_Elo type spin default " << uci::Elo
+		<< " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
+		// end of UCI options
+		<< "uciok" << std::endl;
 }
 
 void position(board::Position& B, std::istringstream& is)
@@ -183,7 +183,9 @@ bool input_available()
 
 }	// namespace
 
-void uci::loop()
+namespace uci {
+
+void loop()
 {
 	board::Position B;
 	std::string cmd, token;
@@ -205,7 +207,7 @@ void uci::loop()
 		else if (token == "go")
 			go(B, is);
 		else if (token == "isready") {
-			search::TT.alloc(uci::Hash << 20);
+			search::TT.alloc(Hash << 20);
 			std::cout << "readyok" << std::endl;
 		} else if (token == "setoption")
 			setoption(is);
@@ -220,7 +222,7 @@ void uci::loop()
 	}
 }
 
-bool uci::stop()
+bool stop()
 {
 	std::string token;
 
@@ -229,3 +231,44 @@ bool uci::stop()
 
 	return token == "stop";
 }
+
+void info::clear()
+{
+	score = depth = time = 0;
+	nodes = 0;
+	bound = EXACT;
+}
+
+std::ostream& operator<< (std::ostream& ostrm, const info& ui)
+{
+	ostrm << "info score ";
+	if (ui.bound == info::LBOUND)
+		ostrm << "lowerbound ";
+	else if (ui.bound == info::UBOUND)
+		ostrm << "upperbound ";
+	else {
+		assert(ui.bound == info::EXACT);
+		ostrm << "cp ";
+	}
+	
+	if (ui.score >= MATE - MAX_PLY)
+		ostrm << "mate " << (MATE - ui.score + 1) / 2;
+	else if (ui.score <= -MATE - MAX_PLY)
+		ostrm << "mate " << -(ui.score + MATE + 1) / 2;
+	else
+		ostrm << ui.score;
+	
+	ostrm << " depth " << ui.depth
+		<< " nodes " << ui.nodes
+		<< " time " << ui.time;
+		
+	if (ui.bound == info::EXACT) {
+		ostrm << " pv";
+		for (int i = 0; i <= MAX_PLY && ui.pv[i]; ++i)
+			ostrm << ' ' << move_to_string(ui.pv[i]);
+	}
+	
+	return ostrm;
+}
+
+}	// namespace uci

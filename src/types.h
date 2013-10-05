@@ -116,7 +116,11 @@ inline int color_of(int sq)
 
 typedef uint64_t Key, Bitboard;
 
-#define INF		32767
+const int MATE = 16000;
+const int INF = 32767;
+
+const int MAX_DEPTH = 127;	// search depth go from MAX_DEPTH down to 1
+const int MIN_DEPTH = -8;	// qsearch depth go from 0 downto -MIN_DEPTH-1
+const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 1;	// plies go from 0 to MAX_PLY
 
 extern uint64_t dbg_cnt1, dbg_cnt2;
-

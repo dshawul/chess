@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include "move.h"
 
 namespace uci {
 
@@ -25,5 +26,18 @@ extern int Contempt;	// in cp
 extern bool LimitStrength, Ponder;
 extern const int ELO_MIN, ELO_MAX;
 extern int Elo;
+
+struct info {
+	void clear();
+	
+	enum BoundType {EXACT, LBOUND, UBOUND};
+	BoundType bound;
+	
+	int score, depth, time;
+	uint64_t nodes;
+	move::move_t *pv;
+};
+
+extern std::ostream& operator<< (std::ostream& ostrm, const info& ui);
 
 }	// namespace uci

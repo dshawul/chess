@@ -34,12 +34,6 @@ uint64_t PollingFrequency;
 
 namespace {
 
-const int MAX_DEPTH = 127;	// pvs() depth go from MAX_DEPTH down to 1
-const int MIN_DEPTH = -8;	// qsearch() depth go from 0 downto -MIN_DEPTH-1
-const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 1;	// plies go from 0 to MAX_PLY
-
-const int MATE = 16000;
-
 bool can_abort;
 struct AbortSearch {};
 struct ForcedMove {};
@@ -79,8 +73,9 @@ void node_poll(board::Position &B)
 	}
 }
 
-bool is_mate_score(int score)
+static bool is_mate_score(int score)
 {
+	assert(std::abs(score) <= INF);
 	return std::abs(score) >= MATE - MAX_PLY;
 }
 
@@ -561,17 +556,22 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	DrawScore[them] = +uci::Contempt;
 
 	move::move_t pv[MAX_PLY + 1];
+	uci::info ui;
+	ui.pv = pv;
+	
 	const int max_depth = sl.depth ? std::min(MAX_DEPTH, sl.depth) : MAX_DEPTH;
-
-	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {
-		// iterative deepening loop
+	
+	// iterative deepening loop
+	for (int depth = 1, alpha = -INF, beta = +INF; depth <= max_depth; depth++) {		
+		ui.clear();
+		ui.depth = depth;
 
 		// We can only abort the search once iteration 1 is finished. In extreme situations (eg.
 		// fixed nodes), the SearchLimits sl could trigger a search abortion before that, which is
 		// disastrous, as the best move could be illegal or completely stupid.
 		can_abort = depth >= 2;
 
-		int score, delta = 16;
+		int delta = 16;
 
 		// Time allowance
 		time_allowed = time_limit[best_move_changed];
@@ -584,7 +584,7 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 
 			can_abort = depth >= 2;
 			try {
-				score = pvs(B, alpha, beta, depth, PV, ss, pv);
+				ui.score = pvs(B, alpha, beta, depth, PV, ss, pv);
 			} catch (AbortSearch e) {
 				goto return_pair;
 			} catch (ForcedMove e) {
@@ -592,30 +592,30 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 				goto return_pair;
 			}
 
-			if (is_mate_score(score))
-				std::cout << "info score mate " << (score > 0 ? (MATE - score + 1) / 2 : -(score + MATE + 1) / 2);
-			else
-				std::cout << "info score cp " << score;
-			std::cout << " depth " << depth << " nodes " << node_count << " time "
-					  << duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
+			ui.nodes = node_count;
+			ui.time = duration_cast<milliseconds>(high_resolution_clock::now() - start).count();
 
-			if (alpha < score && score < beta) {
+			if (alpha < ui.score && ui.score < beta) {
 				// score is within bounds
-				if (depth >= 4 && !is_mate_score(score)) {
-					// set aspiration window for the next depth (so aspiration starts at depth 5)
-					alpha = score - delta;
-					beta = score + delta;
+				ui.bound = uci::info::EXACT;
+				
+				// set aspiration window for the next depth (so aspiration starts at depth 5)
+				if (depth >= 4 && !is_mate_score(ui.score)) {					
+					alpha = ui.score - delta;
+					beta = ui.score + delta;
 				}
 				// stop the aspiration loop
 				break;
 			} else {
 				// score is outside bounds: resize window and double delta
-				if (score <= alpha) {
+				if (ui.score <= alpha) {
 					alpha -= delta;
-					std::cout << " upperbound" << std::endl;
-				} else if (score >= beta) {
+					ui.bound = uci::info::UBOUND;
+					std::cout << ui << std::endl;
+				} else if (ui.score >= beta) {
 					beta += delta;
-					std::cout << " lowerbound" << std::endl;
+					ui.bound = uci::info::LBOUND;
+					std::cout << ui << std::endl;
 				}
 				delta *= 2;
 
@@ -624,11 +624,7 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 			}
 		}
 
-		// display the PV
-		std::cout << " pv";
-		for (int i = 0; i <= MAX_PLY && pv[i]; i++)
-			std::cout << ' ' << move_to_string(pv[i]);
-		std::cout << std::endl;
+		std::cout << ui << std::endl;
 	}
 
 return_pair:
