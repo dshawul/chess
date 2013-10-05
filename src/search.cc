@@ -177,9 +177,18 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	} else
 		ss->eval = in_check ? -INF : (ss->null_child ? -(ss - 1)->eval : eval::symmetric_eval(B));
 
-	// stand pat
+	// stand pat score
+	int stand_pat = ss->eval + eval::asymmetric_eval(B, hanging);
+	if (tte) {
+		if (tte->score < stand_pat && tte->node_type() <= PV)
+			stand_pat = tte->score;
+		else if (tte->score > stand_pat && tte->node_type() >= PV)
+			stand_pat = tte->score;
+	}
+	
+	// consider stand pat when not in check
 	if (!in_check) {
-		best_score = ss->eval + eval::asymmetric_eval(B, hanging);
+		best_score = stand_pat;
 		alpha = std::max(alpha, best_score);
 		if (alpha >= beta)
 			return alpha;
@@ -187,7 +196,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 
 	MoveSort MS(&B, depth, ss, &H, nullptr);
 	int see;
-	const int fut_base = ss->eval + vEP / 2;
+	const int fut_base = stand_pat + vEP / 2;
 
 	while ( alpha < beta && (ss->m = MS.next(&see)) ) {
 		int check = move::is_check(B, ss->m);
@@ -220,7 +229,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 		// recursion
 		int score;
 		if (depth <= MIN_DEPTH && !in_check)		// prevent qsearch explosion
-			score = ss->eval + see;
+			score = stand_pat + see;
 		else {
 			B.play(ss->m);
 			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1, subtree_pv);
