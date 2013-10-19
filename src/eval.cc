@@ -380,9 +380,8 @@ void EvalInfo::eval_shield_storm()
 
 void EvalInfo::eval_passer(int sq, Eval *res)
 {
-	const int r = rank(sq), f = file(sq);
+	const int r = rank(sq);
 	const int next_sq = bb::pawn_push(us, sq);
-	const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
 
 	const int L = (us ? RANK_8 - r : r) - RANK_2;	// Linear part		0..5
 	const int Q = L * (L - 1);						// Quadratic part	0..20
@@ -398,33 +397,11 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
 			res->eg -= bb::kdist(bb::pawn_push(us, next_sq), our_ksq) * Q / 2;
 	}
-
-	// support by friendly pawn
-	if (besides & bb::PawnSpan[them][next_sq]) {
-		if (bb::PAttacks[them][next_sq] & our_pawns)
-			res->eg += 8 * L;	// besides is good, as it allows a further push
-		else if (bb::PAttacks[them][sq] & our_pawns)
-			res->eg += 5 * L;	// behind is solid, but doesn't allow further push
-		else if (!(bb::PAttacks[them][sq] & (their_pawns | B->st().attacks[them][PAWN]))) {
-			// pawns that are 1 push away
-			Bitboard b = bb::PAttacks[them][sq];
-			// also pawns that are 1 double push away if on 5-th (relative) rank
-			// for simplicity neglect en-passant refutation of the double push
-			if (L == 3)
-				b |= bb::PAttacks[them][bb::pawn_push(them, sq)];
-
-			while (b) {
-				const int tsq = bb::pop_lsb(&b);
-				if (bb::test_bit(our_pawns, bb::pawn_push(them, tsq)))
-					res->eg += 2 * L;	// 1 push away from defendint the passer
-			}
-		}
-	}
 }
 
 Bitboard EvalInfo::do_eval_pawns()
 {
-	static const int Chained = 5, Isolated = 20;
+	static const int Isolated = 20;
 	static const Eval Hole = {16, 10};
 	Bitboard passers = 0;
 
@@ -446,9 +423,11 @@ Bitboard EvalInfo::do_eval_pawns()
 		const bool candidate = chained && open && !passed
 			&& !bb::several_bits(bb::PawnSpan[us][sq] & their_pawns);
 
-		if (chained)
-			e[us].op += Chained;
-		else if (hole) {
+		if (chained) {
+			const int rr = us ? RANK_7 - r : r - RANK_2;
+			const int bonus = rr * rr;
+			e[us] += {4 + bonus/2, bonus};
+		} else if (hole) {
 			e[us].op -= open ? Hole.op : Hole.op / 2;
 			e[us].eg -= Hole.eg;
 		} else if (isolated) {
