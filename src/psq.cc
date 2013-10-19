@@ -51,7 +51,7 @@ const int KFileOpening = 10;
 const int KRankOpening = 10;
 
 /* Adjustments */
-const int PCenterOpening = 20;
+const int PCenterOpening = 16;
 const int BDiagonalOpening = 4;
 const int BBackRankOpening = 10;
 const int QBackRankOpening = 5;
