@@ -48,6 +48,7 @@ const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
 const int EvalMargin[4]	 = {0, vEP, vN, vQ};
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
+int TTPrunePVPly;			// TT pruning at PV nodes after this ply
 
 move::move_t best_move, ponder_move;
 bool best_move_changed;
@@ -120,7 +121,7 @@ bool can_return_tt(bool is_pv, const TTable::Entry *tte, int depth, int beta, in
 
 	if (is_pv)
 		return depth_ok && tte->node_type() == PV
-			   && ply >= 2;	// to have at least a ponder move in the PV
+			   && ply >= TTPrunePVPly;
 	else {
 		const int tt_score = score_from_tt(tte->score, ply);
 		return (depth_ok
@@ -561,8 +562,13 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 
 	// Calculate the value of a draw by chess rules, for both colors (contempt option)
 	const int us = B.get_turn(), them = opp_color(us);
-	DrawScore[us] = -uci::Contempt;
-	DrawScore[them] = +uci::Contempt;
+	DrawScore[us] = uci::Analyze ? 0 : -uci::Contempt;
+	DrawScore[them] = uci::Analyze ? 0 : uci::Contempt;
+	
+	// Restrict TT pruning at PV nodes:
+	// Ponder: prune when ply >= 2, to ensures we have a ponder move.
+	// Analyze: never prune, because we don't want truncated PV.
+	TTPrunePVPly = uci::Analyze ? MAX_PLY : uci::Ponder ? 2 : 1;
 
 	move::move_t pv[MAX_PLY + 1];
 	uci::info ui;

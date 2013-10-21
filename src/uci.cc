@@ -33,7 +33,7 @@ namespace uci {
 int Hash = 16;
 int Contempt = 25;
 const int ELO_MIN = 1500, ELO_MAX = 2700;
-bool LimitStrength = false, Ponder = false;
+bool LimitStrength = false, Ponder = false, Analyze = false;
 int Elo = ELO_MIN;
 
 }	// namespace uci
@@ -51,6 +51,7 @@ void intro()
 		<< "option name Clear Hash type button\n"
 		<< "option name Contempt type spin default " << uci::Contempt << " min 0 max 100\n"
 		<< "option name Ponder type check default " << uci::Ponder << '\n'
+		<< "option name UCI_AnalyseMode type check default " << uci::Analyze << '\n'
 		<< "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
 		<< "option name UCI_Elo type spin default " << uci::Elo
 		<< " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
@@ -138,6 +139,8 @@ void setoption(std::istringstream& is)
 		is >> uci::Contempt;
 	else if (name == "Ponder")
 		is >> uci::Ponder;
+	else if (name == "UCI_AnalyseMode")
+		is >> uci::Analyze;
 	else if (name == "UCI_LimitStrength")
 		is >> uci::LimitStrength;
 	else if (name == "UCI_Elo")

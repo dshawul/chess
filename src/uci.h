@@ -23,7 +23,7 @@ extern bool stop();
 // UCI option values
 extern int Hash;		// in MB
 extern int Contempt;	// in cp
-extern bool LimitStrength, Ponder;
+extern bool LimitStrength, Ponder, Analyze;
 extern const int ELO_MIN, ELO_MAX;
 extern int Elo;
 
