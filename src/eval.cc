@@ -425,7 +425,8 @@ Bitboard EvalInfo::do_eval_pawns()
 
 		if (chained) {
 			const int rr = us ? RANK_7 - r : r - RANK_2;
-			const int bonus = rr * rr;
+			const bool support = our_pawns & bb::PAttacks[them][next_sq];
+			const int bonus = rr * (rr + support);
 			e[us] += {4 + bonus/2, bonus};
 		} else if (hole) {
 			e[us].op -= open ? Hole.op : Hole.op / 2;
