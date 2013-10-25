@@ -28,13 +28,13 @@ TTable TT;
 Refutation R;
 
 uint64_t node_count;
-uint64_t PollingFrequency;
+uint64_t polling_frequency;
 
 }	// namespace search
 
 namespace {
 
-bool can_abort;
+bool can_abort, pondering;
 struct AbortSearch {};
 struct ForcedMove {};
 
@@ -55,22 +55,27 @@ bool best_move_changed;
 
 void node_poll(board::Position &B)
 {
-	if (!(++search::node_count & (search::PollingFrequency - 1)) && can_abort) {
+	if (!(++search::node_count & (search::polling_frequency - 1)) && can_abort) {
 		bool abort = false;
 
-		// abort search because node limit exceeded
+		// node limit reached ?
 		if (node_limit && search::node_count >= node_limit)
 			abort = true;
-		// abort search because time limit exceeded
+		// time limit reached ?
 		else if (time_allowed && duration_cast<milliseconds>
 				 (high_resolution_clock::now() - start).count() > time_allowed)
 			abort = true;
-		// abort when UCI "stop" command is received (involves some non standard I/O)
-		else if (uci::stop())
-			abort = true;
 
-		if (abort)
+		// limit reached: abort search, unless we're pondering
+		if (abort && !pondering)
 			throw AbortSearch();
+
+		// handle input during search
+		std::string token = uci::check_input();
+		if (token == "stop")
+			throw AbortSearch();
+		else if (token == "ponderhit")
+			pondering = false;
 	}
 }
 
@@ -551,6 +556,7 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 
 	node_count = 0;
 	node_limit = sl.nodes;
+	pondering = sl.ponder;
 	time_alloc(sl, time_limit);
 
 	best_move = ponder_move = move::move_t(0);
@@ -568,7 +574,7 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	// Restrict TT pruning at PV nodes:
 	// Ponder: prune when ply >= 2, to ensures we have a ponder move.
 	// Analyze: never prune, because we don't want truncated PV.
-	TTPrunePVPly = uci::Analyze ? MAX_PLY : uci::Ponder ? 2 : 1;
+	TTPrunePVPly = uci::Analyze ? MAX_PLY : pondering ? 2 : 1;
 
 	move::move_t pv[MAX_PLY + 1];
 	uci::info ui;
@@ -643,6 +649,13 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	}
 
 return_pair:
+	if (pondering) {
+		// When pondering, never return a bestmove before "stop" or "ponderhit" is received.
+		// Here we should use a normal blocking I/O read.
+		std::string token;
+		getline(std::cin, token);
+	}
+
 	return std::make_pair(best_move, ponder_move);
 }
 

@@ -13,12 +13,13 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #pragma once
+#include <string>
 #include "move.h"
 
 namespace uci {
 
 extern void loop();
-extern bool stop();
+extern std::string check_input();
 
 // UCI option values
 extern int Hash;		// in MB
