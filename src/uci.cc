@@ -12,7 +12,6 @@
  * You should have received a copy of the GNU General Public License along with this program. If not,
  * see <http://www.gnu.org/licenses/>.
 */
-#include <string>
 #include <sstream>
 #include "uci.h"
 #include "search.h"
@@ -86,13 +85,13 @@ void position(board::Position& B, std::istringstream& is)
 void go(board::Position& B, std::istringstream& is)
 {
 	search::Limits sl;
-	search::PollingFrequency = 256;
+	search::polling_frequency = 256;
 
 	if (uci::LimitStrength) {
 		// discard parameters of the go command
 		sl.nodes = pow(2.0, 8.0 + pow((uci::Elo - uci::ELO_MIN) / 128.0, 1.0 / 0.9));
 		if (sl.nodes / 16 <= 256)
-			search::PollingFrequency = 1ULL << bb::msb(sl.nodes / 16);
+			search::polling_frequency = 1ULL << bb::msb(sl.nodes / 16);
 	} else {
 		std::string token;
 		while (is >> token) {
@@ -225,14 +224,14 @@ void loop()
 	}
 }
 
-bool stop()
+std::string check_input()
 {
 	std::string token;
 
 	if (input_available())
 		getline(std::cin, token);
 
-	return token == "stop";
+	return token;
 }
 
 void info::clear()
@@ -249,17 +248,13 @@ std::ostream& operator<< (std::ostream& ostrm, const info& ui)
 		ostrm << "lowerbound ";
 	else if (ui.bound == info::UBOUND)
 		ostrm << "upperbound ";
-	else {
-		assert(ui.bound == info::EXACT);
-		ostrm << "cp ";
-	}
 	
 	if (ui.score >= MATE - MAX_PLY)
 		ostrm << "mate " << (MATE - ui.score + 1) / 2;
 	else if (ui.score <= -MATE - MAX_PLY)
 		ostrm << "mate " << -(ui.score + MATE + 1) / 2;
 	else
-		ostrm << ui.score;
+		ostrm << "cp " << ui.score;
 	
 	ostrm << " depth " << ui.depth
 		<< " nodes " << ui.nodes
