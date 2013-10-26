@@ -649,13 +649,6 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	}
 
 return_pair:
-	if (pondering) {
-		// When pondering, never return a bestmove before "stop" or "ponderhit" is received.
-		// Here we should use a normal blocking I/O read.
-		std::string token;
-		getline(std::cin, token);
-	}
-
 	return std::make_pair(best_move, ponder_move);
 }
 
