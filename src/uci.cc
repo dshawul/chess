@@ -251,7 +251,7 @@ std::ostream& operator<< (std::ostream& ostrm, const info& ui)
 	
 	if (ui.score >= MATE - MAX_PLY)
 		ostrm << "mate " << (MATE - ui.score + 1) / 2;
-	else if (ui.score <= -MATE - MAX_PLY)
+	else if (ui.score <= -MATE + MAX_PLY)
 		ostrm << "mate " << -(ui.score + MATE + 1) / 2;
 	else
 		ostrm << "cp " << ui.score;
