@@ -508,9 +508,8 @@ tt_skip_null:
 		// mated or stalemated
 		assert(!root);
 		return in_check ? mated_in(ss->ply) : DrawScore[B.get_turn()];
-	} else if (root && MS.get_count() == 1 && depth >= 2)
+	} else if (root && MS.get_count() == 1 && can_abort && !pondering)
 		// forced move at the root node, play instantly and prevent further iterative deepening
-		// depth >= 2 is to make sure we have a ponder move pv[1]
 		throw ForcedMove();
 
 	// update TT
@@ -571,10 +570,10 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 	DrawScore[us] = uci::Analyze ? 0 : -uci::Contempt;
 	DrawScore[them] = uci::Analyze ? 0 : uci::Contempt;
 	
-	// Restrict TT pruning at PV nodes:
-	// Ponder: prune when ply >= 2, to ensures we have a ponder move.
-	// Analyze: never prune, because we don't want truncated PV.
-	TTPrunePVPly = uci::Analyze ? MAX_PLY : pondering ? 2 : 1;
+	// TT pruning at PV nodes:
+	// only when play >= , to have a ponder move.
+	// no pruning in analyse mode, to print untruncated PVs.
+	TTPrunePVPly = uci::Analyze ? MAX_PLY : 2;
 
 	move::move_t pv[MAX_PLY + 1];
 	uci::info ui;
@@ -603,7 +602,6 @@ std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits&
 		for (;;) {
 			// Aspiration loop
 
-			can_abort = depth >= 2;
 			try {
 				ui.score = pvs(B, alpha, beta, depth, PV, ss, pv);
 			} catch (AbortSearch e) {
