@@ -16,7 +16,7 @@
 #include "types.h"
 
 namespace board {
-struct Position;
+class Board;
 }
 
 namespace move {
@@ -57,16 +57,16 @@ private:
 
 enum { NO_CHECK, NORMAL_CHECK, DISCO_CHECK };
 
-extern int is_check(const board::Position& B, move_t m);
-extern bool is_cop(const board::Position& B, move_t m);	// capture or promotion
-extern bool is_pawn_threat(const board::Position& B, move_t m);
-extern bool refute(const board::Position& B, move_t m1, move_t m2);
+extern int is_check(const board::Board& B, move_t m);
+extern bool is_cop(const board::Board& B, move_t m);	// capture or promotion
+extern bool is_pawn_threat(const board::Board& B, move_t m);
+extern bool refute(const board::Board& B, move_t m1, move_t m2);
 
-extern move_t string_to_move(const board::Position& B, const std::string& s);
+extern move_t string_to_move(const board::Board& B, const std::string& s);
 extern std::string move_to_string(move_t m);
 
-extern int see(const board::Position& B, move_t m);
-extern int mvv_lva(const board::Position& B, move_t m);
+extern int see(const board::Board& B, move_t m);
+extern int mvv_lva(const board::Board& B, move_t m);
 
 /* move_t member function */
 

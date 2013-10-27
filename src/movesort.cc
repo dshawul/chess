@@ -29,7 +29,7 @@ void History::clear()
 	std::memset(h, 0, sizeof(h));
 }
 
-int History::get(const board::Position& B, move::move_t m) const
+int History::get(const board::Board& B, move::move_t m) const
 {
 	const int us = B.get_turn(), piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move::is_cop(B, m) && piece_ok(piece));
@@ -37,7 +37,7 @@ int History::get(const board::Position& B, move::move_t m) const
 	return h[us][piece][tsq];
 }
 
-void History::add(const board::Position& B, move::move_t m, int bonus)
+void History::add(const board::Board& B, move::move_t m, int bonus)
 {
 	const int us = B.get_turn(), piece = B.get_piece_on(m.fsq()), tsq = m.tsq();
 	assert(!move::is_cop(B, m) && piece_ok(piece));
@@ -68,7 +68,7 @@ void Refutation::clear()
 	std::memset(this, 0, count * sizeof(Entry));
 }
 
-MoveSort::MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,
+MoveSort::MoveSort(const board::Board* _B, int _depth, const SearchInfo *_ss,
 				   const History *_H, const Refutation *_R)
 	: B(_B), ss(_ss), H(_H), R(_R), idx(0), depth(_depth)
 {

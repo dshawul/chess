@@ -35,8 +35,8 @@ public:
 	static const int Max = 2000;
 
 	void clear();
-	void add(const board::Position& B, move::move_t m, int bonus);
-	int get(const board::Position& B, move::move_t m) const;
+	void add(const board::Board& B, move::move_t m, int bonus);
+	int get(const board::Board& B, move::move_t m) const;
 
 private:
 	int h[NB_COLOR][NB_PIECE][NB_SQUARE];
@@ -46,7 +46,7 @@ private:
  * - used for quiet move ordering, and as an LMR guard.
  * - move pair (m1, m2) -> move m3 that refuted the sequence (m1, m2) last time it was visited by the
  * search.
- * - dm_key is the zobrist key of the last 2 moves (see board::Position::get_dm_key(), in particular floor at
+ * - dm_key is the zobrist key of the last 2 moves (see board::Board::get_dm_key(), in particular floor at
  * root sp0).
  * - always overwrite: fancy ageing schemes, or seveal slots per move pair did not work in testing.
  * */
@@ -83,7 +83,7 @@ public:
 		}
 	};
 
-	MoveSort(const board::Position* _B, int _depth, const SearchInfo *_ss,
+	MoveSort(const board::Board* _B, int _depth, const SearchInfo *_ss,
 			 const History *_H, const Refutation *_R);
 
 	move::move_t next(int *see);
@@ -94,7 +94,7 @@ public:
 	}
 
 private:
-	const board::Position *B;
+	const board::Board *B;
 	GenType type;
 	const SearchInfo *ss;
 	const History *H;

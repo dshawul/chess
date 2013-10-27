@@ -58,7 +58,7 @@ void intro()
 		<< "uciok" << std::endl;
 }
 
-void position(board::Position& B, std::istringstream& is)
+void position(board::Board& B, std::istringstream& is)
 {
 	move::move_t m;
 	std::string token, fen;
@@ -82,7 +82,7 @@ void position(board::Position& B, std::istringstream& is)
 	}
 }
 
-void go(board::Position& B, std::istringstream& is)
+void go(board::Board& B, std::istringstream& is)
 {
 	search::Limits sl;
 	search::polling_frequency = 256;
@@ -189,7 +189,7 @@ namespace uci {
 
 void loop()
 {
-	board::Position B;
+	board::Board B;
 	std::string cmd, token;
 	std::cout << std::boolalpha;
 

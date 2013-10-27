@@ -33,7 +33,7 @@ std::string square_to_string(int sq)
 
 namespace move {
 
-int is_check(const board::Position& B, move_t m)
+int is_check(const board::Board& B, move_t m)
 /* Tests if a move is checking the enemy king. General case: direct checks, revealed checks (when
  * piece is a dchecker moving out of ray). Special cases: castling (check by the rook), en passant
  * (check through a newly revealed sliding attacker, once the ep capture square has been vacated)
@@ -86,14 +86,14 @@ int is_check(const board::Position& B, move_t m)
 	return 0;
 }
 
-bool is_cop(const board::Position& B, move_t m)
+bool is_cop(const board::Board& B, move_t m)
 {
 	return piece_ok(B.get_piece_on(m.tsq()))
 		   || m.flag() == EN_PASSANT
 		   || m.flag() == PROMOTION;
 }
 
-bool is_pawn_threat(const board::Position& B, move_t m)
+bool is_pawn_threat(const board::Board& B, move_t m)
 {
 	if (B.get_piece_on(m.fsq()) == PAWN) {
 		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
@@ -108,7 +108,7 @@ bool is_pawn_threat(const board::Position& B, move_t m)
 	return false;
 }
 
-move_t string_to_move(const board::Position& B, const std::string& s)
+move_t string_to_move(const board::Board& B, const std::string& s)
 {
 	move_t m;
 	m.fsq(square(s[1] - '1', s[0] - 'a'));
@@ -140,7 +140,7 @@ std::string move_to_string(move_t m)
 	return s.str();
 }
 
-int see(const board::Position& B, move_t m)
+int see(const board::Board& B, move_t m)
 // Iterative SEE based on Glaurung. Adapted and improved to handle promotions, promoting recaptures
 // and en-passant captures.
 {
@@ -227,7 +227,7 @@ int see(const board::Position& B, move_t m)
 	return swap_list[0];
 }
 
-int mvv_lva(const board::Position& B, move_t m)
+int mvv_lva(const board::Board& B, move_t m)
 {
 	// Queen is the best capture available (King can't be captured since move is legal)
 	static const int victim[NB_PIECE + 1] = {1, 2, 2, 3, 4, 0, 0};
@@ -241,7 +241,7 @@ int mvv_lva(const board::Position& B, move_t m)
 	return victim_value * 8 + attacker_value;
 }
 
-bool refute(const board::Position& B, move_t m1, move_t m2)
+bool refute(const board::Board& B, move_t m1, move_t m2)
 {
 	if (!m2)
 		return false;

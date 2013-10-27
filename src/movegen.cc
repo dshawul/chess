@@ -18,7 +18,7 @@
 
 namespace {
 
-move::move_t *make_pawn_moves(const board::Position& B, int fsq, int tsq, move::move_t *mlist, bool sub_promotions)
+move::move_t *make_pawn_moves(const board::Board& B, int fsq, int tsq, move::move_t *mlist, bool sub_promotions)
 /* Centralise the pawnm moves generation: given (fsq,tsq) the rest follows. We filter here all the
  * indirect self checks (through fsq, or through the ep captured square) */
 {
@@ -64,7 +64,7 @@ move::move_t *make_pawn_moves(const board::Position& B, int fsq, int tsq, move::
 	return mlist;
 }
 
-move::move_t *make_piece_moves(const board::Position& B, int fsq, Bitboard tss, move::move_t *mlist)
+move::move_t *make_piece_moves(const board::Board& B, int fsq, Bitboard tss, move::move_t *mlist)
 /* Centralise the generation of a piece move: given (fsq,tsq) the rest follows. We filter indirect
  * self checks here. Note that direct self-checks aren't generated, so we don't check them here. In
  * other words, we never put our King in check before calling this function */
@@ -91,7 +91,7 @@ move::move_t *make_piece_moves(const board::Position& B, int fsq, Bitboard tss, 
 
 namespace movegen {
 
-move::move_t *gen_piece_moves(const board::Position& B, Bitboard targets, move::move_t *mlist, bool king_moves)
+move::move_t *gen_piece_moves(const board::Board& B, Bitboard targets, move::move_t *mlist, bool king_moves)
 /* Generates piece moves, when the board is not in check. Uses targets to filter the tss, eg.
  * targets = ~friends (all moves), empty (quiet moves only), enemies (captures only). */
 {
@@ -135,7 +135,7 @@ move::move_t *gen_piece_moves(const board::Position& B, Bitboard targets, move::
 	return mlist;
 }
 
-move::move_t *gen_castling(const board::Position& B, move::move_t *mlist)
+move::move_t *gen_castling(const board::Board& B, move::move_t *mlist)
 /* Generates castling moves, when the board is not in check. The only function that doesn't go
  * through serialize_moves, as castling moves are very peculiar, and we don't want to pollute
  * serialize_moves with this over-specific code */
@@ -169,7 +169,7 @@ move::move_t *gen_castling(const board::Position& B, move::move_t *mlist)
 	return mlist;
 }
 
-move::move_t *gen_pawn_moves(const board::Position& B, Bitboard targets, move::move_t *mlist,
+move::move_t *gen_pawn_moves(const board::Board& B, Bitboard targets, move::move_t *mlist,
 							 bool sub_promotions)
 /* Generates pawn moves, when the board is not in check. These are of course: double and single
  * pushes, normal captures, en passant captures. Promotions are considered in serialize_moves (so
@@ -223,7 +223,7 @@ move::move_t *gen_pawn_moves(const board::Position& B, Bitboard targets, move::m
 	return mlist;
 }
 
-move::move_t *gen_evasion(const board::Position& B, move::move_t *mlist)
+move::move_t *gen_evasion(const board::Board& B, move::move_t *mlist)
 /* Generates evasions, when the board is in check. These are of 2 kinds: the king moves, or a piece
  * covers the check. Note that cover means covering the ]ksq,checker_sq], so it includes capturing
  * the checking piece. */
@@ -268,7 +268,7 @@ move::move_t *gen_evasion(const board::Position& B, move::move_t *mlist)
 	return mlist;
 }
 
-move::move_t *gen_quiet_checks(const board::Position& B, move::move_t *mlist)
+move::move_t *gen_quiet_checks(const board::Board& B, move::move_t *mlist)
 /* Generates non capturing checks by pieces (not pawns nor the king) */
 {
 	assert(!B.is_check());
@@ -308,7 +308,7 @@ move::move_t *gen_quiet_checks(const board::Position& B, move::move_t *mlist)
 	return mlist;
 }
 
-move::move_t *gen_moves(const board::Position& B, move::move_t *mlist)
+move::move_t *gen_moves(const board::Board& B, move::move_t *mlist)
 /* Generates all moves in the position, using all the other specific move generators. This function
  * is quite fast but not flexible, and only used for debugging (eg. computing perft values) */
 {

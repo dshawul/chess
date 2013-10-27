@@ -20,7 +20,7 @@ namespace board {
 
 const std::string PieceLabel[NB_COLOR] = { "PNBRQK", "pnbrqk" };
 
-void Position::clear()
+void Board::clear()
 {
 	assert(bb::BitboardInitialized);
 
@@ -39,7 +39,7 @@ void Position::clear()
 	initialized = true;
 }
 
-void Position::set_fen(const std::string& _fen)
+void Board::set_fen(const std::string& _fen)
 {
 	clear();
 
@@ -104,7 +104,7 @@ void Position::set_fen(const std::string& _fen)
 	assert(verify_psq());
 }
 
-std::string Position::get_fen() const
+std::string Board::get_fen() const
 {
 	assert(initialized);
 	std::ostringstream fen;
@@ -161,7 +161,7 @@ std::string Position::get_fen() const
 	return fen.str();
 }
 
-std::ostream& operator<< (std::ostream& ostrm, const Position& B)
+std::ostream& operator<< (std::ostream& ostrm, const Board& B)
 {
 	for (int r = RANK_8; r >= RANK_1; --r) {
 		for (int f = FILE_A; f <= FILE_H; ++f) {
@@ -178,7 +178,7 @@ std::ostream& operator<< (std::ostream& ostrm, const Position& B)
 	return ostrm << B.get_fen() << std::endl;
 }
 
-void Position::play(move::move_t m)
+void Board::play(move::move_t m)
 {
 	assert(initialized);
 	++sp;
@@ -272,7 +272,7 @@ move_played:
 	assert(verify_psq());
 }
 
-void Position::undo()
+void Board::undo()
 {
 	assert(initialized);
 	const move::move_t m = st().last_move;
@@ -323,7 +323,7 @@ move_undone:
 	assert(verify_psq());
 }
 
-Bitboard Position::calc_attacks(int color) const
+Bitboard Board::calc_attacks(int color) const
 {
 	assert(initialized);
 	Bitboard fss, r = 0;
@@ -359,7 +359,7 @@ Bitboard Position::calc_attacks(int color) const
 	return sp->attacks[color][NO_PIECE] = r;
 }
 
-Bitboard Position::hidden_checkers(bool find_pins, int color) const
+Bitboard Board::hidden_checkers(bool find_pins, int color) const
 {
 	assert(initialized && color_ok(color) && (find_pins == 0 || find_pins == 1));
 	const int aside = color ^ find_pins, kside = opp_color(aside);
@@ -381,7 +381,7 @@ Bitboard Position::hidden_checkers(bool find_pins, int color) const
 	return result;
 }
 
-Bitboard Position::calc_checkers(int kcolor) const
+Bitboard Board::calc_checkers(int kcolor) const
 {
 	assert(initialized && color_ok(kcolor));
 	const int kpos = king_pos[kcolor];
@@ -396,7 +396,7 @@ Bitboard Position::calc_checkers(int kcolor) const
 		| (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
 }
 
-void Position::set_square(int color, int piece, int sq, bool calc)
+void Board::set_square(int color, int piece, int sq, bool calc)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -421,7 +421,7 @@ void Position::set_square(int color, int piece, int sq, bool calc)
 	}
 }
 
-void Position::clear_square(int color, int piece, int sq, bool calc)
+void Board::clear_square(int color, int piece, int sq, bool calc)
 {
 	assert(initialized);
 	assert(square_ok(sq) && color_ok(color) && piece_ok(piece));
@@ -446,7 +446,7 @@ void Position::clear_square(int color, int piece, int sq, bool calc)
 	}
 }
 
-bool Position::verify_keys() const
+bool Board::verify_keys() const
 {
 	const Key base = get_turn() ? bb::zob_turn : 0;
 	Key key = base, kpkey = base, mat_key = 0;
@@ -466,7 +466,7 @@ bool Position::verify_keys() const
 	return key == st().key && kpkey == st().kpkey && mat_key == st().mat_key;
 }
 
-bool Position::verify_psq() const
+bool Board::verify_psq() const
 {
 	Eval psq[NB_COLOR];
 	int piece_psq[NB_COLOR];
@@ -492,7 +492,7 @@ bool Position::verify_psq() const
 	return true;
 }
 
-bool Position::is_draw() const
+bool Board::is_draw() const
 {
 	// 3-fold repetition
 	for (int i = 4, rep = 1; i <= std::min(st().rule50, int(sp - game_stack)); i += 2) {
@@ -516,7 +516,7 @@ bool Position::is_draw() const
 	return false;
 }
 
-Bitboard hanging_pieces(const Position& B)
+Bitboard hanging_pieces(const Board& B)
 {
 	const int us = B.get_turn(), them = opp_color(us);
 
@@ -530,7 +530,7 @@ Bitboard hanging_pieces(const Position& B)
 		| (our_pieces & B.st().attacks[them][PAWN]);
 }
 
-Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
+Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 
@@ -542,7 +542,7 @@ Bitboard calc_attackers(const Position& B, int sq, Bitboard occ)
 		| (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
 }
 
-bool has_mating_material(const Position& B, int color)
+bool has_mating_material(const Board& B, int color)
 {
 	// We have mating material when we have either:
 	// 1. a pawn

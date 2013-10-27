@@ -3,7 +3,7 @@
 
 using namespace std::chrono;
 
-uint64_t perft(board::Position& B, int depth, int ply)
+uint64_t perft(board::Board& B, int depth, int ply)
 /* Calculates perft(depth), and displays all perft(depth-1) in the initial position. This
  * decomposition is useful to debug an incorrect perft recursively, against a correct perft
  * generator */
@@ -36,7 +36,7 @@ uint64_t perft(board::Position& B, int depth, int ply)
 
 bool test_perft()
 {
-	board::Position B;
+	board::Board B;
 
 	struct TestPerft {
 		const char *s;
@@ -95,7 +95,7 @@ bool test_see()
 		{NULL, NULL, 0}
 	};
 
-	board::Position B;
+	board::Board B;
 
 	for (int i = 0; test[i].fen; ++i) {
 		B.set_fen(test[i].fen);
@@ -140,7 +140,7 @@ void bench(int depth)
 		nullptr
 	};
 
-	board::Position B;
+	board::Board B;
 	search::Limits sl;
 	sl.depth = depth;
 	uint64_t signature = 0;

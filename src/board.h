@@ -47,7 +47,7 @@ struct UndoInfo {
 	}
 };
 
-class Position {
+class Board {
 public:
 	const UndoInfo& st() const;
 
@@ -109,102 +109,102 @@ private:
 };
 
 extern const std::string PieceLabel[NB_COLOR];
-extern std::ostream& operator<< (std::ostream& ostrm, const Position& B);
+extern std::ostream& operator<< (std::ostream& ostrm, const Board& B);
 
-extern Bitboard hanging_pieces(const Position& B);
-extern Bitboard calc_attackers(const Position& B, int sq, Bitboard occ);
-extern bool has_mating_material(const Position& B, int color);
+extern Bitboard hanging_pieces(const Board& B);
+extern Bitboard calc_attackers(const Board& B, int sq, Bitboard occ);
+extern bool has_mating_material(const Board& B, int color);
 
-inline int Position::get_color_on(int sq) const
+inline int Board::get_color_on(int sq) const
 {
 	assert(initialized && square_ok(sq));
 	return bb::test_bit(all[WHITE], sq) ? WHITE : bb::test_bit(all[BLACK], sq) ? BLACK : NO_COLOR;
 }
 
-inline int Position::get_piece_on(int sq) const
+inline int Board::get_piece_on(int sq) const
 {
 	assert(initialized && square_ok(sq));
 	return piece_on[sq];
 }
 
-inline Bitboard Position::get_pieces(int color) const
+inline Bitboard Board::get_pieces(int color) const
 {
 	assert(initialized && color_ok(color));
 	return all[color];
 }
 
-inline Bitboard Position::get_pieces(int color, int piece) const
+inline Bitboard Board::get_pieces(int color, int piece) const
 {
 	assert(initialized && color_ok(color) && piece_ok(piece));
 	return b[piece] & all[color];
 }
 
-inline int Position::get_turn() const
+inline int Board::get_turn() const
 {
 	assert(initialized);
 	return turn;
 }
 
-inline int Position::get_king_pos(int c) const
+inline int Board::get_king_pos(int c) const
 {
 	assert(initialized);
 	return king_pos[c];
 }
 
-inline const UndoInfo& Position::st() const
+inline const UndoInfo& Board::st() const
 {
 	assert(initialized);
 	return *sp;
 }
 
-inline int Position::get_move_count() const
+inline int Board::get_move_count() const
 {
 	assert(initialized);
 	return move_count;
 }
 
-inline Key Position::get_dm_key() const
+inline Key Board::get_dm_key() const
 {
 	const UndoInfo *p = std::max(sp - 2, sp0);
 	return p->key ^ sp->key;
 }
 
-inline Bitboard Position::get_N() const
+inline Bitboard Board::get_N() const
 {
 	return b[KNIGHT];
 }
 
-inline Bitboard Position::get_K() const
+inline Bitboard Board::get_K() const
 {
 	return b[KING];
 }
 
-inline Bitboard Position::get_RQ(int color) const
+inline Bitboard Board::get_RQ(int color) const
 {
 	return (b[ROOK] | b[QUEEN]) & all[color];
 }
 
-inline Bitboard Position::get_BQ(int color) const
+inline Bitboard Board::get_BQ(int color) const
 {
 	return (b[BISHOP] | b[QUEEN]) & all[color];
 }
 
-inline Bitboard Position::get_NB(int color) const
+inline Bitboard Board::get_NB(int color) const
 {
 	return (b[KNIGHT] | b[BISHOP]) & all[color];
 }
 
-inline Bitboard Position::get_RQ() const
+inline Bitboard Board::get_RQ() const
 {
 	return b[ROOK] | b[QUEEN];
 }
 
-inline Bitboard Position::get_BQ() const
+inline Bitboard Board::get_BQ() const
 {
 	return b[BISHOP] | b[QUEEN];
 }
 
-inline Key Position::get_key() const
+inline Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
@@ -212,12 +212,12 @@ inline Key Position::get_key() const
 		^ bb::zob_castle[st().crights];
 }
 
-inline void Position::set_root()
+inline void Board::set_root()
 {
 	sp0 = sp;
 }
 
-inline bool Position::is_check() const
+inline bool Board::is_check() const
 {
 	return st().checkers;
 }

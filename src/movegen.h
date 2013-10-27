@@ -16,22 +16,22 @@
 #include "types.h"
 
 namespace board {
-class Position;
+class Board;
 }
 namespace move {
-class move_t;
+struct move_t;
 }
 
 #define MAX_MOVES	0x80	// max number of legal moves
 
 namespace movegen {
 
-extern move::move_t *gen_piece_moves(const board::Position& B, Bitboard targets, move::move_t *mlist, bool king_moves);
-extern move::move_t *gen_castling(const board::Position& B, move::move_t *mlist);
-extern move::move_t *gen_pawn_moves(const board::Position& B, Bitboard targets, move::move_t *mlist, bool sub_promotions);
-extern move::move_t *gen_evasion(const board::Position& B, move::move_t *mlist);
-extern move::move_t *gen_quiet_checks(const board::Position& B, move::move_t *mlist);
-extern move::move_t *gen_moves(const board::Position& B, move::move_t *mlist);
+extern move::move_t *gen_piece_moves(const board::Board& B, Bitboard targets, move::move_t *mlist, bool king_moves);
+extern move::move_t *gen_castling(const board::Board& B, move::move_t *mlist);
+extern move::move_t *gen_pawn_moves(const board::Board& B, Bitboard targets, move::move_t *mlist, bool sub_promotions);
+extern move::move_t *gen_evasion(const board::Board& B, move::move_t *mlist);
+extern move::move_t *gen_quiet_checks(const board::Board& B, move::move_t *mlist);
+extern move::move_t *gen_moves(const board::Board& B, move::move_t *mlist);
 
 }	// namespace movegen
 

@@ -62,7 +62,7 @@ static const Key KKBN = 0x110000101000ULL;
 
 class EvalInfo {
 public:
-	explicit EvalInfo(const board::Position *_B): eval_factor(16), B(_B) {
+	explicit EvalInfo(const board::Board *_B): eval_factor(16), B(_B) {
 		e[WHITE] = e[BLACK] = {0, 0};
 	}
 
@@ -81,7 +81,7 @@ public:
 	void adjust_kbnk();
 
 private:
-	const board::Position *B;
+	const board::Board *B;
 	Eval e[NB_COLOR];
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
@@ -555,7 +555,7 @@ void EvalInfo::adjust_kbnk()
 	e[weak_side].eg += 32 * (KingTaxiDistanceToCorner[bcolor][weak_ksq] - 4);
 }
 
-bool kpk_draw(const board::Position& B)
+bool kpk_draw(const board::Board& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int wk = B.get_king_pos(us), bk = B.get_king_pos(opp_color(us));
@@ -577,7 +577,7 @@ bool kpk_draw(const board::Position& B)
 	return !kpk::probe(wk, bk, stm, wp);
 }
 
-bool kbpk_draw(const board::Position& B)
+bool kbpk_draw(const board::Board& B)
 {
 	const int us = B.get_pieces(WHITE, PAWN) ? WHITE : BLACK;
 	int our_king = B.get_king_pos(us), their_king = B.get_king_pos(opp_color(us));
@@ -591,7 +591,7 @@ bool kbpk_draw(const board::Position& B)
 		&& bb::kdist(their_king, prom_sq) - (stm != us) <= bb::kdist(pawn, prom_sq);
 }
 
-int stand_pat_penalty(const board::Position& B, Bitboard hanging)
+int stand_pat_penalty(const board::Board& B, Bitboard hanging)
 {
 	if (bb::several_bits(hanging)) {
 		// Several pieces are hanging. Take the lowest one and return half its value.
@@ -636,7 +636,7 @@ void init()
 		}
 }
 
-int symmetric_eval(const board::Position& B)
+int symmetric_eval(const board::Board& B)
 {
 	assert(!B.is_check());
 	EvalInfo ei(&B);
@@ -665,13 +665,13 @@ int symmetric_eval(const board::Position& B)
 	return ei.interpolate();
 }
 
-int asymmetric_eval(const board::Position& B, Bitboard hanging)
+int asymmetric_eval(const board::Board& B, Bitboard hanging)
 {
 	static const int TEMPO = 4;
 	return TEMPO - stand_pat_penalty(B, hanging);
 }
 
-bool is_tb_draw(const board::Position& B)
+bool is_tb_draw(const board::Board& B)
 // Recognizes some notorious draws. We're talking about TB-like draws here, not to be confused with
 // drawish positions (where we use scaling), or draws by chess rules (see B.is_draw()).
 // Used both in the eval, and as interior node recognizers in the search (pseudo-TB pruning).

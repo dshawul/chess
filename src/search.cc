@@ -53,7 +53,7 @@ int TTPrunePVPly;			// TT pruning at PV nodes after this ply
 move::move_t best_move, ponder_move;
 bool best_move_changed;
 
-void node_poll(board::Position &B)
+void node_poll(board::Board &B)
 {
 	if (!(++search::node_count & (search::polling_frequency - 1)) && can_abort) {
 		bool abort = false;
@@ -149,7 +149,7 @@ void time_alloc(const search::Limits& sl, int result[2])
 	}
 }
 
-int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
+int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
 {
 	assert(depth <= 0);
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
@@ -271,7 +271,7 @@ int qsearch(board::Position& B, int alpha, int beta, int depth, int node_type, S
 	return best_score;
 }
 
-int pvs(board::Position& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
+int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
@@ -544,7 +544,7 @@ tt_skip_null:
 
 namespace search {
 
-std::pair<move::move_t, move::move_t> bestmove(board::Position& B, const Limits& sl)
+std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl)
 // returns a pair (best move, ponder move)
 {
 	start = high_resolution_clock::now();
