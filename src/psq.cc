@@ -18,13 +18,14 @@
 */
 #include "psq.h"
 
-const Eval Material[NB_PIECE] = {
+const Eval Material[NB_PIECE+1] = {
 	{vOP, vEP},
 	{vN, vN},
 	{vB, vB},
 	{vR, vR},
 	{vQ, vQ},
-	{vK, vK}
+	{vK, vK},
+	{ 0,  0}
 };
 
 Eval PsqTable[NB_PIECE][NB_SQUARE];

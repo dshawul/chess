@@ -51,7 +51,7 @@ struct Eval {
 	}
 };
 
-extern const Eval Material[NB_PIECE];
+extern const Eval Material[NB_PIECE+1];
 
 // PSQ table for WHITE
 extern Eval PsqTable[NB_PIECE][NB_SQUARE];
