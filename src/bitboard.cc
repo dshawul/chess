@@ -426,5 +426,32 @@ Bitboard piece_attack(int piece, int sq, Bitboard occ)
 		return KAttacks[sq];
 }
 
+int pawn_push(int color, int sq)
+{
+	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
+	return color ? sq - NB_FILE : sq + NB_FILE;
+}
+
+Bitboard shift_bit(Bitboard b, int i)
+{
+	assert(std::abs(i) < 64);
+	return i > 0 ? b << i : b >> -i;
+}
+
+void set_bit(Bitboard *b, unsigned sq) { assert(square_ok(sq)); *b |= 1ULL << sq; }
+void clear_bit(Bitboard *b, unsigned sq) { assert(square_ok(sq)); *b &= ~(1ULL << sq); }
+bool test_bit(Bitboard b, unsigned sq) { assert(square_ok(sq)); return b & (1ULL << sq); }
+bool several_bits(Bitboard b) { return b & (b - 1); }
+
+Bitboard rank_bb(int r) { assert(rank_file_ok(r, 0)); return Rank1_bb << (NB_FILE * r); }
+Bitboard file_bb(int f) { assert(rank_file_ok(0, f)); return FileA_bb << f; }
+
+// GCC intrinsics for bitscan and popcount
+
+int lsb(Bitboard b) { assert(b); return __builtin_ffsll(b) - 1; }
+int msb(Bitboard b) { assert(b); return 63 - __builtin_clzll(b); }
+int pop_lsb(Bitboard *b) { const int s = lsb(*b); *b &= *b - 1; return s; }
+int count_bit(Bitboard b) { return __builtin_popcountll(b); }
+
 }	// namespace bb
 

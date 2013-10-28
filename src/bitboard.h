@@ -65,79 +65,21 @@ extern Bitboard piece_attack(int piece, int sq, Bitboard occ);
 // print bitboard (ASCII style)
 extern void print(std::ostream& ostrm, Bitboard b);
 
-inline int pawn_push(int color, int sq)
-{
-	assert(color_ok(color) && rank(sq) >= RANK_2 && rank(sq) <= RANK_7);
-	return color ? sq - NB_FILE : sq + NB_FILE;
-}
-
-inline void set_bit(Bitboard *b, unsigned sq)
-{
-	assert(square_ok(sq));
-	*b |= 1ULL << sq;
-}
-
-inline void clear_bit(Bitboard *b, unsigned sq)
-{
-	assert(square_ok(sq));
-	*b &= ~(1ULL << sq);
-}
-
-inline bool test_bit(Bitboard b, unsigned sq)
-{
-	assert(square_ok(sq));
-	return b & (1ULL << sq);
-}
-
-inline Bitboard shift_bit(Bitboard b, int i)
-{
-	assert(std::abs(i) < 64);
-	return i > 0 ? b << i : b >> -i;
-}
-
-inline bool several_bits(Bitboard b)
-{
-	return b & (b - 1);
-}
-
-inline Bitboard rank_bb(int r)
-{
-	assert(rank_file_ok(r, 0));
-	return Rank1_bb << (NB_FILE * r);
-}
-
-inline Bitboard file_bb(int f)
-{
-	assert(rank_file_ok(0, f));
-	return FileA_bb << f;
-}
-
 extern int kdist(int s1, int s2);
 
-// GCC intrinsics for bitscan and popcount
+extern void set_bit(Bitboard *b, unsigned sq);
+extern void clear_bit(Bitboard *b, unsigned sq);
+extern bool test_bit(Bitboard b, unsigned sq);
+extern Bitboard shift_bit(Bitboard b, int i);
+extern bool several_bits(Bitboard b);
 
-inline int count_bit(Bitboard b)
-{
-	return __builtin_popcountll(b);
-}
+extern int pawn_push(int color, int sq);
+extern Bitboard rank_bb(int r);
+extern Bitboard file_bb(int f);
 
-inline int lsb(Bitboard b)
-{
-	assert(b);
-	return __builtin_ffsll(b) - 1;
-}
-
-inline int msb(Bitboard b)
-{
-	assert(b);
-	return 63 - __builtin_clzll(b);
-}
-
-inline int pop_lsb(Bitboard *b)
-{
-	const int s = lsb(*b);
-	*b &= *b - 1;
-	return s;
-}
+extern int count_bit(Bitboard b);
+extern int lsb(Bitboard b);
+extern int msb(Bitboard b);
+extern int pop_lsb(Bitboard *b);
 
 }	// namespace bb

@@ -122,3 +122,10 @@ void init_psq()
 		}*/
 	}
 }
+
+const Eval& get_psq(int color, int piece, int sq)
+{
+	assert(color_ok(color) && piece_ok(piece) && square_ok(sq));
+	return PsqTable[piece][color ? rank_mirror(sq) : sq];
+}
+

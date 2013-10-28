@@ -36,83 +36,30 @@ enum {
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, NB_RANK };
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NB_FILE };
 
-inline bool rank_file_ok(int r, int f)
-{
-	return 0 <= r && r < NB_RANK && 0 <= f && f < NB_FILE;
-}
-
-inline bool square_ok(int sq)
-{
-	return A1 <= sq && sq <= H8;
-}
-
-inline int rank(int sq)
-{
-	assert(square_ok(sq));
-	return sq / NB_FILE;
-}
-
-inline int file(int sq)
-{
-	assert(square_ok(sq));
-	return sq % NB_FILE;
-}
-
-inline int square(int r, int f)
-{
-	assert(rank_file_ok(r, f));
-	return NB_FILE * r + f;
-}
-
-inline int rank_mirror(int sq)
-{
-	assert(square_ok(sq));
-	return sq ^ 070;
-}
-
-inline int file_mirror(int sq)
-{
-	assert(square_ok(sq));
-	return sq ^ 7;
-}
+extern bool rank_file_ok(int r, int f);
+extern bool square_ok(int sq);
+extern int rank(int sq);
+extern int file(int sq);
+extern int square(int r, int f);
+extern int rank_mirror(int sq);
+extern int file_mirror(int sq);
 
 // Piece
 
 #define NB_PIECE 6
 enum { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING, NO_PIECE };
 
-inline bool piece_ok(int piece)
-{
-	return PAWN <= piece && piece < NO_PIECE;
-}
-
-inline bool is_slider(int piece)
-{
-	assert(piece_ok(piece));
-	return BISHOP <= piece && piece <= QUEEN;
-}
+extern bool piece_ok(int piece);
+extern bool is_slider(int piece);
 
 // Color
 
 #define NB_COLOR 2
 enum { WHITE, BLACK, NO_COLOR };
 
-inline bool color_ok(int color)
-{
-	return color == WHITE || color == BLACK;
-}
-
-inline int opp_color(int color)
-{
-	assert(color_ok(color));
-	return color ^ BLACK;
-}
-
-inline int color_of(int sq)
-{
-	assert(square_ok(sq));
-	return (sq & 1) ^ BLACK;
-}
+extern bool color_ok(int color);
+extern int opp_color(int color);
+extern int color_of(int sq);
 
 typedef uint64_t Key, Bitboard;
 
@@ -124,3 +71,4 @@ const int MIN_DEPTH = -8;	// qsearch depth go from 0 downto -MIN_DEPTH-1
 const int MAX_PLY = MAX_DEPTH - MIN_DEPTH + 1;	// plies go from 0 to MAX_PLY
 
 extern uint64_t dbg_cnt1, dbg_cnt2;
+

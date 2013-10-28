@@ -57,8 +57,5 @@ extern const Eval Material[NB_PIECE+1];
 extern Eval PsqTable[NB_PIECE][NB_SQUARE];
 
 extern void init_psq();
+extern const Eval& get_psq(int color, int piece, int sq);
 
-inline const Eval& get_psq(int color, int piece, int sq)
-{
-	return PsqTable[piece][color ? rank_mirror(sq) : sq];
-}

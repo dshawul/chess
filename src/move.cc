@@ -270,5 +270,71 @@ bool refute(const board::Board& B, move_t m1, move_t m2)
 	return false;
 }
 
+/* move_t member function */
+
+move_t::operator bool() const
+{
+	return b;
+}
+
+bool move_t::operator== (move_t m) const
+{
+	return b == m.b;
+}
+
+bool move_t::operator!= (move_t m) const
+{
+	return b != m.b;
+}
+
+int move_t::fsq() const
+{
+	return b & 0x3f;
+}
+
+int move_t::tsq() const
+{
+	return (b >> 6) & 0x3f;
+}
+
+int move_t::flag() const
+{
+	return (b >> 14) & 3;
+}
+
+int move_t::prom() const
+{
+	assert(flag() == PROMOTION);
+	return ((b >> 12) & 3) + KNIGHT;
+}
+
+void move_t::fsq(int new_fsq)
+{
+	assert(square_ok(new_fsq));
+	b &= 0xffc0;
+	b ^= new_fsq;
+}
+
+void move_t::tsq(int new_tsq)
+{
+	assert(square_ok(new_tsq));
+	b &= 0xf03f;
+	b ^= (new_tsq << 6);
+}
+
+void move_t::flag(int new_flag)
+{
+	assert(new_flag < 4);
+	b &= 0x3fff;
+	b ^= (new_flag << 14);
+}
+
+void move_t::prom(int piece)
+{
+	assert(KNIGHT <= piece && piece <= QUEEN);
+	b &= 0xcfff;
+	b ^= (piece - KNIGHT) << 12;
+}
+
 }	// namespace move
 
