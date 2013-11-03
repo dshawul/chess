@@ -33,5 +33,6 @@ extern uint64_t polling_frequency;	// must be a power of two
 std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl);
 
 extern void clear_state();
+extern void init();
 
 }	// namespace search

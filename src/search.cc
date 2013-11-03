@@ -45,7 +45,7 @@ time_point<high_resolution_clock> start;
 History H;
 
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
-const int EvalMargin[4]	 = {0, vEP, vN, vQ};
+int EvalMargin[6];
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
@@ -327,7 +327,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	}
 
 	// Eval pruning
-	if ( depth <= 3 && node_type != PV
+	if ( depth <= 5 && node_type != PV
 		 && !in_check && !is_mate_score(beta)
 		 && stand_pat >= beta + EvalMargin[depth]
 		 && B.st().piece_psq[B.get_turn()] )
@@ -650,10 +650,17 @@ return_pair:
 	return std::make_pair(best_move, ponder_move);
 }
 
-extern void clear_state()
+void clear_state()
 {
 	TT.clear();
 	R.clear();
 }
 
+void init()
+{
+	for (int d = 1; d <= 5; d++)
+		EvalMargin[d] = 3 * vEP * d / 2;
+}
+
 }	// namespace search
+
