@@ -326,7 +326,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 			stand_pat = tte->score;
 	}
 
-	// Eval pruning
+	// post futility pruning
 	if ( depth <= 5 && node_type != PV
 		 && !in_check && !is_mate_score(beta)
 		 && stand_pat >= beta + EvalMargin[depth]
@@ -418,13 +418,33 @@ tt_skip_null:
 			|| ss->m == ss->killer[0]
 			|| ss->m == ss->killer[1]
 			|| ss->m == refutation
-			|| (move::is_pawn_threat(B, ss->m) && see >= 0)
-			|| (ss->m.flag() == move::CASTLING);
+			|| (move::is_pawn_threat(B, ss->m) && see >= 0);
 
-		if (!capture && !dangerous && !in_check && !root) {
+		// reduction decision
+		ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
+		if (ss->reduction && !capture)
+			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8 / depth;
+
+		// do not LMR into the QS
+		if (new_depth - ss->reduction <= 0)
+			ss->reduction = 0;
+
+		// pruning at shallow depth
+		if ( depth <= 6 && node_type != PV
+			 && !capture && !dangerous && !in_check ) {
+			
+			// pre futility pruning
+			const int child_depth = new_depth - ss->reduction;
+			if (child_depth <= 5) {
+				const int opt_score = stand_pat + vEP/2 + EvalMargin[child_depth];
+				if (opt_score <= alpha) {
+					best_score = std::max(best_score, opt_score);
+					continue;
+				}
+			}
+			
 			// Move count pruning
-			if ( depth <= 6 && node_type != PV
-				 && LMR >= 3 + depth * (2 * depth - 1) / 2
+			if ( LMR >= 3 + depth * (2 * depth - 1) / 2
 				 && alpha > mated_in(MAX_PLY)
 				 && (see < 0 || !refute(B, ss->m, threat_move)) ) {
 				best_score = std::max(best_score, std::min(alpha, stand_pat + see));
@@ -437,15 +457,6 @@ tt_skip_null:
 				continue;
 			}
 		}
-
-		// reduction decision
-		ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
-		if (ss->reduction && !capture)
-			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8 / depth;
-
-		// do not LMR into the QS
-		if (new_depth - ss->reduction <= 0)
-			ss->reduction = 0;
 
 		B.play(ss->m);
 
