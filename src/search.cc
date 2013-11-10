@@ -142,10 +142,9 @@ void time_alloc(const search::Limits& sl, int result[2])
 	if (sl.movetime > 0)
 		result[0] = result[1] = sl.movetime;
 	else if (sl.time > 0 || sl.inc > 0) {
-		static const int time_buffer = 100;
 		int movestogo = sl.movestogo > 0 ? sl.movestogo : 30;
-		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - time_buffer), 1);
-		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - time_buffer), 1);
+		result[0] = std::max(std::min(sl.time / movestogo + sl.inc, sl.time - uci::TimeBuffer), 1);
+		result[1] = std::max(std::min(sl.time / (1 + movestogo / 2) + sl.inc, sl.time - uci::TimeBuffer), 1);
 	}
 }
 

@@ -34,6 +34,7 @@ int Contempt = 25;
 const int ELO_MIN = 1500, ELO_MAX = 2700;
 bool LimitStrength = false, Ponder = false, Analyze = false;
 int Elo = ELO_MIN;
+int TimeBuffer = 100;
 
 }	// namespace uci
 
@@ -53,7 +54,8 @@ void intro()
 		<< "option name UCI_AnalyseMode type check default " << uci::Analyze << '\n'
 		<< "option name UCI_LimitStrength type check default " << uci::LimitStrength << '\n'
 		<< "option name UCI_Elo type spin default " << uci::Elo
-		<< " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
+			<< " min " << uci::ELO_MIN << " max " << uci::ELO_MAX <<  '\n'
+		<< "option name Time Buffer type spin default " << uci::TimeBuffer << " min 0 max 1000\n"
 		// end of UCI options
 		<< "uciok" << std::endl;
 }
@@ -144,6 +146,8 @@ void setoption(std::istringstream& is)
 		is >> uci::LimitStrength;
 	else if (name == "UCI_Elo")
 		is >> uci::Elo;
+	else if (name == "TimeBuffer")
+		is >> uci::TimeBuffer;
 }
 
 bool input_available()

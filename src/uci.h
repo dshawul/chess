@@ -25,8 +25,8 @@ extern std::string check_input();
 extern int Hash;		// in MB
 extern int Contempt;	// in cp
 extern bool LimitStrength, Ponder, Analyze;
-extern const int ELO_MIN, ELO_MAX;
 extern int Elo;
+extern int TimeBuffer;
 
 struct info {
 	void clear();
