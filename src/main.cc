@@ -24,7 +24,6 @@ int main (int argc, char **argv)
 	bb::init();
 	init_psq();
 	eval::init();
-	search::init();
 
 	if (argc == 2) {
 		if (std::string(argv[1]) == "bench")

@@ -45,7 +45,7 @@ time_point<high_resolution_clock> start;
 History H;
 
 const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
-int EvalMargin[6];
+int eval_margin(int depth) { return 37 * depth + 111; }	// CLOP
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
@@ -328,7 +328,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	// post futility pruning
 	if ( depth <= 5 && node_type != PV
 		 && !in_check && !is_mate_score(beta)
-		 && stand_pat >= beta + EvalMargin[depth]
+		 && stand_pat >= beta + eval_margin(depth)
 		 && B.st().piece_psq[B.get_turn()] )
 		return stand_pat;
 
@@ -435,7 +435,7 @@ tt_skip_null:
 			// pre futility pruning
 			const int child_depth = new_depth - ss->reduction;
 			if (child_depth <= 5) {
-				const int opt_score = stand_pat + vEP/2 + EvalMargin[child_depth];
+				const int opt_score = stand_pat + vEP/2 + eval_margin(child_depth);
 				if (opt_score <= alpha) {
 					best_score = std::max(best_score, opt_score);
 					continue;
@@ -664,12 +664,6 @@ void clear_state()
 {
 	TT.clear();
 	R.clear();
-}
-
-void init()
-{
-	for (int d = 1; d <= 5; d++)
-		EvalMargin[d] = 3 * vEP * d / 2;
 }
 
 }	// namespace search
