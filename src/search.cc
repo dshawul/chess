@@ -44,8 +44,8 @@ time_point<high_resolution_clock> start;
 
 History H;
 
-const int RazorMargin[4] = {0, 2 * vEP, 2 * vEP + vEP / 2, 3 * vEP};
-int eval_margin(int depth) { return 37 * depth + 111; }	// CLOP
+int razor_margin(int depth) { return 73 * depth + 145; }	// CLOP
+int eval_margin(int depth)  { return 37 * depth + 111; }	// CLOP
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
@@ -335,7 +335,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	// Razoring
 	if ( depth <= 3 && node_type != PV
 		 && !in_check && !is_mate_score(beta) ) {
-		const int threshold = beta - RazorMargin[depth];
+		const int threshold = beta - razor_margin(depth);
 		if (stand_pat < threshold) {
 			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1, subtree_pv);
 			if (score < threshold)
