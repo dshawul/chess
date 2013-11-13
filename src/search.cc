@@ -44,8 +44,10 @@ time_point<high_resolution_clock> start;
 
 History H;
 
-int razor_margin(int depth) { return 73 * depth + 145; }	// CLOP
-int eval_margin(int depth)  { return 37 * depth + 111; }	// CLOP
+// Formulas tuned by CLOP
+int razor_margin(int depth)	  { return 73 * depth + 145; }
+int eval_margin(int depth)	  { return 37 * depth + 111; }
+int null_reduction(int depth) { return (14 * depth + 77) / 32; }
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
@@ -93,11 +95,6 @@ int mated_in(int ply)
 int mate_in(int ply)
 {
 	return MATE - ply;
-}
-
-int null_reduction(int depth)
-{
-	return 3 + depth / 4;
 }
 
 int score_to_tt(int score, int ply)
