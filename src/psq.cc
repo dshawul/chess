@@ -47,9 +47,11 @@ const int BCentreOpening = 2;
 const int BCentreEndgame = 3;
 const int RFileOpening = 3;
 const int QCentreEndgame = 4;
-const int KCentreEndgame = 12;
+
+// CLOP
+const int KCentreEndgame = 14;
 const int KFileOpening = 10;
-const int KRankOpening = 10;
+const int KRankOpening = 7;
 
 /* Adjustments */
 const int PCenterOpening = 16;
