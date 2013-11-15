@@ -135,7 +135,7 @@ void setoption(std::istringstream& is)
 	if (name == "Hash")
 		is >> uci::Hash;
 	else if (name == "ClearHash")
-		search::TT.clear();
+		search::clear_state();
 	else if (name == "Contempt")
 		is >> uci::Contempt;
 	else if (name == "Ponder")
