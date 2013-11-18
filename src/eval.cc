@@ -86,7 +86,7 @@ private:
 	int us, them, our_ksq, their_ksq;
 	Bitboard our_pawns, their_pawns;
 
-	void score_mobility(int p0, int p, Bitboard tss, Eval *em);
+	void score_mobility(int p0, int p, Bitboard tss);
 	void score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
 					   int *total_count, int *total_weight);
 
@@ -146,38 +146,37 @@ void EvalInfo::eval_drawish()
 	}
 }
 
-void EvalInfo::score_mobility(int p0, int p, Bitboard tss, Eval *em)
+void EvalInfo::score_mobility(int p0, int p, Bitboard tss)
 {
-	static const int mob_unit[NB_PHASE][NB_PIECE] = {
-		{0, 1340, 1340,  643, 321, 0},
-		{0, 1340, 1340, 1286, 643, 0}
-	};
 	static const int mob_count[ROOK + 1][15] = {
 		{},
 		{ -3, -2, -1, 0, 1, 2, 3, 4, 4},
 		{ -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 5, 6, 6, 7},
 		{ -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 6, 7, 7}
 	};
+	static const int mob_unit[NB_PHASE][NB_PIECE] = {
+		{0, 4, 5, 2, 1, 0},		// Opening
+		{0, 4, 5, 4, 2, 0}		// EndGame
+	};
 
 	const int count = mob_count[p0][bb::count_bit(tss)];
-	em->op += count * mob_unit[OPENING][p];
-	em->eg += count * mob_unit[ENDGAME][p];
+	e[us].op += count * mob_unit[OPENING][p];
+	e[us].eg += count * mob_unit[ENDGAME][p];
 }
 
 void EvalInfo::eval_mobility()
 {
 	const Bitboard mob_targets = ~(our_pawns | B->get_pieces(us, KING)
-		| B->st().attacks[them][PAWN]);
+								   | B->st().attacks[them][PAWN]);
 
 	Bitboard fss, tss, occ;
 	int fsq, piece;
-	Eval em = {0, 0};
 
 	// Knight mobility
 	fss = B->get_pieces(us, KNIGHT);
 	while (fss) {
 		tss = bb::NAttacks[bb::pop_lsb(&fss)] & mob_targets;
-		score_mobility(KNIGHT, KNIGHT, tss, &em);
+		score_mobility(KNIGHT, KNIGHT, tss);
 	}
 
 	// Lateral mobility
@@ -187,7 +186,7 @@ void EvalInfo::eval_mobility()
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
 		tss = bb::rook_attack(fsq, occ) & mob_targets;
-		score_mobility(ROOK, piece, tss, &em);
+		score_mobility(ROOK, piece, tss);
 	}
 
 	// Diagonal mobility
@@ -197,10 +196,8 @@ void EvalInfo::eval_mobility()
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
 		tss = bb::bishop_attack(fsq, occ) & mob_targets;
-		score_mobility(BISHOP, piece, tss, &em);
+		score_mobility(BISHOP, piece, tss);
 	}
-	
-	e[us] += {em.op/256, em.eg/256};
 }
 
 void EvalInfo::score_attacks(int p0, int sq, Bitboard sq_attackers, Bitboard defended,
