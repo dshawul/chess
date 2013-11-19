@@ -373,7 +373,7 @@ Bitboard Board::hidden_checkers(bool find_pins, int color) const
 
 	while (pinners) {
 		int sq = bb::pop_lsb(&pinners);
-		Bitboard skewered = (bb::Between[ksq][sq] ^ (1ULL << sq)) & st().occ;
+		Bitboard skewered = (bb::between(ksq, sq) ^ (1ULL << sq)) & st().occ;
 
 		if (!bb::several_bits(skewered) && (skewered & all[color]))
 			result |= skewered;

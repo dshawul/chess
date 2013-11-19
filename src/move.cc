@@ -45,7 +45,7 @@ int is_check(const board::Board& B, move_t m)
 
 	// test discovered check
 	if ( (bb::test_bit(B.st().dcheckers, fsq))		// discovery checker
-		 && (!bb::test_bit(bb::Direction[kpos][fsq], tsq)))	// move out of its dc-ray
+		 && (!bb::test_bit(bb::direction(kpos, fsq), tsq)))	// move out of its dc-ray
 		return 2;
 	// test direct check
 	else if (flag != PROMOTION) {
@@ -254,7 +254,7 @@ bool refute(const board::Board& B, move_t m1, move_t m2)
 		return true;
 
 	// block the threat path
-	if (bb::test_bit(bb::Between[m2fsq][m2tsq], m1tsq))
+	if (bb::test_bit(bb::between(m2fsq, m2tsq), m1tsq))
 		return true;
 
 	// defend the threatened square

@@ -37,11 +37,10 @@ extern bool BitboardInitialized;
 // Zobrist keys
 extern Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
 
-// Between[s1][s2] is the segment ]s1,s2] when the angle (s1,s2) is a multiple of 45 degrees, 0
-// otherwise. Direction[s1][s2] is the the half-line from s1 to s2 going all the way to the edge of
-// the board
-extern Bitboard Between[NB_SQUARE][NB_SQUARE];
-extern Bitboard Direction[NB_SQUARE][NB_SQUARE];
+// between(s1,s2) is the segment ]s1,s2] when the angle (s1,s2) is a multiple of 45 degrees, 0
+// otherwise. direction(s1,s2) is the the half-line from s1 through s2 to the edge of the board.
+extern Bitboard between(int s1, int s2);
+extern Bitboard direction(int s1, int s2);
 
 // Bitboards to detect passed pawns
 extern Bitboard InFront[NB_COLOR][NB_RANK];

@@ -27,7 +27,7 @@ move::move_t *make_pawn_moves(const board::Board& B, int fsq, int tsq, move::mov
 	int kpos = B.get_king_pos(us);
 
 	// filter self check through fsq
-	if (bb::test_bit(B.st().pinned, fsq) && !bb::test_bit(bb::Direction[kpos][fsq], tsq))
+	if (bb::test_bit(B.st().pinned, fsq) && !bb::test_bit(bb::direction(kpos, fsq), tsq))
 		return mlist;
 
 	move::move_t m;
@@ -77,7 +77,7 @@ move::move_t *make_piece_moves(const board::Board& B, int fsq, Bitboard tss, mov
 	m.flag(move::NORMAL);
 
 	if (bb::test_bit(B.st().pinned, fsq))
-		tss &= bb::Direction[kpos][fsq];
+		tss &= bb::direction(kpos, fsq);
 
 	while (tss) {
 		m.tsq(bb::pop_lsb(&tss));
@@ -245,7 +245,7 @@ move::move_t *gen_evasion(const board::Board& B, move::move_t *mlist)
 		const int _csq = bb::pop_lsb(&_checkers);
 		const int _cpiece = B.get_piece_on(_csq);
 		if (is_slider(_cpiece))
-			tss &= ~bb::Direction[_csq][kpos];
+			tss &= ~bb::direction(_csq, kpos);
 	}
 
 	// generate King escapes
@@ -254,7 +254,7 @@ move::move_t *gen_evasion(const board::Board& B, move::move_t *mlist)
 	if (!bb::several_bits(B.st().checkers)) {
 		// piece moves (only if we're not in double check)
 		tss = is_slider(cpiece)
-			  ? bb::Between[kpos][csq]	// cover the check (inc capture the sliding checker)
+			  ? bb::between(kpos, csq)	// cover the check (inc capture the sliding checker)
 			  : checkers;				// capture the checker
 
 		/* if checked by a Pawn and epsq is available, then the check must result from a pawn double
@@ -297,7 +297,7 @@ move::move_t *gen_quiet_checks(const board::Board& B, move::move_t *mlist)
 			tss = attacks & check_squares;
 			// revealed checks
 			if (bb::test_bit(B.st().dcheckers, fsq))
-				tss |= attacks & ~bb::Direction[ksq][fsq];
+				tss |= attacks & ~bb::direction(ksq, fsq);
 			// exclude captures
 			tss &= ~occ;
 

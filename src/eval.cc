@@ -251,7 +251,7 @@ void EvalInfo::eval_safety()
 		// hidden attackers: increment count when the attacking line contains at most one pawn
 		while (fss) {
 			sq = bb::pop_lsb(&fss);
-			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::Between[our_ksq][sq]);
+			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::between(our_ksq, sq));
 		}
 
 	// Diagonal attacks
@@ -268,7 +268,7 @@ void EvalInfo::eval_safety()
 		// hidden attackers: increment count when the attacking diagonal contains at most one pawn
 		while (fss) {
 			sq = bb::pop_lsb(&fss);
-			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::Between[our_ksq][sq]);
+			total_count += !bb::several_bits((our_pawns | their_pawns) & bb::between(our_ksq, sq));
 		}
 
 	// Adjust for king's "distance to safety"
@@ -478,7 +478,7 @@ void EvalInfo::eval_pieces()
 	fss = B->get_pieces(us, ROOK) & bb::PPromotionRank[them];
 	while (fss) {
 		const int rsq = bb::pop_lsb(&fss);
-		if (bb::test_bit(bb::Between[rsq][us ? E8 : E1], our_ksq)) {
+		if (bb::test_bit(bb::between(rsq, us ? E8 : E1), our_ksq)) {
 			if (our_pawns & bb::SquaresInFront[us][rsq] & bb::HalfBoard[us])
 				e[us].op -= RookTrapped >> can_castle;
 			else

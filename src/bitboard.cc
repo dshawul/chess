@@ -453,5 +453,9 @@ int msb(Bitboard b) { assert(b); return 63 - __builtin_clzll(b); }
 int pop_lsb(Bitboard *b) { const int s = lsb(*b); *b &= *b - 1; return s; }
 int count_bit(Bitboard b) { return __builtin_popcountll(b); }
 
+// Array safe accessors
+Bitboard between(int s1, int s2)	{ assert(square_ok(s1) && square_ok(s2)); return Between[s1][s2]; }
+Bitboard direction(int s1, int s2)	{ assert(square_ok(s1) && square_ok(s2)); return Direction[s1][s2]; }
+
 }	// namespace bb
 
