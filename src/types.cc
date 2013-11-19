@@ -16,9 +16,14 @@
 
 /* Square, Rank, File */
 
-bool rank_file_ok(int r, int f)
+bool rank_ok(int r)
 {
-	return 0 <= r && r < NB_RANK && 0 <= f && f < NB_FILE;
+	return RANK_1 <= r && r <= RANK_8;
+}
+
+bool file_ok(int f)
+{
+	return FILE_A <= f && f <= FILE_H;
 }
 
 bool square_ok(int sq)
@@ -40,7 +45,7 @@ int file(int sq)
 
 int square(int r, int f)
 {
-	assert(rank_file_ok(r, f));
+	assert(rank_ok(r) && file_ok(f));
 	return NB_FILE * r + f;
 }
 

@@ -55,16 +55,16 @@ uint8_t rules(int idx)
 	if (bb::kdist(wk, bk) <= 1 || wp == wk || wp == bk)
 		return ILLEGAL;
 	// cannot be white's turn if black is in check
-	if (stm == WHITE && bb::test_bit(bb::PAttacks[WHITE][wp], bk))
+	if (stm == WHITE && bb::test_bit(bb::pattacks(WHITE, wp), bk))
 		return ILLEGAL;
 
 	// win if pawn can be promoted without getting captured
 	if (stm == WHITE) {
 		if (rank(wp) == RANK_7 && bk != wp + 8 && wk != wp + 8
-			&& !bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp + 8))
+			&& !bb::test_bit(bb::kattacks(bk) & ~bb::kattacks(wk), wp + 8))
 			return WIN;
-	} else if ( !(bb::KAttacks[bk] & ~(bb::KAttacks[wk] | bb::PAttacks[WHITE][wp]))
-		 || bb::test_bit(bb::KAttacks[bk] & ~bb::KAttacks[wk], wp) )
+	} else if ( !(bb::kattacks(bk) & ~(bb::kattacks(wk) | bb::pattacks(WHITE, wp)))
+		 || bb::test_bit(bb::kattacks(bk) & ~bb::kattacks(wk), wp) )
 		return DRAW;
 
 	return UNKNOWN;
@@ -77,7 +77,7 @@ uint8_t classify(uint8_t res[], int idx)
 	decode(idx, &wk, &bk, &stm, &wp);
 
 	uint8_t r = ILLEGAL;
-	Bitboard b = bb::KAttacks[stm ? bk : wk];
+	Bitboard b = bb::kattacks(stm ? bk : wk);
 
 	// king moves
 	while (b) {

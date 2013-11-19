@@ -50,7 +50,7 @@ int is_check(const board::Board& B, move_t m)
 	// test direct check
 	else if (flag != PROMOTION) {
 		const int piece = B.get_piece_on(fsq);
-		Bitboard tss = piece == PAWN ? bb::PAttacks[us][tsq]
+		Bitboard tss = piece == PAWN ? bb::pattacks(us, tsq)
 					   : bb::piece_attack(piece, tsq, B.st().occ);
 		if (bb::test_bit(tss, kpos))
 			return 1;
@@ -63,8 +63,8 @@ int is_check(const board::Board& B, move_t m)
 		bb::clear_bit(&occ, tsq + (us ? 8 : -8));
 		bb::set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
-		if ( (B.get_RQ(us) & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
-			|| (B.get_BQ(us) & bb::BPseudoAttacks[kpos] & bb::bishop_attack(kpos, occ)) )
+		if ( (B.get_RQ(us) & bb::rattacks(kpos) & bb::rook_attack(kpos, occ))
+			|| (B.get_BQ(us) & bb::battacks(kpos) & bb::bishop_attack(kpos, occ)) )
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
@@ -73,7 +73,7 @@ int is_check(const board::Board& B, move_t m)
 		bb::clear_bit(&occ, fsq);
 		Bitboard RQ = B.get_RQ(us);
 		bb::set_bit(&RQ, rook_sq);
-		if (RQ & bb::RPseudoAttacks[kpos] & bb::rook_attack(kpos, occ))
+		if (RQ & bb::rattacks(kpos) & bb::rook_attack(kpos, occ))
 			return 1;	// direct check by the castled rook
 	} else if (flag == PROMOTION) {
 		// test check by the promoted piece
@@ -100,8 +100,8 @@ bool is_pawn_threat(const board::Board& B, move_t m)
 
 		if (bb::test_bit(bb::HalfBoard[them], sq)) {
 			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
-			return !(bb::PawnSpan[us][sq] & their_pawns)
-				   && !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
+			return !(bb::pawn_span(us, sq) & their_pawns)
+				   && !(bb::squares_in_front(us, sq) & (our_pawns | their_pawns));
 		}
 	}
 
@@ -193,8 +193,8 @@ int see(const board::Board& B, move_t m)
 		// remove the piece (from wherever it came)
 		bb::clear_bit(&occ, bb::lsb(stm_attackers & B.get_pieces(stm, piece)));
 		// scan for new X-ray attacks through the vacated square
-		attackers |= (B.get_RQ() & bb::RPseudoAttacks[tsq] & bb::rook_attack(tsq, occ))
-					 | (B.get_BQ() & bb::BPseudoAttacks[tsq] & bb::bishop_attack(tsq, occ));
+		attackers |= (B.get_RQ() & bb::rattacks(tsq) & bb::rook_attack(tsq, occ))
+					 | (B.get_BQ() & bb::battacks(tsq) & bb::bishop_attack(tsq, occ));
 		// cut out pieces we've already done
 		attackers &= occ;
 
@@ -260,7 +260,7 @@ bool refute(const board::Board& B, move_t m1, move_t m2)
 	// defend the threatened square
 	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op) {
 		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
-		const Bitboard b = m1piece == PAWN ? bb::PAttacks[B.get_turn()][m1tsq]
+		const Bitboard b = m1piece == PAWN ? bb::pattacks(B.get_turn(), m1tsq)
 						   : bb::piece_attack(m1piece, m1tsq, B.st().occ);
 
 		if (bb::test_bit(b, m2tsq))

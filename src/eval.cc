@@ -175,7 +175,7 @@ void EvalInfo::eval_mobility()
 	// Knight mobility
 	fss = B->get_pieces(us, KNIGHT);
 	while (fss) {
-		tss = bb::NAttacks[bb::pop_lsb(&fss)] & mob_targets;
+		tss = bb::nattacks(bb::pop_lsb(&fss)) & mob_targets;
 		score_mobility(KNIGHT, KNIGHT, tss);
 	}
 
@@ -227,18 +227,18 @@ void EvalInfo::eval_safety()
 	Bitboard sq_attackers, attacked, occ, fss;
 
 	// Knight attacks
-	attacked = B->st().attacks[them][KNIGHT] & (bb::KAttacks[our_ksq] | bb::NAttacks[our_ksq]) & ~solid;
+	attacked = B->st().attacks[them][KNIGHT] & (bb::kattacks(our_ksq) | bb::nattacks(our_ksq)) & ~solid;
 	if (attacked) {
 		fss = B->get_pieces(them, KNIGHT);
 		while (attacked) {
 			sq = bb::pop_lsb(&attacked);
-			sq_attackers = bb::NAttacks[sq] & fss;
+			sq_attackers = bb::nattacks(sq) & fss;
 			score_attacks(KNIGHT, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	}
 
 	// Lateral attacks
-	attacked = B->st().attacks[them][ROOK] & bb::KAttacks[our_ksq] & ~solid;
+	attacked = B->st().attacks[them][ROOK] & bb::kattacks(our_ksq) & ~solid;
 	if (attacked) {
 		fss = B->get_RQ(them);
 		occ = B->st().occ ^ fss;	// rooks and queens see through each other
@@ -247,7 +247,7 @@ void EvalInfo::eval_safety()
 			sq_attackers = fss & bb::rook_attack(sq, occ);
 			score_attacks(ROOK, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
-	} else if ( (fss = bb::RPseudoAttacks[our_ksq] & B->get_RQ(them)) )
+	} else if ( (fss = bb::rattacks(our_ksq) & B->get_RQ(them)) )
 		// hidden attackers: increment count when the attacking line contains at most one pawn
 		while (fss) {
 			sq = bb::pop_lsb(&fss);
@@ -255,7 +255,7 @@ void EvalInfo::eval_safety()
 		}
 
 	// Diagonal attacks
-	attacked = B->st().attacks[them][BISHOP] & bb::KAttacks[our_ksq] & ~solid;
+	attacked = B->st().attacks[them][BISHOP] & bb::kattacks(our_ksq) & ~solid;
 	if (attacked) {
 		fss = B->get_BQ(them);
 		occ = B->st().occ ^ fss;	// bishops and queens see through each other
@@ -264,7 +264,7 @@ void EvalInfo::eval_safety()
 			sq_attackers = fss & bb::bishop_attack(sq, occ);
 			score_attacks(BISHOP, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
-	} else if ( (fss = bb::BPseudoAttacks[our_ksq] & B->get_BQ(them)) )
+	} else if ( (fss = bb::battacks(our_ksq) & B->get_BQ(them)) )
 		// hidden attackers: increment count when the attacking diagonal contains at most one pawn
 		while (fss) {
 			sq = bb::pop_lsb(&fss);
@@ -276,8 +276,8 @@ void EvalInfo::eval_safety()
 
 	if (total_weight) {
 		// if king cannot retreat increase penalty
-		if ( bb::Shield[them][our_ksq]
-			 && (bb::Shield[them][our_ksq] & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+		if ( bb::shield(them, our_ksq)
+			 && (bb::shield(them, our_ksq) & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
 			++total_count;
 
 		e[us].op -= total_count * total_weight;
@@ -295,7 +295,7 @@ void EvalInfo::eval_passer_interaction(int sq)
 	const int Q = L * (L - 1);				// Quadratic part	0..20
 
 	if (Q && !bb::test_bit(B->st().occ, bb::pawn_push(c, sq))) {
-		const Bitboard path = bb::SquaresInFront[c][sq];
+		const Bitboard path = bb::squares_in_front(c, sq);
 		const Bitboard b = bb::file_bb(file(sq)) & bb::rook_attack(sq, B->st().occ);
 
 		uint64_t defended, attacked;
@@ -411,21 +411,21 @@ Bitboard EvalInfo::do_eval_pawns()
 	while (sqs) {
 		const int sq = bb::pop_lsb(&sqs), next_sq = bb::pawn_push(us, sq);
 		const int r = rank(sq), f = file(sq);
-		const Bitboard besides = our_pawns & bb::AdjacentFiles[f];
+		const Bitboard besides = our_pawns & bb::adjacent_files(f);
 
 		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
-		const bool hole = !chained && !(bb::PawnSpan[them][next_sq] & our_pawns)
+		const bool hole = !chained && !(bb::pawn_span(them, next_sq) & our_pawns)
 			&& bb::test_bit(B->st().attacks[them][PAWN], next_sq);
 		const bool isolated = !besides;
 
-		const bool open = !(bb::SquaresInFront[us][sq] & (our_pawns | their_pawns));
-		const bool passed = open && !(bb::PawnSpan[us][sq] & their_pawns);
+		const bool open = !(bb::squares_in_front(us, sq) & (our_pawns | their_pawns));
+		const bool passed = open && !(bb::pawn_span(us, sq) & their_pawns);
 		const bool candidate = chained && open && !passed
-			&& !bb::several_bits(bb::PawnSpan[us][sq] & their_pawns);
+			&& !bb::several_bits(bb::pawn_span(us, sq) & their_pawns);
 
 		if (chained) {
 			const int rr = us ? RANK_7 - r : r - RANK_2;
-			const bool support = our_pawns & bb::PAttacks[them][next_sq];
+			const bool support = our_pawns & bb::pattacks(them, next_sq);
 			const int bonus = rr * (rr + support);
 			e[us] += {4 + bonus/2, bonus};
 		} else if (hole) {
@@ -465,7 +465,7 @@ void EvalInfo::eval_pieces()
 	fss = B->get_pieces(us, ROOK);
 	while (fss) {
 		const int rsq = bb::pop_lsb(&fss);
-		const Bitboard ahead = bb::SquaresInFront[us][rsq];
+		const Bitboard ahead = bb::squares_in_front(us, rsq);
 		if (!(our_pawns & ahead)) {
 			int bonus = RookOpen;
 			if (!(their_pawns & ahead))
@@ -479,7 +479,7 @@ void EvalInfo::eval_pieces()
 	while (fss) {
 		const int rsq = bb::pop_lsb(&fss);
 		if (bb::test_bit(bb::between(rsq, us ? E8 : E1), our_ksq)) {
-			if (our_pawns & bb::SquaresInFront[us][rsq] & bb::HalfBoard[us])
+			if (our_pawns & bb::squares_in_front(us, rsq) & bb::HalfBoard[us])
 				e[us].op -= RookTrapped >> can_castle;
 			else
 				e[us].op -= (RookTrapped / 2) >> can_castle;
@@ -492,7 +492,7 @@ void EvalInfo::eval_pieces()
 	fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
 	while (fss) {
 		// escape squares = not defended by enemy pawns
-		tss = bb::NAttacks[bb::pop_lsb(&fss)] & ~B->st().attacks[them][PAWN];
+		tss = bb::nattacks(bb::pop_lsb(&fss)) & ~B->st().attacks[them][PAWN];
 		// If escape square(s) are attacked and not defended by a pawn, then the knight is likely
 		// to be trapped and we penalize it
 		if (!(tss & ~(B->st().attacks[them][NO_PIECE] & ~B->st().attacks[us][PAWN])))
@@ -508,10 +508,10 @@ void EvalInfo::eval_pieces()
 	while (fss) {
 		const int fsq = bb::pop_lsb(&fss);
 		// See if the retreat path of the bishop is blocked by a defended pawn
-		if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & bb::PAttacks[them][fsq]) {
+		if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & bb::pattacks(them, fsq)) {
 			e[us].op -= vOP;
 			// in the endgame, we only penalize if there's no escape via the 8th rank
-			if (bb::PAttacks[us][fsq] & B->st().attacks[them][KING])
+			if (bb::pattacks(us, fsq) & B->st().attacks[them][KING])
 				e[us].eg -= vEP;
 		}
 	}

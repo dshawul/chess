@@ -18,13 +18,28 @@
 
 namespace {
 
-void safe_add_bit(Bitboard *b, int r, int f)
-{
-	if (rank_file_ok(r, f))
-		bb::set_bit(b, square(r, f));
-}
+Key Zob[NB_COLOR][NB_PIECE][NB_SQUARE], ZobTurn, ZobEp[NB_SQUARE], ZobCastle[16];
+
+Bitboard Between[NB_SQUARE][NB_SQUARE];
+Bitboard Direction[NB_SQUARE][NB_SQUARE];
+
+Bitboard InFront[NB_COLOR][NB_RANK];
+Bitboard AdjacentFiles[NB_FILE];
+Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
+Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
+Bitboard Shield[NB_COLOR][NB_SQUARE];
+
+Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
+Bitboard PAttacks[NB_COLOR][NB_SQUARE];
+Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
 int KingDistance[NB_SQUARE][NB_SQUARE];
+
+void safe_add_bit(Bitboard *b, int r, int f)
+{
+	if (rank_ok(r) && file_ok(f))
+		bb::set_bit(b, square(r, f));
+}
 
 const int magic_bb_r_shift[NB_SQUARE] = {
 	52, 53, 53, 53, 53, 53, 53, 52,
@@ -174,7 +189,7 @@ Bitboard calc_sliding_attacks(int sq, Bitboard occ, const int dir[4][2])
 		const int dr = dir[i][0], df = dir[i][1];
 		int _r, _f;
 
-		for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
+		for (_r = r + dr, _f = f + df; rank_ok(_r) && file_ok(_f); _r += dr, _f += df) {
 			const int _sq = square(_r, _f);
 			bb::set_bit(&result, _sq);
 			if (bb::test_bit(occ, _sq))
@@ -262,21 +277,6 @@ namespace bb {
 
 bool BitboardInitialized = false;
 
-Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
-
-Bitboard Between[NB_SQUARE][NB_SQUARE];
-Bitboard Direction[NB_SQUARE][NB_SQUARE];
-
-Bitboard InFront[NB_COLOR][NB_RANK];
-Bitboard AdjacentFiles[NB_FILE];
-Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
-Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
-Bitboard Shield[NB_COLOR][NB_SQUARE];
-
-Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
-Bitboard PAttacks[NB_COLOR][NB_SQUARE];
-Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
-
 int kdist(int s1, int s2)
 {
 	return KingDistance[s1][s2];
@@ -288,16 +288,16 @@ void init()
 
 	init_magics();
 
-	/* Zobrist: zob[c][p][s], zob_turn, zob_castle[cr], zob_ep[s] */
+	/* Generate Zobrist keys*/
 
 	PRNG prng;
 	for (int c = WHITE; c <= BLACK; c++)
 		for (int p = PAWN; p <= KING; p++)
-			for (int sq = A1; sq <= H8; zob[c][p][sq++] = prng.rand());
+			for (int sq = A1; sq <= H8; Zob[c][p][sq++] = prng.rand());
 
-	zob_turn = prng.rand();
-	for (int crights = 0; crights < 16; zob_castle[crights++] = prng.rand());
-	for (int sq = A1; sq <= H8; zob_ep[sq++] = prng.rand());
+	ZobTurn = prng.rand();
+	for (int crights = 0; crights < 16; ZobCastle[crights++] = prng.rand());
+	for (int sq = A1; sq <= H8; ZobEp[sq++] = prng.rand());
 
 	/* NAttacks[s], KAttacks[s], Pattacks[c][s] */
 
@@ -334,7 +334,7 @@ void init()
 			const int dr = Kdir[i][0], df = Kdir[i][1];
 			int _r, _f, _sq;
 
-			for (_r = r + dr, _f = f + df; rank_file_ok(_r, _f); _r += dr, _f += df) {
+			for (_r = r + dr, _f = f + df; rank_ok(_r) && file_ok(_f); _r += dr, _f += df) {
 				_sq = square(_r, _f);
 				mask |= 1ULL << _sq;
 				Between[sq][_sq] = mask;
@@ -443,8 +443,8 @@ void clear_bit(Bitboard *b, unsigned sq) { assert(square_ok(sq)); *b &= ~(1ULL <
 bool test_bit(Bitboard b, unsigned sq) { assert(square_ok(sq)); return b & (1ULL << sq); }
 bool several_bits(Bitboard b) { return b & (b - 1); }
 
-Bitboard rank_bb(int r) { assert(rank_file_ok(r, 0)); return Rank1_bb << (NB_FILE * r); }
-Bitboard file_bb(int f) { assert(rank_file_ok(0, f)); return FileA_bb << f; }
+Bitboard rank_bb(int r) { assert(rank_ok(r)); return Rank1_bb << (NB_FILE * r); }
+Bitboard file_bb(int f) { assert(file_ok(f)); return FileA_bb << f; }
 
 // GCC intrinsics for bitscan and popcount
 
@@ -454,8 +454,26 @@ int pop_lsb(Bitboard *b) { const int s = lsb(*b); *b &= *b - 1; return s; }
 int count_bit(Bitboard b) { return __builtin_popcountll(b); }
 
 // Array safe accessors
-Bitboard between(int s1, int s2)	{ assert(square_ok(s1) && square_ok(s2)); return Between[s1][s2]; }
-Bitboard direction(int s1, int s2)	{ assert(square_ok(s1) && square_ok(s2)); return Direction[s1][s2]; }
+
+Key zob(int c, int p, int sq)				{ assert(color_ok(c) && piece_ok(p) && square_ok(sq)); return Zob[c][p][sq]; }
+Key zob_ep(int sq)							{ assert(square_ok(sq)); return ZobEp[sq]; }
+Key zob_castle(int crights)					{ assert(0 <= crights && crights < 16); return ZobCastle[crights]; }
+Key zob_turn()								{ return ZobTurn; }
+
+Bitboard between(int s1, int s2)			{ assert(square_ok(s1) && square_ok(s2)); return Between[s1][s2]; }
+Bitboard direction(int s1, int s2)			{ assert(square_ok(s1) && square_ok(s2)); return Direction[s1][s2]; }
+
+Bitboard kattacks(int sq)					{ assert(square_ok(sq)); return KAttacks[sq]; }
+Bitboard nattacks(int sq)					{ assert(square_ok(sq)); return NAttacks[sq]; }
+Bitboard battacks(int sq)					{ assert(square_ok(sq)); return BPseudoAttacks[sq]; }
+Bitboard rattacks(int sq)					{ assert(square_ok(sq)); return RPseudoAttacks[sq]; }
+Bitboard pattacks(int c, int sq)			{ assert(color_ok(c) && square_ok(sq)); return PAttacks[c][sq]; }
+
+Bitboard in_front(int c, int r)				{ assert(color_ok(c) && rank_ok(r)); return InFront[c][r];}
+Bitboard adjacent_files(int f)				{ assert(file_ok(f)); return AdjacentFiles[f]; }
+Bitboard squares_in_front(int c, int sq)	{ assert(color_ok(c) && square_ok(sq)); return SquaresInFront[c][sq]; }
+Bitboard pawn_span(int c, int sq)			{ assert(color_ok(c) && square_ok(sq)); return PawnSpan[c][sq]; }
+Bitboard shield(int c, int sq)				{ assert(color_ok(c) && square_ok(sq)); return Shield[c][sq]; }
 
 }	// namespace bb
 

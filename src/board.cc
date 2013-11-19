@@ -70,8 +70,8 @@ void Board::set_fen(const std::string& _fen)
 	fen >> c;
 	turn = c == 'w' ? WHITE : BLACK;
 	if (turn) {
-		sp->key ^= bb::zob_turn;
-		sp->kpkey ^= bb::zob_turn;
+		sp->key ^= bb::zob_turn();
+		sp->kpkey ^= bb::zob_turn();
 	}
 	fen >> c;
 
@@ -256,8 +256,8 @@ move_played:
 	if (turn == WHITE)
 		++move_count;
 
-	sp->key ^= bb::zob_turn;
-	sp->kpkey ^= bb::zob_turn;
+	sp->key ^= bb::zob_turn();
+	sp->kpkey ^= bb::zob_turn();
 
 	sp->capture = capture;
 	sp->pinned = hidden_checkers(1, them);
@@ -338,7 +338,7 @@ Bitboard Board::calc_attacks(int color) const
 	sp->attacks[color][KNIGHT] = 0;
 	fss = get_pieces(color, KNIGHT);
 	while (fss)
-		r |= sp->attacks[color][KNIGHT] |= bb::NAttacks[bb::pop_lsb(&fss)];
+		r |= sp->attacks[color][KNIGHT] |= bb::nattacks(bb::pop_lsb(&fss));
 
 	// Bishop + Queen (diagonal)
 	sp->attacks[color][BISHOP] = 0;
@@ -353,7 +353,7 @@ Bitboard Board::calc_attacks(int color) const
 		r |= sp->attacks[color][ROOK] |= bb::rook_attack(bb::pop_lsb(&fss), st().occ);
 
 	// King
-	r |= sp->attacks[color][KING] = bb::KAttacks[get_king_pos(color)];
+	r |= sp->attacks[color][KING] = bb::kattacks(get_king_pos(color));
 
 	//All
 	return sp->attacks[color][NO_PIECE] = r;
@@ -369,7 +369,7 @@ Bitboard Board::hidden_checkers(bool find_pins, int color) const
 	const int ksq = king_pos[kside];
 
 	// Pinners are only sliders with X-ray attacks to ksq
-	pinners = (get_RQ(aside) & bb::RPseudoAttacks[ksq]) | (get_BQ(aside) & bb::BPseudoAttacks[ksq]);
+	pinners = (get_RQ(aside) & bb::rattacks(ksq)) | (get_BQ(aside) & bb::battacks(ksq));
 
 	while (pinners) {
 		int sq = bb::pop_lsb(&pinners);
@@ -387,13 +387,13 @@ Bitboard Board::calc_checkers(int kcolor) const
 	const int kpos = king_pos[kcolor];
 	const int them = opp_color(kcolor);
 
-	const Bitboard RQ = get_RQ(them) & bb::RPseudoAttacks[kpos];
-	const Bitboard BQ = get_BQ(them) & bb::BPseudoAttacks[kpos];
+	const Bitboard RQ = get_RQ(them) & bb::rattacks(kpos);
+	const Bitboard BQ = get_BQ(them) & bb::battacks(kpos);
 
 	return (RQ & bb::rook_attack(kpos, st().occ))
 		| (BQ & bb::bishop_attack(kpos, st().occ))
-		| (get_pieces(them, KNIGHT) & bb::NAttacks[kpos])
-		| (get_pieces(them, PAWN) & bb::PAttacks[kcolor][kpos]);
+		| (get_pieces(them, KNIGHT) & bb::nattacks(kpos))
+		| (get_pieces(them, PAWN) & bb::pattacks(kcolor, kpos));
 }
 
 void Board::set_square(int color, int piece, int sq, bool calc)
@@ -414,9 +414,9 @@ void Board::set_square(int color, int piece, int sq, bool calc)
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] += e.op;
 		else
-			sp->kpkey ^= bb::zob[color][piece][sq];
+			sp->kpkey ^= bb::zob(color, piece, sq);
 
-		sp->key ^= bb::zob[color][piece][sq];
+		sp->key ^= bb::zob(color, piece, sq);
 		sp->mat_key += 1ULL << (8 * piece + 4 * color);
 	}
 }
@@ -439,16 +439,16 @@ void Board::clear_square(int color, int piece, int sq, bool calc)
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] -= e.op;
 		else
-			sp->kpkey ^= bb::zob[color][piece][sq];
+			sp->kpkey ^= bb::zob(color, piece, sq);
 
-		sp->key ^= bb::zob[color][piece][sq];
+		sp->key ^= bb::zob(color, piece, sq);
 		sp->mat_key -= 1ULL << (8 * piece + 4 * color);
 	}
 }
 
 bool Board::verify_keys() const
 {
-	const Key base = get_turn() ? bb::zob_turn : 0;
+	const Key base = get_turn() ? bb::zob_turn() : 0;
 	Key key = base, kpkey = base, mat_key = 0;
 
 	for (int color = WHITE; color <= BLACK; ++color)
@@ -457,9 +457,9 @@ bool Board::verify_keys() const
 			mat_key += (uint64_t)bb::count_bit(sqs) << (8 * piece + 4 * color);
 			while (sqs) {
 				const int sq = bb::pop_lsb(&sqs);
-				key ^= bb::zob[color][piece][sq];
+				key ^= bb::zob(color, piece, sq);
 				if (piece == PAWN || piece == KING)
-					kpkey ^= bb::zob[color][piece][sq];
+					kpkey ^= bb::zob(color, piece, sq);
 			}
 		}
 
@@ -534,12 +534,12 @@ Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 
-	return (B.get_RQ() & bb::RPseudoAttacks[sq] & bb::rook_attack(sq, occ))
-		| (B.get_BQ() & bb::BPseudoAttacks[sq] & bb::bishop_attack(sq, occ))
-		| (bb::NAttacks[sq] & B.get_N())
-		| (bb::KAttacks[sq] & B.get_K())
-		| (bb::PAttacks[WHITE][sq] & B.get_pieces(BLACK, PAWN))
-		| (bb::PAttacks[BLACK][sq] & B.get_pieces(WHITE, PAWN));
+	return (B.get_RQ() & bb::rattacks(sq) & bb::rook_attack(sq, occ))
+		| (B.get_BQ() & bb::battacks(sq) & bb::bishop_attack(sq, occ))
+		| (bb::nattacks(sq) & B.get_N())
+		| (bb::kattacks(sq) & B.get_K())
+		| (bb::pattacks(WHITE, sq) & B.get_pieces(BLACK, PAWN))
+		| (bb::pattacks(BLACK, sq) & B.get_pieces(WHITE, PAWN));
 }
 
 bool has_mating_material(const Board& B, int color)
@@ -646,8 +646,8 @@ Key Board::get_key() const
 {
 	assert(initialized);
 	return st().key
-		^ (st().epsq == NO_SQUARE ? 0 : bb::zob_ep[st().epsq])
-		^ bb::zob_castle[st().crights];
+		^ (st().epsq == NO_SQUARE ? 0 : bb::zob_ep(st().epsq))
+		^ bb::zob_castle(st().crights);
 }
 
 void Board::set_root()

@@ -36,7 +36,8 @@ enum {
 enum { RANK_1, RANK_2, RANK_3, RANK_4, RANK_5, RANK_6, RANK_7, RANK_8, NB_RANK };
 enum { FILE_A, FILE_B, FILE_C, FILE_D, FILE_E, FILE_F, FILE_G, FILE_H, NB_FILE };
 
-extern bool rank_file_ok(int r, int f);
+extern bool rank_ok(int r);
+extern bool file_ok(int f);
 extern bool square_ok(int sq);
 extern int rank(int sq);
 extern int file(int sq);

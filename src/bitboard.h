@@ -34,25 +34,26 @@ const Bitboard BlackSquares = 0xAA55AA55AA55AA55ULL;
 extern void init();
 extern bool BitboardInitialized;
 
-// Zobrist keys
-extern Key zob[NB_COLOR][NB_PIECE][NB_SQUARE], zob_turn, zob_ep[NB_SQUARE], zob_castle[16];
+extern Key zob(int c, int p, int sq);
+extern Key zob_ep(int sq);
+extern Key zob_castle(int crights);
+extern Key zob_turn();
 
-// between(s1,s2) is the segment ]s1,s2] when the angle (s1,s2) is a multiple of 45 degrees, 0
-// otherwise. direction(s1,s2) is the the half-line from s1 through s2 to the edge of the board.
-extern Bitboard between(int s1, int s2);
-extern Bitboard direction(int s1, int s2);
+extern Bitboard between(int s1, int s2);	// excludes s1 and includes s2
+extern Bitboard direction(int s1, int s2);	// so through s2 to the edge of the board
 
-// Bitboards to detect passed pawns
-extern Bitboard InFront[NB_COLOR][NB_RANK];
-extern Bitboard AdjacentFiles[NB_FILE];
-extern Bitboard SquaresInFront[NB_COLOR][NB_SQUARE];
-extern Bitboard PawnSpan[NB_COLOR][NB_SQUARE];
-extern Bitboard Shield[NB_COLOR][NB_SQUARE];
+extern Bitboard in_front(int c, int r);
+extern Bitboard adjacent_files(int f);
+extern Bitboard squares_in_front(int c, int sq);
+extern Bitboard pawn_span(int c, int sq);
+extern Bitboard shield(int c, int sq);
 
 // Occupancy independant attacks
-extern Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
-extern Bitboard PAttacks[NB_COLOR][NB_SQUARE];
-extern Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
+extern Bitboard kattacks(int sq);
+extern Bitboard nattacks(int sq);
+extern Bitboard battacks(int sq);
+extern Bitboard rattacks(int sq);
+extern Bitboard pattacks(int c, int sq);
 
 // Squares attacked by a bishop/rook for a given board occupancy
 extern Bitboard bishop_attack(int sq, Bitboard occ);
