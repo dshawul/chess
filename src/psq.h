@@ -15,47 +15,11 @@
 #pragma once
 #include "types.h"
 
-// game phase
-enum { OPENING, ENDGAME, NB_PHASE };
+namespace psq {
 
-// material values
-enum {
-	vOP = 80, vEP = 100,
-	vN = 330, vB = 330,
-	vR = 545, vQ = 1000,
-	vK = 20000 // only for SEE
-};
+extern void init();
+extern Eval material(int p);
+extern Eval table(int color, int piece, int sq);
 
-// Bind opening and endgame scores together
-struct Eval {
-	int op, eg;
-
-	bool operator== (const Eval& e) {
-		return op == e.op && eg == e.eg;
-	}
-
-	bool operator!= (const Eval& e) {
-		return !(*this == e);
-	}
-
-	const Eval& operator+= (const Eval& e) {
-		op += e.op;
-		eg += e.eg;
-		return *this;
-	}
-
-	const Eval& operator-= (const Eval& e) {
-		op -= e.op;
-		eg -= e.eg;
-		return *this;
-	}
-};
-
-extern const Eval Material[NB_PIECE+1];
-
-// PSQ table for WHITE
-extern Eval PsqTable[NB_PIECE][NB_SQUARE];
-
-extern void init_psq();
-extern const Eval& get_psq(int color, int piece, int sq);
+}	// namespace psq
 

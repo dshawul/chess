@@ -15,7 +15,6 @@
 #pragma once
 #include <string>
 #include "bitboard.h"
-#include "psq.h"
 #include "move.h"
 
 namespace board {

@@ -62,6 +62,28 @@ extern bool color_ok(int color);
 extern int opp_color(int color);
 extern int color_of(int sq);
 
+// game phase
+enum { OPENING, ENDGAME, NB_PHASE };
+
+// material values
+enum {
+	vOP = 80, vEP = 100,
+	vN = 330, vB = 330,
+	vR = 545, vQ = 1000,
+	vK = 20000 // only for SEE
+};
+
+// Eval
+
+struct Eval {
+	int op, eg;
+
+	bool operator== (const Eval& e) { return op == e.op && eg == e.eg; }
+	bool operator!= (const Eval& e) { return !(*this == e); }
+	const Eval& operator+= (const Eval& e) { op += e.op; eg += e.eg; return *this; }
+	const Eval& operator-= (const Eval& e) { op -= e.op; eg -= e.eg; return *this; }
+};
+
 typedef uint64_t Key, Bitboard;
 
 const int MATE = 16000;

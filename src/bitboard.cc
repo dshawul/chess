@@ -33,6 +33,10 @@ Bitboard KAttacks[NB_SQUARE], NAttacks[NB_SQUARE];
 Bitboard PAttacks[NB_COLOR][NB_SQUARE];
 Bitboard BPseudoAttacks[NB_SQUARE], RPseudoAttacks[NB_SQUARE];
 
+const Bitboard PInitialRank[NB_COLOR]   = { 0x000000000000FF00ULL, 0x00FF000000000000ULL };
+const Bitboard PPromotionRank[NB_COLOR] = { 0xFF00000000000000ULL, 0x00000000000000FFULL };
+const Bitboard HalfBoard[NB_COLOR] = { 0x00000000FFFFFFFFULL, 0xFFFFFFFF00000000ULL };
+
 int KingDistance[NB_SQUARE][NB_SQUARE];
 
 void safe_add_bit(Bitboard *b, int r, int f)
@@ -454,6 +458,10 @@ int pop_lsb(Bitboard *b) { const int s = lsb(*b); *b &= *b - 1; return s; }
 int count_bit(Bitboard b) { return __builtin_popcountll(b); }
 
 // Array safe accessors
+
+Bitboard second_rank(int c)					{ assert(color_ok(c)); return PInitialRank[c]; }
+Bitboard eighth_rank(int c)					{ assert(color_ok(c)); return PPromotionRank[c]; }
+Bitboard half_board(int c)					{ assert(color_ok(c)); return HalfBoard[c]; }
 
 Key zob(int c, int p, int sq)				{ assert(color_ok(c) && piece_ok(p) && square_ok(sq)); return Zob[c][p][sq]; }
 Key zob_ep(int sq)							{ assert(square_ok(sq)); return ZobEp[sq]; }

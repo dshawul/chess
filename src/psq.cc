@@ -18,6 +18,8 @@
 */
 #include "psq.h"
 
+namespace {
+
 const Eval Material[NB_PIECE+1] = {
 	{vOP, vEP},
 	{vN, vN},
@@ -29,8 +31,6 @@ const Eval Material[NB_PIECE+1] = {
 };
 
 Eval PsqTable[NB_PIECE][NB_SQUARE];
-
-namespace {
 
 /* Shape */
 const int Center[8]	= { -3, -1, +0, +1, +1, +0, -1, -3};
@@ -93,7 +93,9 @@ Eval psq_bonus(int piece, int sq)
 
 }	// namespace
 
-void init_psq()
+namespace psq {
+
+void init()
 {
 	for (int piece = PAWN; piece <= KING; ++piece) {
 		for (int sq = A1; sq <= H8; ++sq) {
@@ -119,9 +121,17 @@ void init_psq()
 	}
 }
 
-const Eval& get_psq(int color, int piece, int sq)
+Eval table(int color, int piece, int sq)
 {
 	assert(color_ok(color) && piece_ok(piece) && square_ok(sq));
 	return PsqTable[piece][color ? rank_mirror(sq) : sq];
 }
+
+Eval material(int p)
+{
+	assert(piece_ok(p) || p == NO_PIECE);
+	return Material[p];
+}
+
+}	// namespace psq
 

@@ -17,6 +17,7 @@
 #include "search.h"
 #include "uci.h"
 #include "eval.h"
+#include "psq.h"
 #include "movesort.h"
 #include "prng.h"
 
@@ -207,9 +208,9 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 		if (!check && !in_check && node_type != PV) {
 			// opt_score = current eval + some margin + max material gain of the move
 			const int opt_score = fut_base
-				+ Material[B.get_piece_on(ss->m.tsq())].eg
+				+ psq::material(B.get_piece_on(ss->m.tsq())).eg
 				+ (ss->m.flag() == move::EN_PASSANT ? vEP : 0)
-				+ (ss->m.flag() == move::PROMOTION ? Material[ss->m.prom()].eg - vOP : 0);
+				+ (ss->m.flag() == move::PROMOTION ? psq::material(ss->m.prom()).eg - vOP : 0);
 
 			// still can't raise alpha, skip
 			if (opt_score <= alpha) {

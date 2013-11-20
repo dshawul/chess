@@ -19,6 +19,7 @@
 #include <algorithm>
 #include "move.h"
 #include "board.h"
+#include "psq.h"
 
 namespace {
 
@@ -98,7 +99,7 @@ bool is_pawn_threat(const board::Board& B, move_t m)
 	if (B.get_piece_on(m.fsq()) == PAWN) {
 		const int us = B.get_turn(), them = opp_color(us), sq = m.tsq();
 
-		if (bb::test_bit(bb::HalfBoard[them], sq)) {
+		if (bb::test_bit(bb::half_board(them), sq)) {
 			const Bitboard our_pawns = B.get_pieces(us, PAWN), their_pawns = B.get_pieces(them, PAWN);
 			return !(bb::pawn_span(us, sq) & their_pawns)
 				   && !(bb::squares_in_front(us, sq) & (our_pawns | their_pawns));
@@ -201,7 +202,7 @@ int see(const board::Board& B, move_t m)
 		// add the new entry to the swap list (beware of promoting pawn captures)
 		assert(sl_idx < 32);
 		swap_list[sl_idx] = -swap_list[sl_idx - 1] + see_val[capture];
-		if (piece == PAWN && bb::test_bit(bb::PPromotionRank[stm], tsq)) {
+		if (piece == PAWN && bb::test_bit(bb::eighth_rank(stm), tsq)) {
 			swap_list[sl_idx] += see_val[QUEEN] - see_val[PAWN];
 			capture = QUEEN;
 		} else
@@ -258,7 +259,7 @@ bool refute(const board::Board& B, move_t m1, move_t m2)
 		return true;
 
 	// defend the threatened square
-	if (Material[B.get_piece_on(m2tsq)].op <= Material[B.get_piece_on(m2fsq)].op) {
+	if (psq::material(B.get_piece_on(m2tsq)).op <= psq::material(B.get_piece_on(m2fsq)).op) {
 		const int m1piece = m1.flag() == PROMOTION ? m1.prom() : B.get_piece_on(m1fsq);
 		const Bitboard b = m1piece == PAWN ? bb::pattacks(B.get_turn(), m1tsq)
 						   : bb::piece_attack(m1piece, m1tsq, B.st().occ);

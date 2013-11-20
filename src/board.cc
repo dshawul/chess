@@ -15,6 +15,7 @@
 #include <sstream>
 #include <cstring>
 #include "board.h"
+#include "psq.h"
 
 namespace board {
 
@@ -409,7 +410,7 @@ void Board::set_square(int color, int piece, int sq, bool calc)
 	if (calc) {
 		bb::set_bit(&sp->occ, sq);
 
-		const Eval& e = get_psq(color, piece, sq);
+		const Eval& e = psq::table(color, piece, sq);
 		sp->psq[color] += e;
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] += e.op;
@@ -434,7 +435,7 @@ void Board::clear_square(int color, int piece, int sq, bool calc)
 	if (calc) {
 		bb::clear_bit(&sp->occ, sq);
 
-		const Eval& e = get_psq(color, piece, sq);
+		const Eval& e = psq::table(color, piece, sq);
 		sp->psq[color] -= e;
 		if (KNIGHT <= piece && piece <= QUEEN)
 			sp->piece_psq[color] -= e.op;
@@ -478,7 +479,7 @@ bool Board::verify_psq() const
 		for (int piece = PAWN; piece <= KING; ++piece) {
 			Bitboard sqs = get_pieces(color, piece);
 			while (sqs) {
-				const Eval& e = get_psq(color, piece, bb::pop_lsb(&sqs));
+				const Eval& e = psq::table(color, piece, bb::pop_lsb(&sqs));
 				psq[color] += e;
 				if (KNIGHT <= piece && piece <= QUEEN)
 					piece_psq[color] += e.op;

@@ -13,6 +13,7 @@
  * see <http://www.gnu.org/licenses/>.
 */
 #include "test.h"
+#include "psq.h"
 #include "eval.h"
 #include "search.h"
 #include "uci.h"
@@ -22,7 +23,7 @@ uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
 int main (int argc, char **argv)
 {
 	bb::init();
-	init_psq();
+	psq::init();
 	eval::init();
 
 	if (argc == 2) {

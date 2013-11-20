@@ -18,6 +18,7 @@
 #include <cstring>
 #include "eval.h"
 #include "kpk.h"
+#include "psq.h"
 
 namespace {
 
@@ -475,11 +476,11 @@ void EvalInfo::eval_pieces()
 	}
 
 	// Rook blocked by uncastled King
-	fss = B->get_pieces(us, ROOK) & bb::PPromotionRank[them];
+	fss = B->get_pieces(us, ROOK) & bb::eighth_rank(them);
 	while (fss) {
 		const int rsq = bb::pop_lsb(&fss);
 		if (bb::test_bit(bb::between(rsq, us ? E8 : E1), our_ksq)) {
-			if (our_pawns & bb::squares_in_front(us, rsq) & bb::HalfBoard[us])
+			if (our_pawns & bb::squares_in_front(us, rsq) & bb::half_board(us))
 				e[us].op -= RookTrapped >> can_castle;
 			else
 				e[us].op -= (RookTrapped / 2) >> can_castle;
@@ -523,8 +524,8 @@ void EvalInfo::eval_pieces()
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
 		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
-		e[us].op -= 4 + Material[victim].op / 32;
-		e[us].eg -= 8 + Material[victim].eg / 32;
+		e[us].op -= 4 + psq::material(victim).op / 32;
+		e[us].eg -= 8 + psq::material(victim).eg / 32;
 	}
 }
 
@@ -601,12 +602,12 @@ int stand_pat_penalty(const board::Board& B, Bitboard hanging)
 			const int p = B.get_piece_on(sq);
 			piece = std::min(piece, p);
 		}
-		return Material[piece].op / 2;
+		return psq::material(piece).op / 2;
 	} else if (hanging & B.st().pinned) {
 		// Only one piece hanging, but also pinned. Return half its value.
 		assert(bb::count_bit(hanging) == 1);
 		const int sq = bb::lsb(hanging), piece = B.get_piece_on(sq);
-		return Material[piece].op / 2;
+		return psq::material(piece).op / 2;
 	}
 
 	return 0;

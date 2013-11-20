@@ -48,7 +48,7 @@ move::move_t *make_pawn_moves(const board::Board& B, int fsq, int tsq, move::mov
 	} else
 		m.flag(move::NORMAL);
 
-	if (bb::test_bit(bb::PPromotionRank[us], tsq)) {
+	if (bb::test_bit(bb::eighth_rank(us), tsq)) {
 		// promotion(s)
 		m.flag(move::PROMOTION);
 		m.prom(QUEEN); *mlist++ = m;
@@ -191,7 +191,7 @@ move::move_t *gen_pawn_moves(const board::Board& B, Bitboard targets, move::move
 	tss_sp = bb::shift_bit(fss, sp_inc) & ~B.st().occ;
 
 	// double pushes
-	fssd = fss & bb::PInitialRank[us]			// pawns on their initial rank
+	fssd = fss & bb::second_rank(us)				// pawns on their initial rank
 		   & ~bb::shift_bit(B.st().occ, -sp_inc)	// can push once
 		   & ~bb::shift_bit(B.st().occ, -dp_inc);	// can push twice
 	tss_dp = bb::shift_bit(fssd, dp_inc);			// double push fssd

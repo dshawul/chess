@@ -14,82 +14,21 @@
 */
 #include "types.h"
 
-/* Square, Rank, File */
+bool rank_ok(int r)			{ return RANK_1 <= r && r <= RANK_8; }
+bool file_ok(int f)			{ return FILE_A <= f && f <= FILE_H; }
+bool square_ok(int sq)		{ return A1 <= sq && sq <= H8; }
 
-bool rank_ok(int r)
-{
-	return RANK_1 <= r && r <= RANK_8;
-}
+int rank(int sq)			{ assert(square_ok(sq)); return sq / NB_FILE; }
+int file(int sq)			{ assert(square_ok(sq)); return sq % NB_FILE; }
+int square(int r, int f)	{ assert(rank_ok(r) && file_ok(f)); return NB_FILE * r + f; }
 
-bool file_ok(int f)
-{
-	return FILE_A <= f && f <= FILE_H;
-}
+int rank_mirror(int sq)		{ assert(square_ok(sq)); return sq ^ 070; }
+int file_mirror(int sq)		{ assert(square_ok(sq)); return sq ^ 7; }
 
-bool square_ok(int sq)
-{
-	return A1 <= sq && sq <= H8;
-}
+bool piece_ok(int piece)	{ return PAWN <= piece && piece < NO_PIECE; }
+bool is_slider(int piece)	{ assert(piece_ok(piece)); return BISHOP <= piece && piece <= QUEEN; }
 
-int rank(int sq)
-{
-	assert(square_ok(sq));
-	return sq / NB_FILE;
-}
-
-int file(int sq)
-{
-	assert(square_ok(sq));
-	return sq % NB_FILE;
-}
-
-int square(int r, int f)
-{
-	assert(rank_ok(r) && file_ok(f));
-	return NB_FILE * r + f;
-}
-
-int rank_mirror(int sq)
-{
-	assert(square_ok(sq));
-	return sq ^ 070;
-}
-
-int file_mirror(int sq)
-{
-	assert(square_ok(sq));
-	return sq ^ 7;
-}
-
-/* Piece */
-
-bool piece_ok(int piece)
-{
-	return PAWN <= piece && piece < NO_PIECE;
-}
-
-bool is_slider(int piece)
-{
-	assert(piece_ok(piece));
-	return BISHOP <= piece && piece <= QUEEN;
-}
-
-/* Color */
-
-bool color_ok(int color)
-{
-	return color == WHITE || color == BLACK;
-}
-
-int opp_color(int color)
-{
-	assert(color_ok(color));
-	return color ^ BLACK;
-}
-
-int color_of(int sq)
-{
-	assert(square_ok(sq));
-	return (sq & 1) ^ BLACK;
-}
+bool color_ok(int color)	{ return color == WHITE || color == BLACK; }
+int opp_color(int color)	{ assert(color_ok(color)); return color ^ 1; }
+int color_of(int sq)		{ assert(square_ok(sq)); return (sq & 1) ^ 1; }
 
