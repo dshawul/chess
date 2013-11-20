@@ -344,13 +344,13 @@ Bitboard Board::calc_attacks(int color) const
 	sp->attacks[color][BISHOP] = 0;
 	fss = get_BQ(color);
 	while (fss)
-		r |= sp->attacks[color][BISHOP] |= bb::bishop_attack(bb::pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][BISHOP] |= bb::battacks(bb::pop_lsb(&fss), st().occ);
 
 	// Rook + Queen (lateral)
 	sp->attacks[color][ROOK] = 0;
 	fss = get_RQ(color);
 	while (fss)
-		r |= sp->attacks[color][ROOK] |= bb::rook_attack(bb::pop_lsb(&fss), st().occ);
+		r |= sp->attacks[color][ROOK] |= bb::rattacks(bb::pop_lsb(&fss), st().occ);
 
 	// King
 	r |= sp->attacks[color][KING] = bb::kattacks(get_king_pos(color));
@@ -390,8 +390,8 @@ Bitboard Board::calc_checkers(int kcolor) const
 	const Bitboard RQ = get_RQ(them) & bb::rattacks(kpos);
 	const Bitboard BQ = get_BQ(them) & bb::battacks(kpos);
 
-	return (RQ & bb::rook_attack(kpos, st().occ))
-		| (BQ & bb::bishop_attack(kpos, st().occ))
+	return (RQ & bb::rattacks(kpos, st().occ))
+		| (BQ & bb::battacks(kpos, st().occ))
 		| (get_pieces(them, KNIGHT) & bb::nattacks(kpos))
 		| (get_pieces(them, PAWN) & bb::pattacks(kcolor, kpos));
 }
@@ -534,8 +534,8 @@ Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 
-	return (B.get_RQ() & bb::rattacks(sq) & bb::rook_attack(sq, occ))
-		| (B.get_BQ() & bb::battacks(sq) & bb::bishop_attack(sq, occ))
+	return (B.get_RQ() & bb::rattacks(sq) & bb::rattacks(sq, occ))
+		| (B.get_BQ() & bb::battacks(sq) & bb::battacks(sq, occ))
 		| (bb::nattacks(sq) & B.get_N())
 		| (bb::kattacks(sq) & B.get_K())
 		| (bb::pattacks(WHITE, sq) & B.get_pieces(BLACK, PAWN))

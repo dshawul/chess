@@ -63,8 +63,8 @@ int is_check(const board::Board& B, move_t m)
 		bb::clear_bit(&occ, tsq + (us ? 8 : -8));
 		bb::set_bit(&occ, tsq);
 		// test for new sliding attackers to the enemy king
-		if ( (B.get_RQ(us) & bb::rattacks(kpos) & bb::rook_attack(kpos, occ))
-			|| (B.get_BQ(us) & bb::battacks(kpos) & bb::bishop_attack(kpos, occ)) )
+		if ( (B.get_RQ(us) & bb::rattacks(kpos) & bb::rattacks(kpos, occ))
+			|| (B.get_BQ(us) & bb::battacks(kpos) & bb::battacks(kpos, occ)) )
 			return 2;	// discovered check through the fsq or the ep captured square
 	} else if (flag == CASTLING) {
 		// position of the Rook after playing the castling move
@@ -73,7 +73,7 @@ int is_check(const board::Board& B, move_t m)
 		bb::clear_bit(&occ, fsq);
 		Bitboard RQ = B.get_RQ(us);
 		bb::set_bit(&RQ, rook_sq);
-		if (RQ & bb::rattacks(kpos) & bb::rook_attack(kpos, occ))
+		if (RQ & bb::rattacks(kpos) & bb::rattacks(kpos, occ))
 			return 1;	// direct check by the castled rook
 	} else if (flag == PROMOTION) {
 		// test check by the promoted piece
@@ -193,8 +193,8 @@ int see(const board::Board& B, move_t m)
 		// remove the piece (from wherever it came)
 		bb::clear_bit(&occ, bb::lsb(stm_attackers & B.get_pieces(stm, piece)));
 		// scan for new X-ray attacks through the vacated square
-		attackers |= (B.get_RQ() & bb::rattacks(tsq) & bb::rook_attack(tsq, occ))
-					 | (B.get_BQ() & bb::battacks(tsq) & bb::bishop_attack(tsq, occ));
+		attackers |= (B.get_RQ() & bb::rattacks(tsq) & bb::rattacks(tsq, occ))
+					 | (B.get_BQ() & bb::battacks(tsq) & bb::battacks(tsq, occ));
 		// cut out pieces we've already done
 		attackers &= occ;
 

@@ -42,8 +42,8 @@ move::move_t *make_pawn_moves(const board::Board& B, int fsq, int tsq, move::mov
 		bb::clear_bit(&occ, bb::pawn_push(them, m.tsq()));	// remove the ep captured enemy pawn
 		bb::set_bit(&occ, m.tsq());
 		// test for check by a sliding enemy piece
-		if ((B.get_RQ(them) & bb::rattacks(kpos) & bb::rook_attack(kpos, occ))
-			|| (B.get_BQ(them) & bb::battacks(kpos) & bb::bishop_attack(kpos, occ)))
+		if ((B.get_RQ(them) & bb::rattacks(kpos) & bb::rattacks(kpos, occ))
+			|| (B.get_BQ(them) & bb::battacks(kpos) & bb::battacks(kpos, occ)))
 			return mlist;	// illegal move by indirect self check (through the ep captured pawn)
 	} else
 		m.flag(move::NORMAL);
@@ -112,7 +112,7 @@ move::move_t *gen_piece_moves(const board::Board& B, Bitboard targets, move::mov
 	fss = B.get_RQ(us);
 	while (fss) {
 		int fsq = bb::pop_lsb(&fss);
-		Bitboard tss = targets & bb::rook_attack(fsq, B.st().occ);
+		Bitboard tss = targets & bb::rattacks(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 
@@ -120,7 +120,7 @@ move::move_t *gen_piece_moves(const board::Board& B, Bitboard targets, move::mov
 	fss = B.get_BQ(us);
 	while (fss) {
 		int fsq = bb::pop_lsb(&fss);
-		Bitboard tss = targets & bb::bishop_attack(fsq, B.st().occ);
+		Bitboard tss = targets & bb::battacks(fsq, B.st().occ);
 		mlist = make_piece_moves(B, fsq, tss, mlist);
 	}
 

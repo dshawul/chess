@@ -56,8 +56,8 @@ extern Bitboard rattacks(int sq);
 extern Bitboard pattacks(int c, int sq);
 
 // Squares attacked by a bishop/rook for a given board occupancy
-extern Bitboard bishop_attack(int sq, Bitboard occ);
-extern Bitboard rook_attack(int sq, Bitboard occ);
+extern Bitboard battacks(int sq, Bitboard occ);
+extern Bitboard rattacks(int sq, Bitboard occ);
 
 // squares attacked by piece on sq, for a given occupancy
 extern Bitboard piece_attack(int piece, int sq, Bitboard occ);

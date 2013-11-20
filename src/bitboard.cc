@@ -319,8 +319,8 @@ void init()
 			safe_add_bit(&PAttacks[BLACK][sq], r - Pdir[d][0], f - Pdir[d][1]);
 		}
 
-		BPseudoAttacks[sq] = bishop_attack(sq, 0);
-		RPseudoAttacks[sq] = rook_attack(sq, 0);
+		BPseudoAttacks[sq] = battacks(sq, 0);
+		RPseudoAttacks[sq] = rattacks(sq, 0);
 	}
 
 	/* Between[s1][s2] and Direction[s1][s2] */
@@ -393,14 +393,14 @@ void print(std::ostream& ostrm, Bitboard b)
 	}
 }
 
-Bitboard bishop_attack(int sq, Bitboard occ)
+Bitboard battacks(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	std::uintptr_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
 	return magic_bb_b_indices[sq][idx];
 }
 
-Bitboard rook_attack(int sq, Bitboard occ)
+Bitboard rattacks(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
 	std::uintptr_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];
@@ -417,11 +417,11 @@ Bitboard piece_attack(int piece, int sq, Bitboard occ)
 	if (piece == KNIGHT)
 		return NAttacks[sq];
 	else if (piece == BISHOP)
-		return bishop_attack(sq, occ);
+		return battacks(sq, occ);
 	else if (piece == ROOK)
-		return rook_attack(sq, occ);
+		return rattacks(sq, occ);
 	else if (piece == QUEEN)
-		return bishop_attack(sq, occ) | rook_attack(sq, occ);
+		return battacks(sq, occ) | rattacks(sq, occ);
 	else
 		return KAttacks[sq];
 }

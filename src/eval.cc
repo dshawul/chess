@@ -185,7 +185,7 @@ void EvalInfo::eval_mobility()
 	while (fss) {
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
-		tss = bb::rook_attack(fsq, occ) & mob_targets;
+		tss = bb::rattacks(fsq, occ) & mob_targets;
 		score_mobility(ROOK, piece, tss);
 	}
 
@@ -195,7 +195,7 @@ void EvalInfo::eval_mobility()
 	while (fss) {
 		fsq = bb::pop_lsb(&fss);
 		piece = B->get_piece_on(fsq);
-		tss = bb::bishop_attack(fsq, occ) & mob_targets;
+		tss = bb::battacks(fsq, occ) & mob_targets;
 		score_mobility(BISHOP, piece, tss);
 	}
 }
@@ -244,7 +244,7 @@ void EvalInfo::eval_safety()
 		occ = B->st().occ ^ fss;	// rooks and queens see through each other
 		while (attacked) {
 			sq = bb::pop_lsb(&attacked);
-			sq_attackers = fss & bb::rook_attack(sq, occ);
+			sq_attackers = fss & bb::rattacks(sq, occ);
 			score_attacks(ROOK, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	} else if ( (fss = bb::rattacks(our_ksq) & B->get_RQ(them)) )
@@ -261,7 +261,7 @@ void EvalInfo::eval_safety()
 		occ = B->st().occ ^ fss;	// bishops and queens see through each other
 		while (attacked) {
 			sq = bb::pop_lsb(&attacked);
-			sq_attackers = fss & bb::bishop_attack(sq, occ);
+			sq_attackers = fss & bb::battacks(sq, occ);
 			score_attacks(BISHOP, sq, sq_attackers, defended, &total_count, &total_weight);
 		}
 	} else if ( (fss = bb::battacks(our_ksq) & B->get_BQ(them)) )
@@ -296,7 +296,7 @@ void EvalInfo::eval_passer_interaction(int sq)
 
 	if (Q && !bb::test_bit(B->st().occ, bb::pawn_push(c, sq))) {
 		const Bitboard path = bb::squares_in_front(c, sq);
-		const Bitboard b = bb::file_bb(file(sq)) & bb::rook_attack(sq, B->st().occ);
+		const Bitboard b = bb::file_bb(file(sq)) & bb::rattacks(sq, B->st().occ);
 
 		uint64_t defended, attacked;
 		if (B->get_RQ(not_c) & b) {
