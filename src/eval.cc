@@ -453,14 +453,8 @@ Bitboard EvalInfo::do_eval_pawns()
 void EvalInfo::eval_pieces()
 {
 	static const int RookOpen = 8, RookTrapped = 40;
-	static const uint64_t BishopTrap[NB_COLOR] = {
-		(1ULL << A7) | (1ULL << H7) | (1ULL << A6) | (1ULL << H6),
-		(1ULL << A2) | (1ULL << H2) | (1ULL << A3) | (1ULL << H3)
-	};
-	static const Bitboard KnightTrap[NB_COLOR] = {0xFFFF000000000000ULL, 0x000000000000FFFFULL};
-
 	const bool can_castle = B->st().crights & (3 << (2 * us));
-	Bitboard fss, tss;
+	Bitboard fss;
 
 	// Rook on open file
 	fss = B->get_pieces(us, ROOK);
@@ -486,34 +480,6 @@ void EvalInfo::eval_pieces()
 				e[us].op -= (RookTrapped / 2) >> can_castle;
 
 			break;  // King can only trap one Rook
-		}
-	}
-
-	// Knight trapped
-	fss = B->get_pieces(us, KNIGHT) & KnightTrap[us];
-	while (fss) {
-		// escape squares = not defended by enemy pawns
-		tss = bb::nattacks(bb::pop_lsb(&fss)) & ~B->st().attacks[them][PAWN];
-		// If escape square(s) are attacked and not defended by a pawn, then the knight is likely
-		// to be trapped and we penalize it
-		if (!(tss & ~(B->st().attacks[them][NO_PIECE] & ~B->st().attacks[us][PAWN])))
-			e[us].op -= vOP;
-		// in the endgame, we only look at king attacks, and incentivise the king to go and grab
-		// the trapped knight
-		if (!(tss & ~(B->st().attacks[them][KING] & ~B->st().attacks[us][PAWN])))
-			e[us].eg -= vEP;
-	}
-
-	// Bishop trapped
-	fss = B->get_pieces(us, BISHOP) & BishopTrap[us];
-	while (fss) {
-		const int fsq = bb::pop_lsb(&fss);
-		// See if the retreat path of the bishop is blocked by a defended pawn
-		if (B->get_pieces(them, PAWN) & B->st().attacks[them][NO_PIECE] & bb::pattacks(them, fsq)) {
-			e[us].op -= vOP;
-			// in the endgame, we only penalize if there's no escape via the 8th rank
-			if (bb::pattacks(us, fsq) & B->st().attacks[them][KING])
-				e[us].eg -= vEP;
 		}
 	}
 
