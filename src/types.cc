@@ -30,5 +30,5 @@ bool is_slider(int piece)	{ assert(piece_ok(piece)); return BISHOP <= piece && p
 
 bool color_ok(int color)	{ return color == WHITE || color == BLACK; }
 int opp_color(int color)	{ assert(color_ok(color)); return color ^ 1; }
-int color_of(int sq)		{ assert(square_ok(sq)); return (sq & 1) ^ 1; }
+int color_of(int sq)		{ assert(square_ok(sq)); return (sq + rank(sq)) & 1; }
 
