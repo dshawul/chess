@@ -427,7 +427,7 @@ Bitboard EvalInfo::do_eval_pawns()
 		if (chained) {
 			const int rr = us ? RANK_7 - r : r - RANK_2;
 			const bool support = our_pawns & bb::pattacks(them, next_sq);
-			const int bonus = rr * (rr + support) * 352/256;	// CLOP
+			const int bonus = rr * (rr + support) * 352/256;
 			e[us] += {4 + bonus/2, bonus};
 		} else if (hole) {
 			e[us].op -= open ? Hole.op : Hole.op / 2;
@@ -490,8 +490,8 @@ void EvalInfo::eval_pieces()
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
 		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
-		e[us].op -= 13 + psq::material(victim).op * 5 / 256;	// CLOP
-		e[us].eg -= 21 + psq::material(victim).eg * 5 / 256;	//
+		e[us].op -= 4 + psq::material(victim).op / 32;
+		e[us].eg -= 8 + psq::material(victim).eg / 32;
 	}
 }
 
