@@ -634,7 +634,7 @@ int symmetric_eval(const board::Board& B)
 
 int asymmetric_eval(const board::Board& B, Bitboard hanging)
 {
-	static const int TEMPO = 4;
+	static const int TEMPO = 7;
 	return TEMPO - stand_pat_penalty(B, hanging);
 }
 
