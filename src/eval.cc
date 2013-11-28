@@ -130,19 +130,25 @@ void EvalInfo::eval_material()
 void EvalInfo::eval_drawish()
 {
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
+	assert(eval_factor == 16);
 
+	// Strongest side has no pawns
 	if (!B->get_pieces(strong_side, PAWN)) {
-		// The strongest side has no pawns.
-		// Unless we have mating material against a lone king, half the eval		
-		if ( bb::several_bits(B->get_pieces(opp_color(strong_side)))
-			|| !board::has_mating_material(*B, strong_side) )
-			eval_factor = 8;
-	} else if ((B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
-		// Each side has exactly one bishop
+		if (board::has_mating_material(*B, strong_side)) {
+			// Half the eval, unless we're in a KXK situation where X is mating material
+			if (bb::several_bits(B->get_pieces(opp_color(strong_side))))
+				eval_factor = 8;
+		} else
+			// No mating material: divide eval by 4
+			eval_factor = 4;
+	}
+
+	// Opposite color bishop
+	if (eval_factor == 16 && (B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
 		const Bitboard b = B->get_pieces(WHITE, BISHOP) | B->get_pieces(BLACK, BISHOP);
 		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
-			// We have an opposite color bishop situation. If the stronger side has no other
-			// pieces it's more drawish.
+			// We have an opposite color bishop situation. If the stronger side has no other pieces
+			// it's more drawish.
 			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4 * strong_side))) ? 12 : 8;
 	}
 }
@@ -608,9 +614,6 @@ int symmetric_eval(const board::Board& B)
 	assert(!B.is_check());
 	EvalInfo ei(&B);
 
-	// Recognize some general drawish patterns
-	ei.eval_drawish();
-
 	if (bb::count_bit(B.st().occ) <= 4) {
 		// Recognize some specific endgames
 		const Bitboard mk = B.st().mat_key;
@@ -628,6 +631,9 @@ int symmetric_eval(const board::Board& B)
 		ei.eval_safety();
 		ei.eval_pieces();
 	}
+
+	// Handle general drawish patterns via eval_factor
+	ei.eval_drawish();
 
 	return ei.interpolate();
 }
