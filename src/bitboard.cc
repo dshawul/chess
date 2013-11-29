@@ -217,7 +217,7 @@ Bitboard init_magic_bb_occ(const int* sq, int sq_cnt, Bitboard linocc)
 
 void init_magics()
 {
-	static const std::uintptr_t magic_bb_b_indices2[64] = {
+	static const size_t magic_bb_b_indices2[64] = {
 		4992, 2624, 256,  896, 1280, 1664, 4800, 5120,
 		2560, 2656, 288,  928, 1312, 1696, 4832, 4928,
 		   0,  128, 320,  960, 1344, 1728, 2304, 2432,
@@ -228,7 +228,7 @@ void init_magics()
 		5056, 2720, 864, 1248, 1632, 2272, 4896, 5184
 	};
 
-	static const std::uintptr_t magic_bb_r_indices2[64] = {
+	static const size_t magic_bb_r_indices2[64] = {
 		86016, 73728, 36864, 43008, 47104, 51200, 77824, 94208,
 		69632, 32768, 38912, 10240, 14336, 53248, 57344, 81920,
 		24576, 33792,  6144, 11264, 15360, 18432, 58368, 61440,
@@ -253,7 +253,7 @@ void init_magics()
 		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
 			Bitboard *p = magic_bb_b_db + magic_bb_b_indices2[i];
-			std::uintptr_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
+			size_t idx = (tempocc * magic_bb_b_magics[i]) >> magic_bb_b_shift[i];
 			p[idx] = calc_sliding_attacks(i, tempocc, Bdir);
 		}
 	}
@@ -269,7 +269,7 @@ void init_magics()
 		for (temp = 0; temp < (1ULL << sq_cnt); temp++) {
 			Bitboard tempocc = init_magic_bb_occ(sq, sq_cnt, temp);
 			Bitboard *p = magic_bb_r_db + magic_bb_r_indices2[i];
-			std::uintptr_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
+			size_t idx = (tempocc * magic_bb_r_magics[i]) >> magic_bb_r_shift[i];
 			p[idx] = calc_sliding_attacks(i, tempocc, Rdir);
 		}
 	}
@@ -400,14 +400,14 @@ void print(std::ostream& ostrm, Bitboard b)
 Bitboard battacks(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
-	std::uintptr_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
+	size_t idx = ((occ & magic_bb_b_mask[sq]) * magic_bb_b_magics[sq]) >> magic_bb_b_shift[sq];
 	return magic_bb_b_indices[sq][idx];
 }
 
 Bitboard rattacks(int sq, Bitboard occ)
 {
 	assert(square_ok(sq));
-	std::uintptr_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];
+	size_t idx = ((occ & magic_bb_r_mask[sq]) * magic_bb_r_magics[sq]) >> magic_bb_r_shift[sq];
 	return magic_bb_r_indices[sq][idx];
 }
 
