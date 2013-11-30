@@ -613,6 +613,11 @@ Bitboard Board::get_N() const
 	return b[KNIGHT];
 }
 
+Bitboard Board::get_B() const
+{
+	return b[BISHOP];
+}
+
 Bitboard Board::get_K() const
 {
 	return b[KING];

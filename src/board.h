@@ -60,6 +60,7 @@ public:
 	Bitboard get_pieces(int color, int piece) const;
 
 	Bitboard get_N() const;
+	Bitboard get_B() const;
 	Bitboard get_K() const;
 	Bitboard get_RQ() const;
 	Bitboard get_BQ() const;

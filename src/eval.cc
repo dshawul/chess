@@ -63,7 +63,7 @@ static const Key KKBN = 0x110000101000ULL;
 
 class EvalInfo {
 public:
-	explicit EvalInfo(const board::Board *_B): eval_factor(16), B(_B) {
+	explicit EvalInfo(const board::Board *_B): B(_B) {
 		e[WHITE] = e[BLACK] = {0, 0};
 	}
 
@@ -72,14 +72,9 @@ public:
 	void eval_mobility();
 	void eval_safety();
 	void eval_pieces();
-
 	void eval_pawns();
-	void eval_drawish();
-
-	int interpolate();
-	int eval_factor;	// between 0 and 16
-
 	void adjust_kbnk();
+	int interpolate();	
 
 private:
 	const board::Board *B;
@@ -125,32 +120,6 @@ void EvalInfo::eval_material()
 	// Rook pair penalty
 	if (bb::several_bits(B->get_pieces(us, ROOK)))
 		e[us] -= {12, 12};
-}
-
-void EvalInfo::eval_drawish()
-{
-	const int strong_side = e[BLACK].eg > e[WHITE].eg;
-	assert(eval_factor == 16);
-
-	// Strongest side has no pawns
-	if (!B->get_pieces(strong_side, PAWN)) {
-		if (board::has_mating_material(*B, strong_side)) {
-			// Half the eval, unless we're in a KXK situation where X is mating material
-			if (bb::several_bits(B->get_pieces(opp_color(strong_side))))
-				eval_factor = 8;
-		} else
-			// No mating material: divide eval by 4
-			eval_factor = 4;
-	}
-
-	// Opposite color bishop
-	if (eval_factor == 16 && (B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
-		const Bitboard b = B->get_pieces(WHITE, BISHOP) | B->get_pieces(BLACK, BISHOP);
-		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
-			// We have an opposite color bishop situation. If the stronger side has no other pieces
-			// it's more drawish.
-			eval_factor = (B->st().mat_key & (0x0F0F000F00ULL << (4 * strong_side))) ? 12 : 8;
-	}
 }
 
 void EvalInfo::score_mobility(int p0, int p, Bitboard tss)
@@ -509,10 +478,34 @@ int EvalInfo::calc_phase() const
 
 int EvalInfo::interpolate()
 {
+	const int strong_side = e[BLACK].eg > e[WHITE].eg;
+	int eval_factor = 16;
+
+	// Strongest side has no pawns
+	if (!B->get_pieces(strong_side, PAWN)) {
+		if (board::has_mating_material(*B, strong_side)) {
+			// Half the endgame eval, unless we're in a KXK situation where X is mating material
+			if (bb::several_bits(B->get_pieces(opp_color(strong_side))))
+				eval_factor = 8;	// CLOP
+		} else
+			// No mating material: divide endgame eval by 4
+			eval_factor = 4;		// CLOP
+	}
+
+	// Opposite color bishop
+	if (eval_factor == 16 && (B->st().mat_key & 0xFF0000ULL) == 0x110000ULL) {
+		// Each side has exactly one bishop: are the two bishops on opposite color squares?
+		const Bitboard b = B->get_B();
+		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
+			eval_factor = 12;		// CLOP
+	}
+	
 	us = B->get_turn(), them = opp_color(us);
 	const int phase = calc_phase();
-	const int eval = (phase * (e[us].op - e[them].op) + (1024 - phase) * (e[us].eg - e[them].eg)) / 1024;
-	return eval * eval_factor / 16;
+	const int op = e[us].op - e[them].op, eg = e[us].eg - e[them].eg;
+	const int eval = (phase * op + (1024 - phase) * eg * eval_factor / 16) / 1024;
+
+	return eval;
 }
 
 void EvalInfo::adjust_kbnk()
@@ -631,9 +624,6 @@ int symmetric_eval(const board::Board& B)
 		ei.eval_safety();
 		ei.eval_pieces();
 	}
-
-	// Handle general drawish patterns via eval_factor
-	ei.eval_drawish();
 
 	return ei.interpolate();
 }
