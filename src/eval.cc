@@ -321,8 +321,8 @@ void EvalInfo::eval_pawns()
 
 void EvalInfo::eval_shield_storm()
 {
-	static const int ShieldPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};
-	static const int StormPenalty[8] = {10, 0, 40, 20, 10, 0, 0, 0};
+	static const int ShieldPenalty[8] = {55, 0, 15, 40, 50, 55, 55, 0};	// CLOP
+	static const int StormPenalty[8] = {5, 0, 20, 10, 5, 0, 0, 0};	// CLOP
 
 	const int kf = file(our_ksq);
 
