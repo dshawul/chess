@@ -465,8 +465,8 @@ void EvalInfo::eval_pieces()
 	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
 	while (hanging) {
 		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
-		e[us].op -= 4 + psq::material(victim).op / 32;
-		e[us].eg -= 8 + psq::material(victim).eg / 32;
+		e[us].op -= 10 + psq::material(victim).op / 64;
+		e[us].eg -= 18 + psq::material(victim).eg / 64;
 	}
 }
 
