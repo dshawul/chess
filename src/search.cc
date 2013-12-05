@@ -412,13 +412,12 @@ tt_skip_null:
 		const bool bad_capture = capture && see < 0;
 		// dangerous movea are not reduced
 		const bool dangerous = check
-			|| ss->m == ss->killer[0]
-			|| ss->m == ss->killer[1]
-			|| ss->m == refutation
 			|| (move::is_pawn_threat(B, ss->m) && see >= 0);
 
-		// reduction decision
-		ss->reduction = !first && (bad_capture || bad_quiet) && !dangerous;
+		// reduction
+		ss->reduction = !first && (bad_capture || bad_quiet)
+			&& ss->m != ss->killer[0] && ss->m != ss->killer[1] && ss->m != refutation;
+		// double reduction
 		if (ss->reduction && !capture)
 			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8 / depth;
 
