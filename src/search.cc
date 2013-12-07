@@ -57,7 +57,7 @@ move::move_t pv[MAX_PLY+1][MAX_PLY+1];
 move::move_t best_move, ponder_move;
 bool best_move_changed;
 
-void node_poll(board::Board &B)
+void node_poll()
 {
 	if (!(++search::node_count & (search::polling_frequency - 1)) && can_abort) {
 		bool abort = false;
@@ -154,7 +154,7 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 
 	const Key key = B.get_key();
 	search::TT.prefetch(key);
-	node_poll(B);
+	node_poll();
 
 	const bool in_check = B.is_check();
 	int best_score = -INF, old_alpha = alpha;
@@ -280,7 +280,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	if (node_type == PV)
 		pv[ss->ply][0] = move::move_t(0);
 
-	node_poll(B);
+	node_poll();
 
 	const bool root = !ss->ply, in_check = B.is_check();
 	const int old_alpha = alpha, static_node_type = node_type;
