@@ -111,7 +111,7 @@ bool is_pawn_threat(const board::Board& B, move_t m)
 
 move_t string_to_move(const board::Board& B, const std::string& s)
 {
-	move_t m;
+	move_t m(0);
 	m.fsq(square(s[1] - '1', s[0] - 'a'));
 	m.tsq(square(s[3] - '1', s[2] - 'a'));
 	m.flag(NORMAL);

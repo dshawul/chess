@@ -53,6 +53,7 @@ int null_reduction(int depth) { return (14 * depth + 77) / 32; }
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
 
+move::move_t pv[MAX_PLY+1][MAX_PLY+1];
 move::move_t best_move, ponder_move;
 bool best_move_changed;
 
@@ -146,7 +147,7 @@ void time_alloc(const search::Limits& sl, int result[2])
 	}
 }
 
-int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
+int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(depth <= 0);
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
@@ -159,9 +160,8 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 	int best_score = -INF, old_alpha = alpha;
 	ss->best = move::move_t(0);
 
-	move::move_t subtree_pv[MAX_PLY - ss->ply];
 	if (node_type == PV)
-		pv[0] = move::move_t(0);
+		pv[ss->ply][0] = move::move_t(0);
 
 	if (B.is_draw())
 		return DrawScore[B.get_turn()];
@@ -235,7 +235,7 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 			score = stand_pat + see;
 		else {
 			B.play(ss->m);
-			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1, subtree_pv);
+			score = -qsearch(B, -beta, -alpha, depth - 1, -node_type, ss + 1);
 			B.undo();
 		}
 
@@ -247,10 +247,9 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 
 				if (node_type == PV) {
 					// update the PV
-					pv[0] = ss->m;
-					for (int i = 0; i < MAX_PLY - ss->ply; i++)
-						if (!(pv[i + 1] = subtree_pv[i]))
-							break;
+					pv[ss->ply][0] = ss->m;
+					memcpy(&pv[ss->ply][1], &pv[ss->ply+1][0], MAX_PLY * sizeof(move::move_t));
+					pv[ss->ply][MAX_PLY] = move::move_t(0);
 				}
 			}
 
@@ -268,19 +267,18 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 	return best_score;
 }
 
-int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss, move::move_t *pv)
+int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
 
 	if (depth <= 0 || ss->ply >= MAX_DEPTH)
-		return qsearch(B, alpha, beta, depth, node_type, ss, pv);
+		return qsearch(B, alpha, beta, depth, node_type, ss);
 
 	const Key key = B.get_key();
 	search::TT.prefetch(key);
 
-	move::move_t subtree_pv[MAX_PLY - ss->ply];
 	if (node_type == PV)
-		pv[0] = move::move_t(0);
+		pv[ss->ply][0] = move::move_t(0);
 
 	node_poll(B);
 
@@ -335,7 +333,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 		 && !in_check && !is_mate_score(beta) ) {
 		const int threshold = beta - razor_margin(depth);
 		if (stand_pat < threshold) {
-			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1, subtree_pv);
+			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1);
 			if (score < threshold)
 				return score;
 		}
@@ -358,7 +356,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 
 		B.play(move::move_t(0));
 		(ss + 1)->null_child = (ss + 1)->skip_null = true;
-		const int score = -pvs(B, -beta, -alpha, depth - reduction, All, ss + 1, subtree_pv);
+		const int score = -pvs(B, -beta, -alpha, depth - reduction, All, ss + 1);
 		(ss + 1)->null_child = (ss + 1)->skip_null = false;
 		B.undo();
 
@@ -381,7 +379,7 @@ tt_skip_null:
 	if ( (!tte || !tte->move || tte->depth <= 0)
 		 && depth >= (node_type == PV ? 4 : 7) ) {
 		ss->skip_null = true;
-		pvs(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss, subtree_pv);
+		pvs(B, alpha, beta, node_type == PV ? depth - 2 : depth / 2, node_type, ss);
 		ss->skip_null = false;
 	}
 
@@ -462,7 +460,7 @@ tt_skip_null:
 			// search full window full depth
 			// Note that the full window is a zero window at non PV nodes
 			// "-node_type" effectively does PV->PV Cut<->All
-			score = -pvs(B, -beta, -alpha, new_depth, -node_type, ss + 1, subtree_pv);
+			score = -pvs(B, -beta, -alpha, new_depth, -node_type, ss + 1);
 		else {
 			// Cut node: If the first move didn't produce the expected cutoff, then we are
 			// unlikely to get a cutoff at this node, which becomes an All node, so that its
@@ -472,15 +470,15 @@ tt_skip_null:
 
 			// zero window search (reduced)
 			score = -pvs(B, -alpha - 1, -alpha, new_depth - ss->reduction,
-						 node_type == PV ? Cut : -node_type, ss + 1, subtree_pv);
+						 node_type == PV ? Cut : -node_type, ss + 1);
 
 			// doesn't fail low: verify at full depth, with zero window
 			if (score > alpha && ss->reduction)
-				score = -pvs(B, -alpha - 1, -alpha, new_depth, All, ss + 1, subtree_pv);
+				score = -pvs(B, -alpha - 1, -alpha, new_depth, All, ss + 1);
 
 			// still doesn't fail low at PV node: full depth and full window
 			if (node_type == PV && score > alpha)
-				score = -pvs(B, -beta, -alpha, new_depth , PV, ss + 1, subtree_pv);
+				score = -pvs(B, -beta, -alpha, new_depth , PV, ss + 1);
 		}
 
 		B.undo();
@@ -494,10 +492,9 @@ tt_skip_null:
 
 				if (node_type == PV) {
 					// update the PV
-					pv[0] = ss->m;
-					for (int i = 0; i < MAX_PLY - ss->ply; i++)
-						if (!(pv[i + 1] = subtree_pv[i]))
-							break;
+					pv[ss->ply][0] = ss->m;
+					memcpy(&pv[ss->ply][1], &pv[ss->ply+1][0], MAX_PLY * sizeof(move::move_t));
+					pv[ss->ply][MAX_PLY] = move::move_t(0);
 				}
 			}
 
@@ -506,7 +503,7 @@ tt_skip_null:
 					best_move_changed = true;
 					best_move = ss->m;
 				}
-				ponder_move = pv[1];
+				ponder_move = pv[ss->ply][1];
 			}
 		}
 	}
@@ -582,9 +579,8 @@ std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl
 	// no pruning in analyse mode, to print untruncated PVs.
 	TTPrunePVPly = uci::Analyze ? MAX_PLY : 2;
 
-	move::move_t pv[MAX_PLY + 1];
 	uci::info ui;
-	ui.pv = pv;
+	ui.pv = pv[0];
 	
 	const int max_depth = sl.depth ? std::min(MAX_DEPTH, sl.depth) : MAX_DEPTH;
 	
@@ -610,7 +606,7 @@ std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl
 			// Aspiration loop
 
 			try {
-				ui.score = pvs(B, alpha, beta, depth, PV, ss, pv);
+				ui.score = pvs(B, alpha, beta, depth, PV, ss);
 			} catch (AbortSearch e) {
 				goto return_pair;
 			} catch (ForcedMove e) {
