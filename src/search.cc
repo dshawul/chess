@@ -267,6 +267,18 @@ int qsearch(board::Board& B, int alpha, int beta, int depth, int node_type, Sear
 	return best_score;
 }
 
+void update_killers(const board::Board& B, SearchInfo *ss)
+{
+	// update killers on a LIFO basis
+	if (ss->killer[0] != ss->best) {
+		ss->killer[1] = ss->killer[0];
+		ss->killer[0] = ss->best;
+	}
+
+	// update double move refutation hash table
+	search::R.set_refutation(B.get_dm_key(), ss->best);
+}
+
 int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchInfo *ss)
 {
 	assert(alpha < beta && (node_type == PV || alpha + 1 == beta));
@@ -304,7 +316,13 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	const TTable::Entry *tte = search::TT.probe(key);
 	if (tte) {
 		if (!root && can_return_tt(node_type == PV, tte, depth, beta, ss->ply)) {
+			// Refresh TT entry to prevent ageing
 			search::TT.refresh(tte);
+
+			// update killers and refutation table on TT hit
+			if ( (ss->best = tte->move) && !move::is_cop(B, ss->best) )
+				update_killers(B, ss);
+
 			return score_from_tt(tte->score, ss->ply);
 		}
 		ss->eval = tte->eval;
@@ -520,13 +538,10 @@ tt_skip_null:
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
 	search::TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
-	// best move is quiet: update killers and history
+	// best move is quiet: update move sorting heuristics
 	if (ss->best && !move::is_cop(B, ss->best)) {
-		// update killers on a LIFO basis
-		if (ss->killer[0] != ss->best) {
-			ss->killer[1] = ss->killer[0];
-			ss->killer[0] = ss->best;
-		}
+		// update killers and reuftation table
+		update_killers(B, ss);
 
 		// update history table
 		// mark ss->best as good, and all other moves searched as bad
@@ -536,9 +551,6 @@ tt_skip_null:
 		while ( (m = MS.previous()) )
 			if (!move::is_cop(B, m))
 				H.add(B, m, m == ss->best ? bonus : -bonus);
-
-		// update double move refutation hash table
-		search::R.set_refutation(B.get_dm_key(), ss->best);
 	}
 
 	return best_score;
