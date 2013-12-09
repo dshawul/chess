@@ -319,9 +319,11 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 			// Refresh TT entry to prevent ageing
 			search::TT.refresh(tte);
 
-			// update killers and refutation table on TT hit
-			if ( (ss->best = tte->move) && !move::is_cop(B, ss->best) )
+			// update killers, refutation, and history on TT prune
+			if ( (ss->best = tte->move) && !move::is_cop(B, ss->best) ) {
 				update_killers(B, ss);
+				H.add(B, ss->best, depth * depth);
+			}
 
 			return score_from_tt(tte->score, ss->ply);
 		}
