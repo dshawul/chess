@@ -322,7 +322,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 			// update killers, refutation, and history on TT prune
 			if ( (ss->best = tte->move) && !move::is_cop(B, ss->best) ) {
 				update_killers(B, ss);
-				H.add(B, ss->best, depth * depth);
+				H.add(B, ss->best, (depth * depth) >> (hanging != 0));
 			}
 
 			return score_from_tt(tte->score, ss->ply);
