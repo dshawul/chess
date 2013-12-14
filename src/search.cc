@@ -444,7 +444,7 @@ tt_skip_null:
 			ss->reduction = 0;
 
 		// pruning at shallow depth
-		if ( depth <= 6 && node_type != PV
+		if ( depth <= 6 && node_type != PV && cnt > 1
 			 && !capture && !dangerous && !in_check ) {
 			
 			// pre futility pruning
