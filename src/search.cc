@@ -432,12 +432,15 @@ tt_skip_null:
 		const bool dangerous = check
 			|| (move::is_pawn_threat(B, ss->m) && see >= 0);
 
-		// reduction
+		// basic reduction (1 ply)
 		ss->reduction = !first && (bad_capture || bad_quiet)
 			&& ss->m != ss->killer[0] && ss->m != ss->killer[1] && ss->m != refutation;
-		// double reduction
-		if (ss->reduction && !capture && !check)
-			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8 / depth;
+		// further reductions (2 or 3 plies)
+		if (ss->reduction && !capture && !check) {
+			++LMR;
+			const int idx = (static_node_type == Cut ? 2 : 3) + 8 / depth;
+			ss->reduction += (LMR >= idx) + (LMR >= 3*idx);
+		}
 
 		// do not LMR into the QS
 		if (new_depth - ss->reduction <= 0)
