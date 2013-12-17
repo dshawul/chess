@@ -436,7 +436,7 @@ tt_skip_null:
 		ss->reduction = !first && (bad_capture || bad_quiet)
 			&& ss->m != ss->killer[0] && ss->m != ss->killer[1] && ss->m != refutation;
 		// double reduction
-		if (ss->reduction && !capture)
+		if (ss->reduction && !capture && !check)
 			ss->reduction += ++LMR >= (static_node_type == Cut ? 2 : 3) + 8 / depth;
 
 		// do not LMR into the QS
