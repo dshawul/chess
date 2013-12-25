@@ -442,9 +442,9 @@ tt_skip_null:
 			ss->reduction += (LMR >= idx) + (LMR >= 3*idx);
 		}
 
-		// do not LMR into the QS
+		// do not LMR into the deep QS
 		if (new_depth - ss->reduction <= 0)
-			ss->reduction = 0;
+			ss->reduction = new_depth;
 
 		// pruning at shallow depth
 		if ( depth <= 6 && node_type != PV && cnt > 1
