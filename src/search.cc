@@ -360,7 +360,6 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	}
 
 	// Null move pruning
-	move::move_t threat_move = move::move_t(0);
 	if ( stand_pat >= beta
 		 && !ss->skip_null && node_type != PV
 		 && !in_check && !is_mate_score(beta)
@@ -385,7 +384,6 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 				? score		// fail soft
 				: beta;		// but do not return an unproven mate
 		else {
-			threat_move = (ss + 1)->best;
 			if (score <= mated_in(MAX_PLY) && (ss - 1)->reduction) {
 				++depth;
 				--(ss - 1)->reduction;
@@ -462,8 +460,7 @@ tt_skip_null:
 			
 			// Move count pruning
 			if ( LMR >= 3 + depth * (2 * depth - 1) / 2
-				 && alpha > mated_in(MAX_PLY)
-				 && (see < 0 || !refute(B, ss->m, threat_move)) ) {
+				 && alpha > mated_in(MAX_PLY) ) {
 				best_score = std::max(best_score, std::min(alpha, stand_pat + see));
 				continue;
 			}
