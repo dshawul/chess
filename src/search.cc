@@ -562,7 +562,7 @@ tt_skip_null:
 
 namespace search {
 
-std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl)
+std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl, int *score)
 // returns a pair (best move, ponder move)
 {
 	start = high_resolution_clock::now();
@@ -664,6 +664,8 @@ std::pair<move::move_t, move::move_t> bestmove(board::Board& B, const Limits& sl
 	}
 
 return_pair:
+	if (score)
+		*score = ui.score;
 	return std::make_pair(best_move, ponder_move);
 }
 
@@ -674,4 +676,3 @@ void clear_state()
 }
 
 }	// namespace search
-

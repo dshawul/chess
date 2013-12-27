@@ -155,7 +155,7 @@ void bench(int depth)
 		B.set_fen(test[i]);
 
 		std::cout << B.get_fen() << std::endl;
-		bestmove(B, sl);
+		bestmove(B, sl, nullptr);
 		std::cout << std::endl;
 
 		signature += search::node_count;

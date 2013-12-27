@@ -17,6 +17,7 @@
 #include "eval.h"
 #include "search.h"
 #include "uci.h"
+#include "book.h"
 
 uint64_t dbg_cnt1 = 0, dbg_cnt2 = 0;
 
@@ -25,6 +26,8 @@ int main (int argc, char **argv)
 	bb::init();
 	psq::init();
 	eval::init();
+	
+	book::process_file(std::cin, std::cerr);
 
 	if (argc == 2) {
 		if (std::string(argv[1]) == "bench")
