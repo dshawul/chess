@@ -212,7 +212,7 @@ void Board::play(move::move_t m)
 		sp->rule50 = 0;
 		const int inc_pp = us ? -8 : 8;
 		// set the epsq if double push, and ep square is attacked by enemy pawns
-		sp->epsq = tsq == fsq + 2 * inc_pp && bb::test_bit(st().attacks[them][PAWN], fsq + inc_pp)
+		sp->epsq = tsq == fsq + 2 * inc_pp && bb::test_bit(get_attacks(them, PAWN), fsq + inc_pp)
 			? fsq + inc_pp : NO_SQUARE;
 		// capture en passant
 		if (m.flag() == move::EN_PASSANT)
@@ -524,11 +524,11 @@ Bitboard hanging_pieces(const Board& B)
 	const Bitboard our_pawns = B.get_pieces(us, PAWN);
 	const Bitboard our_pieces = B.get_pieces(us) ^ our_pawns;
 
-	const Bitboard attacked = B.st().attacks[them][NO_PIECE];
-	const Bitboard defended = B.st().attacks[us][NO_PIECE];
+	const Bitboard attacked = B.get_attacks(them, NO_PIECE);
+	const Bitboard defended = B.get_attacks(us, NO_PIECE);
 
 	return ((our_pawns ^ our_pieces) & attacked & ~defended)
-		| (our_pieces & B.st().attacks[them][PAWN]);
+		| (our_pieces & B.get_attacks(them, PAWN));
 }
 
 Bitboard calc_attackers(const Board& B, int sq, Bitboard occ)
@@ -576,6 +576,13 @@ Bitboard Board::get_pieces(int color, int piece) const
 {
 	assert(initialized && color_ok(color) && piece_ok(piece));
 	return b[piece] & all[color];
+}
+
+Bitboard Board::get_attacks(int color, int piece) const
+{
+	assert(color_ok(color));
+	assert(PAWN <= piece && piece <= NO_PIECE && piece != QUEEN);
+	return st().attacks[color][piece];
 }
 
 int Board::get_turn() const

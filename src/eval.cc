@@ -143,7 +143,7 @@ void EvalInfo::score_mobility(int p0, int p, Bitboard tss)
 void EvalInfo::eval_mobility()
 {
 	const Bitboard mob_targets = ~(our_pawns | B->get_pieces(us, KING)
-								   | B->st().attacks[them][PAWN]);
+								   | B->get_attacks(them, PAWN));
 
 	Bitboard fss, tss, occ;
 	int fsq, piece;
@@ -193,17 +193,17 @@ void EvalInfo::eval_safety()
 {
 	// Squares that defended by pawns or occupied by attacker pawns, are useless as far as piece
 	// attacks are concerned
-	const Bitboard solid = B->st().attacks[us][PAWN] | their_pawns;
+	const Bitboard solid = B->get_attacks(us, PAWN) | their_pawns;
 
 	// Defended by our pieces
-	const Bitboard defended = B->st().attacks[us][KNIGHT] | B->st().attacks[us][BISHOP]
-							  | B->st().attacks[us][ROOK];
+	const Bitboard defended = B->get_attacks(us, KNIGHT) | B->get_attacks(us, BISHOP)
+							  | B->get_attacks(us, ROOK);
 
 	int total_weight = 0, total_count = 0, sq;
 	Bitboard sq_attackers, attacked, occ, fss;
 
 	// Knight attacks
-	attacked = B->st().attacks[them][KNIGHT] & (bb::kattacks(our_ksq) | bb::nattacks(our_ksq)) & ~solid;
+	attacked = B->get_attacks(them, KNIGHT) & (bb::kattacks(our_ksq) | bb::nattacks(our_ksq)) & ~solid;
 	if (attacked) {
 		fss = B->get_pieces(them, KNIGHT);
 		while (attacked) {
@@ -214,7 +214,7 @@ void EvalInfo::eval_safety()
 	}
 
 	// Lateral attacks
-	attacked = B->st().attacks[them][ROOK] & bb::kattacks(our_ksq) & ~solid;
+	attacked = B->get_attacks(them, ROOK) & bb::kattacks(our_ksq) & ~solid;
 	if (attacked) {
 		fss = B->get_RQ(them);
 		occ = B->st().occ ^ fss;	// rooks and queens see through each other
@@ -231,7 +231,7 @@ void EvalInfo::eval_safety()
 		}
 
 	// Diagonal attacks
-	attacked = B->st().attacks[them][BISHOP] & bb::kattacks(our_ksq) & ~solid;
+	attacked = B->get_attacks(them, BISHOP) & bb::kattacks(our_ksq) & ~solid;
 	if (attacked) {
 		fss = B->get_BQ(them);
 		occ = B->st().occ ^ fss;	// bishops and queens see through each other
@@ -253,7 +253,7 @@ void EvalInfo::eval_safety()
 	if (total_weight) {
 		// if king cannot retreat increase penalty
 		if ( bb::shield(them, our_ksq)
-			 && (bb::shield(them, our_ksq) & ~B->st().attacks[them][NO_PIECE] & ~B->get_pieces(us)) )
+			 && (bb::shield(them, our_ksq) & ~B->get_attacks(them, NO_PIECE) & ~B->get_pieces(us)) )
 			++total_count;
 
 		e[us].op -= total_count * total_weight;
@@ -276,11 +276,11 @@ void EvalInfo::eval_passer_interaction(int sq)
 
 		uint64_t defended, attacked;
 		if (B->get_RQ(not_c) & b) {
-			defended = path & B->st().attacks[c][NO_PIECE];
+			defended = path & B->get_attacks(c, NO_PIECE);
 			attacked = path;
 		} else {
-			defended = (B->get_RQ(c) & b) ? path : path & B->st().attacks[c][NO_PIECE];
-			attacked = path & (B->st().attacks[not_c][NO_PIECE] | B->get_pieces(not_c));
+			defended = (B->get_RQ(c) & b) ? path : path & B->get_attacks(c, NO_PIECE);
+			attacked = path & (B->get_attacks(not_c, NO_PIECE) | B->get_pieces(not_c));
 		}
 
 		if (!attacked)
@@ -391,7 +391,7 @@ Bitboard EvalInfo::do_eval_pawns()
 
 		const bool chained = besides & (bb::rank_bb(r) | bb::rank_bb(us ? r + 1 : r - 1));
 		const bool hole = !chained && !(bb::pawn_span(them, next_sq) & our_pawns)
-			&& bb::test_bit(B->st().attacks[them][PAWN], next_sq);
+			&& bb::test_bit(B->get_attacks(them, PAWN), next_sq);
 		const bool isolated = !besides;
 
 		const bool open = !(bb::squares_in_front(us, sq) & (our_pawns | their_pawns));
@@ -459,10 +459,10 @@ void EvalInfo::eval_pieces()
 	}
 
 	// Hanging pieces
-	Bitboard loose_pawns = our_pawns & ~B->st().attacks[us][NO_PIECE];
+	Bitboard loose_pawns = our_pawns & ~B->get_attacks(us, NO_PIECE);
 	Bitboard loose_pieces = (B->get_pieces(us) ^ our_pawns)
-		& (B->st().attacks[them][PAWN] | ~B->st().attacks[us][PAWN]);
-	Bitboard hanging = (loose_pawns | loose_pieces) & B->st().attacks[them][NO_PIECE];
+		& (B->get_attacks(them, PAWN) | ~B->get_attacks(us, PAWN));
+	Bitboard hanging = (loose_pawns | loose_pieces) & B->get_attacks(them, NO_PIECE);
 	while (hanging) {
 		const int victim = B->get_piece_on(bb::pop_lsb(&hanging));
 		e[us].op -= 10 + psq::material(victim).op / 64;

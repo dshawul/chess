@@ -98,13 +98,13 @@ move::move_t *MoveSort::generate(move::move_t *mlist)
 		Bitboard targets = B->get_pieces(them);
 
 		// Piece captures
-		if (targets & (B->st().attacks[us][KNIGHT] | B->st().attacks[us][BISHOP]
-					   | B->st().attacks[us][ROOK] | B->st().attacks[us][KING]))
+		if (targets & (B->get_attacks(us, KNIGHT) | B->get_attacks(us, BISHOP)
+					   | B->get_attacks(us, ROOK) | B->get_attacks(us, KING)))
 			end = movegen::gen_piece_moves(*B, targets, end, true);
 
 		// Pawn captures
 		targets |= B->st().epsq_bb() | bb::eighth_rank(us);
-		if (targets & B->st().attacks[us][PAWN])
+		if (targets & B->get_attacks(us, PAWN))
 			end = movegen::gen_pawn_moves(*B, targets, end, false);
 
 		// Quiet checks
