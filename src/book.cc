@@ -4,10 +4,10 @@
 namespace {
 
 Bitboard keys[0x100000];
+board::Board B;
 
 void process_fen(const std::string& fen, std::ostream& os)
 {
-	board::Board B;
 	B.set_fen(fen);
 	
 	search::Limits sl;
@@ -22,7 +22,7 @@ void process_fen(const std::string& fen, std::ostream& os)
 		
 		std::string new_fen = B.get_fen();
 		const Bitboard key = B.get_key();
-		const size_t idx = key & 0x100000;
+		const size_t idx = key & 0xfffffULL;
 		
 		if (keys[idx] != key) {
 			int score;
@@ -56,3 +56,4 @@ void process_file(std::istream& is, std::ostream& os)
 }
 	
 }	// namespace book
+
