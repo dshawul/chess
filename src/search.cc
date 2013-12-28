@@ -48,7 +48,7 @@ History H;
 // Formulas tuned by CLOP
 int razor_margin(int depth)	  { return 73 * depth + 145; }
 int eval_margin(int depth)	  { return 37 * depth + 111; }
-int null_reduction(int depth) { return (14 * depth + 77) / 32; }
+int null_reduction(int depth) { return (13 * depth + 72) / 32; }
 
 int DrawScore[NB_COLOR];	// Contempt draw score by color
 int TTPrunePVPly;			// TT pruning at PV nodes after this ply
@@ -361,7 +361,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 
 	// Null move pruning
 	if ( stand_pat >= beta
-		 && !ss->skip_null && node_type != PV
+		 && !ss->skip_null && node_type != PV && depth >= 2
 		 && !in_check && !is_mate_score(beta)
 		 && B.st().piece_psq[B.get_turn()] ) {
 		const int reduction = null_reduction(depth) + (stand_pat - vOP >= beta);
