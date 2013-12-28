@@ -12,9 +12,6 @@ void process_fen(const std::string& fen, std::ostream& os)
 	sl.depth = 12;
 	sl.nodes = 1 << 20;	// in case of search explosion
 
-	search::TT.alloc(16ULL << 20);
-	search::clear_state();
-
 	move::move_t mlist[MAX_MOVES];
 	move::move_t *end = movegen::gen_moves(B, mlist);
 	
@@ -26,7 +23,7 @@ void process_fen(const std::string& fen, std::ostream& os)
 		
 		search::bestmove(B, sl, &score);
 		
-		if (std::abs(score) < 70)
+		if (std::abs(score) <= 50)
 			os << new_fen << std::endl;
 		
 		B.undo();
@@ -39,6 +36,9 @@ namespace book {
 
 void process_file(std::istream& is, std::ostream& os)
 {
+	search::TT.alloc(32ULL << 20);
+	search::clear_state();
+
 	std::string fen;
 	while (getline(is, fen))
 		process_fen(fen, os);
