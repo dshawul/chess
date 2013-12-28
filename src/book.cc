@@ -3,6 +3,8 @@
 
 namespace {
 
+Bitboard keys[0x100000];
+
 void process_fen(const std::string& fen, std::ostream& os)
 {
 	board::Board B;
@@ -16,15 +18,22 @@ void process_fen(const std::string& fen, std::ostream& os)
 	move::move_t *end = movegen::gen_moves(B, mlist);
 	
 	for (move::move_t *m = mlist; m != end; ++m) {
-		int score;
-		
 		B.play(*m);
+		
 		std::string new_fen = B.get_fen();
+		const Bitboard key = B.get_key();
+		const size_t idx = key & 0x100000;
 		
-		search::bestmove(B, sl, &score);
-		
-		if (std::abs(score) <= 50)
-			os << new_fen << std::endl;
+		if (keys[idx] != key) {
+			int score;
+			search::bestmove(B, sl, &score);
+			
+			// position has been searched: always overwrite, to not search it again
+			keys[idx] = key;
+			
+			if (std::abs(score) <= 50)
+				os << new_fen << std::endl;
+		}
 		
 		B.undo();
 	}
@@ -36,6 +45,8 @@ namespace book {
 
 void process_file(std::istream& is, std::ostream& os)
 {
+	memset(keys, 0, sizeof(keys));
+	
 	search::TT.alloc(32ULL << 20);
 	search::clear_state();
 

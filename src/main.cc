@@ -28,6 +28,7 @@ int main (int argc, char **argv)
 	eval::init();
 	
 	book::process_file(std::cin, std::cerr);
+	return 0;
 
 	if (argc == 2) {
 		if (std::string(argv[1]) == "bench")
