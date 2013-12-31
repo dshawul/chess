@@ -295,7 +295,7 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	node_poll();
 
 	const bool root = !ss->ply, in_check = B.is_check();
-	const int old_alpha = alpha, static_node_type = node_type;
+	const int old_alpha = alpha;
 	int best_score = -INF;
 	ss->best = move::move_t(0);
 
@@ -436,7 +436,7 @@ tt_skip_null:
 		// further reductions (2 or 3 plies)
 		if (ss->reduction && !capture && !check) {
 			++LMR;
-			const int idx = (static_node_type == Cut ? 2 : 3) + 8 / depth;
+			const int idx = 2 + 8 / depth;
 			ss->reduction += (LMR >= idx) + (LMR >= 3*idx);
 		}
 
