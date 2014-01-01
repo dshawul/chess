@@ -68,8 +68,8 @@ enum { OPENING, ENDGAME, NB_PHASE };
 // material values
 enum {
 	vOP = 80, vEP = 100,
-	vN = 330, vB = 330,
-	vR = 545, vQ = 1000,
+	vN = 325, vB = 325,
+	vR = 540, vQ = 995,
 	vK = 20000 // only for SEE
 };
 

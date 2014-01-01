@@ -478,6 +478,7 @@ int EvalInfo::calc_phase() const
 
 int EvalInfo::interpolate()
 {
+	us = B->get_turn(), them = opp_color(us);
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	int eval_factor = 16;
 
@@ -499,13 +500,25 @@ int EvalInfo::interpolate()
 		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
 			eval_factor = 12;		// CLOP
 	}
+
+	// Piece count Imbalance
+	const int our_minors_cnt = bb::count_bit(B->get_NB(us));
+	const int their_minors_cnt = bb::count_bit(B->get_NB(them));
 	
-	us = B->get_turn(), them = opp_color(us);
+	int imbalance = 0;
+	if (our_minors_cnt != their_minors_cnt) {
+		const int our_pawns_cnt = bb::count_bit(B->get_pieces(us, PAWN));
+		const int their_pawns_cnt = bb::count_bit(B->get_pieces(them, PAWN));
+
+		imbalance = 4 * (our_minors_cnt - their_minors_cnt)
+			* (our_minors_cnt > their_minors_cnt ? their_pawns_cnt : our_pawns_cnt);
+	}
+	
 	const int phase = calc_phase();
 	const int op = e[us].op - e[them].op, eg = e[us].eg - e[them].eg;
 	const int eval = (phase * op + (1024 - phase) * eg * eval_factor / 16) / 1024;
 
-	return eval;
+	return eval + imbalance;
 }
 
 void EvalInfo::adjust_kbnk()
