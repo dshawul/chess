@@ -17,10 +17,10 @@ void process_fen(const std::string& fen, std::ostream& os)
 		const bool tactical = move::is_check(B, *m) || move::is_cop(B, *m);
 		const int eval_before = B.is_check() ? -INF : eval::symmetric_eval(B);
 
-		if (tactical || -eval::symmetric_eval(B) >= eval_before) {
-			std::string new_fen = B.get_fen();
-			os << new_fen << std::endl;
-		}
+		B.play(*m);
+		if (tactical || -eval::symmetric_eval(B) >= eval_before)
+			os << B.get_fen() << std::endl;
+		B.undo(*m);
 	}
 }
 
