@@ -27,7 +27,7 @@ int main (int argc, char **argv)
 	psq::init();
 	eval::init();
 	
-	book::process_file(std::cin, std::cerr);
+	book::process_file(std::cin, std::cout);
 	return 0;
 
 	if (argc == 2) {
