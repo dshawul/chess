@@ -501,18 +501,10 @@ int EvalInfo::interpolate()
 			eval_factor = 12;		// CLOP
 	}
 
-	// Piece count Imbalance
-	const int our_minors_cnt = bb::count_bit(B->get_NB(us));
-	const int their_minors_cnt = bb::count_bit(B->get_NB(them));
-	
-	int imbalance = 0;
-	if (our_minors_cnt != their_minors_cnt) {
-		const int our_pawns_cnt = bb::count_bit(B->get_pieces(us, PAWN));
-		const int their_pawns_cnt = bb::count_bit(B->get_pieces(them, PAWN));
-
-		imbalance = 4 * (our_minors_cnt - their_minors_cnt)
-			* (our_minors_cnt > their_minors_cnt ? their_pawns_cnt : our_pawns_cnt);
-	}
+	// Basic material imbalance, based on counting minor pieces
+	const int om = bb::count_bit(B->get_NB(us));
+	const int tm = bb::count_bit(B->get_NB(them));
+	const int imbalance = 2 * (om - tm) * bb::count_bit(B->get_P());
 	
 	const int phase = calc_phase();
 	const int op = e[us].op - e[them].op, eg = e[us].eg - e[them].eg;
