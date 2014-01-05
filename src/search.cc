@@ -342,15 +342,17 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 	}
 
 	// post futility pruning
-	if ( depth <= 5 && node_type != PV
+	if ( depth <= 5
 		 && !in_check && !is_mate_score(beta)
 		 && stand_pat >= beta + eval_margin(depth)
-		 && B.st().piece_psq[B.get_turn()] )
+		 && B.st().piece_psq[B.get_turn()]
+		 && node_type != PV )
 		return stand_pat;
 
 	// Razoring
-	if ( depth <= 3 && node_type != PV
-		 && !in_check && !is_mate_score(beta) ) {
+	if ( depth <= 3
+		 && !in_check && !is_mate_score(beta)
+		 && node_type != PV ) {
 		const int threshold = beta - razor_margin(depth);
 		if (stand_pat < threshold) {
 			const int score = qsearch(B, threshold - 1, threshold, 0, All, ss + 1);
@@ -361,9 +363,10 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 
 	// Null move pruning
 	if ( stand_pat >= beta
-		 && !ss->skip_null && node_type != PV && depth >= 2
+		 && !ss->skip_null && depth >= 2
 		 && !in_check && !is_mate_score(beta)
-		 && B.st().piece_psq[B.get_turn()] ) {
+		 && B.st().piece_psq[B.get_turn()]
+		 && node_type != PV ) {
 		const int reduction = null_reduction(depth) + (stand_pat - vOP >= beta);
 
 		// if the TT entry tells us that no move can beat alpha at the null search depth or deeper,
@@ -445,8 +448,9 @@ tt_skip_null:
 			ss->reduction = new_depth;
 
 		// pruning at shallow depth
-		if ( depth <= 6 && node_type != PV && cnt > 1
-			 && !capture && !dangerous && !in_check ) {
+		if ( depth <= 6 && cnt > 1
+			 && !capture && !dangerous && !in_check
+			 && node_type != PV ) {
 			
 			// pre futility pruning
 			const int child_depth = new_depth - ss->reduction;
