@@ -368,7 +368,7 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 
 	if (Q) {
 		// adjustment for king distance
-		res->eg += bb::kdist(next_sq, their_ksq) * 2 * Q;
+		res->eg += bb::kdist(next_sq, their_ksq) * 3 * Q;
 		res->eg -= bb::kdist(next_sq, our_ksq) * Q;
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
 			res->eg -= bb::kdist(bb::pawn_push(us, next_sq), our_ksq) * Q / 2;
