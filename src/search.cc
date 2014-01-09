@@ -319,8 +319,8 @@ int pvs(board::Board& B, int alpha, int beta, int depth, int node_type, SearchIn
 			// Refresh TT entry to prevent ageing
 			search::TT.refresh(tte);
 
-			// update killers, refutation, and history on TT prune
-			if ( (ss->best = tte->move) && !move::is_cop(B, ss->best) ) {
+			// update killers, refutation, and history on TT prune when alpha is raised
+			if (tte->score > old_alpha && (ss->best = tte->move) && !move::is_cop(B, ss->best)) {
 				update_killers(B, ss);
 				H.add(B, ss->best, (depth * depth) >> (hanging != 0));
 			}
@@ -544,8 +544,8 @@ tt_skip_null:
 	node_type = best_score <= old_alpha ? All : best_score >= beta ? Cut : PV;
 	search::TT.store(key, node_type, depth, score_to_tt(best_score, ss->ply), ss->eval, ss->best);
 
-	// best move is quiet: update move sorting heuristics
-	if (ss->best && !move::is_cop(B, ss->best)) {
+	// best move is quiet: update move sorting heuristics if alpha was raised
+	if (best_score > old_alpha && ss->best && !move::is_cop(B, ss->best)) {
 		// update killers and reuftation table
 		update_killers(B, ss);
 
