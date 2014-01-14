@@ -116,10 +116,6 @@ void EvalInfo::eval_material()
 	// Bishop pair
 	if (bb::several_bits(B->get_pieces(us, BISHOP)))
 		e[us] += {51, 57};	// CLOP
-
-	// Rook pair penalty
-	if (bb::several_bits(B->get_pieces(us, ROOK)))
-		e[us] -= {12, 12};
 }
 
 void EvalInfo::score_mobility(int p0, int p, Bitboard tss)

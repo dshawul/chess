@@ -69,7 +69,7 @@ enum { OPENING, ENDGAME, NB_PHASE };
 enum {
 	vOP = 78, vEP = 100,
 	vN = 320, vB = 320,
-	vR = 525, vQ = 980,
+	vR = 523, vQ = 990,
 	vK = 20000 // only for SEE
 };
 
