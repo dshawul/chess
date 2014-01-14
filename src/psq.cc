@@ -65,6 +65,7 @@ Eval psq_bonus(int piece, int sq)
 			e.op += PCenterOpening / 2;
 		else if (sq == D4 || sq == E4)
 			e.op += PCenterOpening;
+		e.eg += r - RANK_3;
 	} else if (piece == KNIGHT) {
 		e.op += (Center[r] + Center[f]) * NCentreOpening;
 		e.eg += (Center[r] + Center[f]) * NCentreEndgame;
