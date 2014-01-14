@@ -615,6 +615,11 @@ Key Board::get_dm_key() const
 	return p->key ^ sp->key;
 }
 
+Bitboard Board::get_P() const
+{
+	return b[PAWN];
+}
+
 Bitboard Board::get_N() const
 {
 	return b[KNIGHT];

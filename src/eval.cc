@@ -116,10 +116,6 @@ void EvalInfo::eval_material()
 	// Bishop pair
 	if (bb::several_bits(B->get_pieces(us, BISHOP)))
 		e[us] += {51, 57};	// CLOP
-
-	// Rook pair penalty
-	if (bb::several_bits(B->get_pieces(us, ROOK)))
-		e[us] -= {12, 12};
 }
 
 void EvalInfo::score_mobility(int p0, int p, Bitboard tss)
@@ -368,7 +364,7 @@ void EvalInfo::eval_passer(int sq, Eval *res)
 
 	if (Q) {
 		// adjustment for king distance
-		res->eg += bb::kdist(next_sq, their_ksq) * 2 * Q;
+		res->eg += bb::kdist(next_sq, their_ksq) * 3 * Q;
 		res->eg -= bb::kdist(next_sq, our_ksq) * Q;
 		if (rank(next_sq) != (us ? RANK_1 : RANK_8))
 			res->eg -= bb::kdist(bb::pawn_push(us, next_sq), our_ksq) * Q / 2;
@@ -478,6 +474,7 @@ int EvalInfo::calc_phase() const
 
 int EvalInfo::interpolate()
 {
+	us = B->get_turn(), them = opp_color(us);
 	const int strong_side = e[BLACK].eg > e[WHITE].eg;
 	int eval_factor = 16;
 
@@ -499,13 +496,17 @@ int EvalInfo::interpolate()
 		if ((b & bb::WhiteSquares) && (b & bb::BlackSquares))
 			eval_factor = 12;		// CLOP
 	}
+
+	// Basic material imbalance, based on counting minor pieces
+	const int om = bb::count_bit(B->get_NB(us));
+	const int tm = bb::count_bit(B->get_NB(them));
+	const int imbalance = 2 * (om - tm) * bb::count_bit(B->get_P());
 	
-	us = B->get_turn(), them = opp_color(us);
 	const int phase = calc_phase();
 	const int op = e[us].op - e[them].op, eg = e[us].eg - e[them].eg;
 	const int eval = (phase * op + (1024 - phase) * eg * eval_factor / 16) / 1024;
 
-	return eval;
+	return eval + imbalance;
 }
 
 void EvalInfo::adjust_kbnk()

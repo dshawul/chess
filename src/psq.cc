@@ -38,7 +38,6 @@ const int KFile[8]	= { +3, +4, +2, +0, +0, +2, +4, +3};
 const int KRank[8]	= { +1, +0, -2, -3, -4, -5, -6, -7};
 
 /* Weight */
-const int PFileOpening = 3;
 const int BCentreOpening = 2;
 const int BCentreEndgame = 3;
 const int RFileOpening = 3;
@@ -49,7 +48,7 @@ const int KCentreEndgame = 14, KFileOpening = 10, KRankOpening = 7;
 const int NCentreOpening = 10, NCentreEndgame = 3;
 
 /* Adjustments */
-const int PCenterOpening = 16;
+const int PCenterOpening = 18;
 const int BDiagonalOpening = 4;
 const int BBackRankOpening = 10;
 const int QBackRankOpening = 5;
@@ -62,7 +61,6 @@ Eval psq_bonus(int piece, int sq)
 	const int r = rank(sq), f = file(sq);
 
 	if (piece == PAWN) {
-		e.op += Center[f] * PFileOpening;
 		if (sq == D5 || sq == E5 || sq == D3 || sq == E3)
 			e.op += PCenterOpening / 2;
 		else if (sq == D4 || sq == E4)

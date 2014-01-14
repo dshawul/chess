@@ -69,7 +69,7 @@ bool test_perft()
 
 	auto stop = high_resolution_clock::now();
 	int elapsed = duration_cast<microseconds>(stop - start).count();
-	std::cout << "speed: " << (int)(total / (float)elapsed * 1e6) << " leaf/sec" << std::endl;
+	std::cout << "speed: " << (int)(total / (double)elapsed * 1e6) << " leaf/sec" << std::endl;
 
 	return true;
 }
@@ -143,7 +143,7 @@ void bench(int depth)
 	board::Board B;
 	search::Limits sl;
 	sl.depth = depth;
-	uint64_t signature = 0;
+	uint64_t nodes = 0;
 
 	search::TT.alloc(32ULL << 20);
 	search::clear_state();
@@ -158,13 +158,13 @@ void bench(int depth)
 		bestmove(B, sl, nullptr);
 		std::cout << std::endl;
 
-		signature += search::node_count;
+		nodes += search::node_count;
 	}
 
 	end = high_resolution_clock::now();
 	int64_t elapsed_usec = duration_cast<microseconds>(end - start).count();
 
-	std::cout << "signature = " << signature << std::endl;
-	std::cout << "time = " << (float)elapsed_usec / 1e6 << std::endl;
+	std::cout << "nodes = " << nodes << std::endl;
+	std::cout << "kn/s = " << nodes / (double)elapsed_usec * 1e3 << std::endl;
 }
 
